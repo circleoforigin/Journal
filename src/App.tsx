@@ -31,6 +31,8 @@ import type { Journal } from './models/Journal'
 import { journalRepository } from './journals/JournalRepository'
 
 import { NewJournalDialog } from './journals/NewJournalDialog'
+import { OpenJournalDialog } from './journals/OpenJournalDialog'
+import { DeleteJournalDialog } from './journals/DeleteJournalDialog'
 
 function App() {
   const [
@@ -51,6 +53,21 @@ const [
   isNewJournalOpen,
   setIsNewJournalOpen,
 ] = useState(false)
+
+const [
+  isOpenJournalOpen,
+  setIsOpenJournalOpen,
+] = useState(false)
+
+const [
+  isDeleteJournalOpen,
+  setIsDeleteJournalOpen,
+] = useState(false)
+
+const [
+  availableJournals,
+  setAvailableJournals,
+] = useState<Journal[]>([])
 
   const [
     projectDirty,
@@ -634,6 +651,165 @@ async function createJournal(
   setIsNewJournalOpen(false)
 }
 
+async function loadProjectJournals():
+  Promise<Journal[]> {
+  if (!activeProject) {
+    return []
+  }
+
+  const journals =
+    await Promise.all(
+      activeProject.journalIds.map(
+        (journalId) =>
+          journalRepository
+            .loadJournal(
+              journalId,
+            ),
+      ),
+    )
+
+  return journals
+    .filter(
+      (
+        journal,
+      ): journal is Journal =>
+        journal !== null,
+    )
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(
+          right.name,
+        ),
+    )
+}
+
+async function handleOpenJournal() {
+  const journals =
+    await loadProjectJournals()
+
+  setAvailableJournals(
+    journals,
+  )
+
+  setIsOpenJournalOpen(true)
+}
+
+async function openSelectedJournal(
+  journalId: string,
+) {
+  const journal =
+    await journalRepository
+      .loadJournal(
+        journalId,
+      )
+
+  if (!journal) {
+    return
+  }
+
+  if (
+    !activeProject?.journalIds
+      .includes(journal.id)
+  ) {
+    return
+  }
+
+  setActiveJournal(
+    journal,
+  )
+
+  setIsOpenJournalOpen(false)
+}
+
+async function handleDeleteJournal() {
+  const journals =
+    await loadProjectJournals()
+
+  setAvailableJournals(
+    journals,
+  )
+
+  setIsDeleteJournalOpen(true)
+}
+
+async function deleteSelectedJournal(
+  journal: Journal,
+) {
+  if (!activeProject) {
+    return
+  }
+
+  if (
+    !activeProject.journalIds
+      .includes(journal.id)
+  ) {
+    return
+  }
+
+  await journalRepository
+    .deleteJournal(
+      journal.id,
+    )
+
+  const updatedProject: Project = {
+    ...activeProject,
+
+    journalIds:
+      activeProject.journalIds
+        .filter(
+          (journalId) =>
+            journalId !==
+            journal.id,
+        ),
+
+    updatedAt:
+      new Date().toISOString(),
+  }
+
+  await projectRepository
+    .saveProject(
+      updatedProject,
+    )
+
+  setActiveProject(
+    updatedProject,
+  )
+
+  if (
+    activeJournal?.id ===
+    journal.id
+  ) {
+    setActiveJournal(null)
+  }
+
+  const journals =
+    await Promise.all(
+      updatedProject.journalIds.map(
+        (journalId) =>
+          journalRepository
+            .loadJournal(
+              journalId,
+            ),
+      ),
+    )
+
+  setAvailableJournals(
+    journals.filter(
+      (
+        candidate,
+      ): candidate is Journal =>
+        candidate !== null,
+    ),
+  )
+
+  if (
+    updatedProject.journalIds
+      .length === 0
+  ) {
+    setIsDeleteJournalOpen(false)
+  }
+}
+
   return (
     <div className="journal-app">
       <MenuBar
@@ -681,7 +857,7 @@ async function createJournal(
   }
 
   onOpenJournal={() => {
-    // next step
+    void handleOpenJournal()
   }}
 
   onCloseJournal={() => {
@@ -689,7 +865,7 @@ async function createJournal(
   }}
 
   onDeleteJournal={() => {
-    // next step
+    void handleDeleteJournal()
   }}
 />
 
@@ -795,6 +971,42 @@ async function createJournal(
 
     onCancel={() => {
       setIsNewJournalOpen(
+        false,
+      )
+    }}
+  />
+)}
+
+{isOpenJournalOpen && (
+  <OpenJournalDialog
+    journals={
+      availableJournals
+    }
+
+    onOpen={
+      openSelectedJournal
+    }
+
+    onCancel={() => {
+      setIsOpenJournalOpen(
+        false,
+      )
+    }}
+  />
+)}
+
+{isDeleteJournalOpen && (
+  <DeleteJournalDialog
+    journals={
+      availableJournals
+    }
+
+    onDelete={
+      deleteSelectedJournal
+    }
+
+    onCancel={() => {
+      setIsDeleteJournalOpen(
         false,
       )
     }}
