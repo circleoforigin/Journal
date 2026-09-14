@@ -1,0 +1,137 @@
+.journal-app {
+  width: 100%;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  color: #eeeeee;
+  background: #202225;
+}
+
+/* =========================
+   MENU BAR
+   ========================= */
+
+.menu-bar {
+  position: relative;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+
+  height: 34px;
+  padding: 0 8px;
+
+  background: #1f1f1f;
+  border-bottom: 1px solid #3a3a3a;
+
+  user-select: none;
+}
+
+.menu-group {
+  position: relative;
+
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+}
+
+.menu-item {
+  height: 100%;
+  padding: 0 10px;
+
+  border: none;
+  border-radius: 0;
+
+  background: transparent;
+  color: #e8e8e8;
+
+  font: inherit;
+  font-size: 14px;
+
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item:focus {
+  outline: none;
+  background: #343434;
+}
+
+.menu-project-name {
+  position: absolute;
+
+  left: 50%;
+  transform: translateX(-50%);
+
+  max-width: 40%;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #b8b8b8;
+
+  font-size: 13px;
+  font-weight: bold;
+
+  pointer-events: none;
+}
+
+/* =========================
+   JOURNAL SHELL
+   ========================= */
+
+.journal-workspace {
+  position: relative;
+
+  flex: 1;
+  min-height: 0;
+
+  display: block;
+}
+
+.journal-main-workspace {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 0;
+  min-height: 0;
+
+  background: #202225;
+}
+
+.module-identifier {
+  margin-bottom: 10px;
+
+  color: #6f7378;
+
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.journal-empty {
+  text-align: center;
+}
+
+.journal-empty h2 {
+  margin: 0 0 8px;
+
+  color: #ffffff;
+}
+
+.journal-empty p {
+  margin: 0;
+
+  color: #999999;
+}
