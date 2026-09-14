@@ -1,37 +1,151 @@
+import {
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+
 interface MenuBarProps {
+  onNewProject: () => void
+  onLoadProject: () => void
+  onSaveProject: () => void
+  onCloseProject: () => void
+  onDeleteProject: () => void
+
   projectName?: string
 }
 
 export function MenuBar({
+  onNewProject,
+  onLoadProject,
+  onSaveProject,
+  onCloseProject,
+  onDeleteProject,
   projectName,
 }: MenuBarProps) {
+  const menuBarRef =
+    useRef<HTMLDivElement>(null)
+
+  const [
+    projectMenuOpen,
+    setProjectMenuOpen,
+  ] = useState(false)
+
+  useEffect(() => {
+    if (!projectMenuOpen) {
+      return
+    }
+
+    function handleOutsidePointerDown(
+      event: PointerEvent,
+    ) {
+      const target =
+        event.target
+
+      if (
+        target instanceof Node &&
+        !menuBarRef.current?.contains(
+          target,
+        )
+      ) {
+        setProjectMenuOpen(false)
+      }
+    }
+
+    document.addEventListener(
+      'pointerdown',
+      handleOutsidePointerDown,
+    )
+
+    return () => {
+      document.removeEventListener(
+        'pointerdown',
+        handleOutsidePointerDown,
+      )
+    }
+  }, [projectMenuOpen])
+
+  function runAction(
+    action: () => void,
+  ) {
+    setProjectMenuOpen(false)
+    action()
+  }
+
   return (
-    <div className="menu-bar">
+    <div
+      ref={menuBarRef}
+      className="menu-bar"
+    >
       <div className="menu-group">
         <button
-          className="menu-item"
           type="button"
+          className="menu-item"
+          onClick={() => {
+            setProjectMenuOpen(
+              (open) => !open,
+            )
+          }}
         >
           Project
         </button>
-      </div>
 
-      <div className="menu-group">
-        <button
-          className="menu-item"
-          type="button"
-        >
-          Edit
-        </button>
-      </div>
+        {projectMenuOpen && (
+          <div className="dropdown-menu">
+            <button
+              type="button"
+              className="dropdown-item"
+              onClick={() => {
+                runAction(onNewProject)
+              }}
+            >
+              New Project...
+            </button>
 
-      <div className="menu-group">
-        <button
-          className="menu-item"
-          type="button"
-        >
-          Journal
-        </button>
+            <button
+              type="button"
+              className="dropdown-item"
+              onClick={() => {
+                runAction(onLoadProject)
+              }}
+            >
+              Load Project...
+            </button>
+
+            <button
+              type="button"
+              className="dropdown-item"
+              disabled={!projectName}
+              onClick={() => {
+                runAction(onSaveProject)
+              }}
+            >
+              Save Project
+            </button>
+
+            <button
+              type="button"
+              className="dropdown-item"
+              disabled={!projectName}
+              onClick={() => {
+                runAction(onCloseProject)
+              }}
+            >
+              Close Project
+            </button>
+
+            <div className="dropdown-separator" />
+
+            <button
+              type="button"
+              className="dropdown-item"
+              onClick={() => {
+                runAction(onDeleteProject)
+              }}
+            >
+              Delete Project...
+            </button>
+          </div>
+        )}
       </div>
 
       {projectName && (
