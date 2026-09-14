@@ -10,8 +10,15 @@ interface MenuBarProps {
   onSaveProject: () => void
   onCloseProject: () => void
   onDeleteProject: () => void
+  onNewJournal: () => void
+  onOpenJournal: () => void
+  onCloseJournal: () => void
+  onDeleteJournal: () => void
 
   projectName?: string
+  hasProject: boolean
+  hasJournals: boolean
+  hasActiveJournal: boolean
 }
 
 export function MenuBar({
@@ -35,9 +42,15 @@ export function MenuBar({
     setEditMenuOpen,
   ] = useState(false)
 
+  const [
+    journalsMenuOpen,
+    setJournalsMenuOpen,
+    ] = useState(false)
+
   const anyMenuOpen =
-    projectMenuOpen ||
-    editMenuOpen
+  projectMenuOpen ||
+  editMenuOpen ||
+  journalsMenuOpen
 
   useEffect(() => {
     if (!anyMenuOpen) {
@@ -76,22 +89,29 @@ export function MenuBar({
   function closeMenus() {
     setProjectMenuOpen(false)
     setEditMenuOpen(false)
+    setJournalsMenuOpen(false)
   }
 
   function openProjectMenu() {
     setEditMenuOpen(false)
-
+    setJournalsMenuOpen(false)
     setProjectMenuOpen(
-      (open) => !open,
-    )
-  }
+        (open) => !open)
+    }
 
   function openEditMenu() {
     setProjectMenuOpen(false)
-
+    setJournalsMenuOpen(false)
     setEditMenuOpen(
-      (open) => !open,
-    )
+    (open) => !open)
+  }  
+
+  function openJournalsMenu() {
+    setProjectMenuOpen(false)
+    setEditMenuOpen(false)
+
+    setJournalsMenuOpen(
+        (open) => !open)
   }
 
   function runAction(
@@ -276,7 +296,75 @@ export function MenuBar({
             </button>
           </div>
         )}
-      </div>
+    </div>
+    
+    <div className="menu-group">
+  <button
+    type="button"
+    className="menu-item"
+    onClick={openJournalsMenu}
+  >
+    Journals
+  </button>
+
+  {journalsMenuOpen && (
+    <div className="dropdown-menu">
+      <button
+        type="button"
+        className="dropdown-item"
+        disabled={!hasProject}
+        onClick={() => {
+          runAction(onNewJournal)
+        }}
+      >
+        New Journal...
+      </button>
+
+      <button
+        type="button"
+        className="dropdown-item"
+        disabled={
+          !hasProject ||
+          !hasJournals
+        }
+        onClick={() => {
+          runAction(onOpenJournal)
+        }}
+      >
+        Open Journal...
+      </button>
+
+      <button
+        type="button"
+        className="dropdown-item"
+        disabled={
+          !hasActiveJournal
+        }
+        onClick={() => {
+          runAction(onCloseJournal)
+        }}
+      >
+        Close Journal
+      </button>
+
+      <div className="dropdown-separator" />
+
+      <button
+        type="button"
+        className="dropdown-item"
+        disabled={
+          !hasProject ||
+          !hasJournals
+        }
+        onClick={() => {
+          runAction(onDeleteJournal)
+        }}
+      >
+        Delete Journal...
+      </button>
+    </div>
+  )}
+</div>
 
       {projectName && (
         <div className="menu-project-name">

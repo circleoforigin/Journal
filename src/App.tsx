@@ -26,6 +26,12 @@ import { LoadProjectDialog } from './projects/LoadProjectDialog'
 import { DeleteProjectDialog } from './projects/DeleteProjectDialog'
 import { UnsavedChangesDialog } from './projects/UnsavedChangesDialog'
 
+import type { Journal } from './models/Journal'
+
+import { journalRepository } from './journals/JournalRepository'
+
+import { NewJournalDialog } from './journals/NewJournalDialog'
+
 function App() {
   const [
     activeProject,
@@ -33,6 +39,18 @@ function App() {
   ] = useState<Project | null>(
     null,
   )
+
+  const [
+  activeJournal,
+  setActiveJournal,
+] = useState<Journal | null>(
+  null,
+)
+
+const [
+  isNewJournalOpen,
+  setIsNewJournalOpen,
+] = useState(false)
 
   const [
     projectDirty,
@@ -143,14 +161,18 @@ const pendingProjectActionRef =
             payload.loadId
 
           void Promise.resolve()
-            .then(() => {
-              setActiveProject(
-                project,
-              )
+  .then(() => {
+    setActiveProject(
+      project,
+    )
 
-              setProjectDirty(
-                false,
-              )
+    setActiveJournal(
+      null,
+    )
+
+    setProjectDirty(
+      false,
+    )
 
               const loaded:
                 ProjectLoadedPayload = {
@@ -262,12 +284,16 @@ const pendingProjectActionRef =
           }
 
           setActiveProject(
-            null,
-          )
+  null,
+)
 
-          setProjectDirty(
-            false,
-          )
+setActiveJournal(
+  null,
+)
+
+setProjectDirty(
+  false,
+)
 
           return {
             closed: true,
@@ -286,15 +312,17 @@ const pendingProjectActionRef =
     projectDirty,
   ])
 
-  function loadProjectIntoWorkspace(
+ function loadProjectIntoWorkspace(
   project: Project,
 ) {
   setActiveProject(project)
+  setActiveJournal(null)
   setProjectDirty(false)
 }
 
 function closeProject() {
   setActiveProject(null)
+  setActiveJournal(null)
   setProjectDirty(false)
 }
 
@@ -541,33 +569,129 @@ async function deleteSelectedProject(
   )
 }
 
+function handleNewJournal() {
+  if (!activeProject) {
+    return
+  }
+
+  setIsNewJournalOpen(true)
+}
+
+async function createJournal(
+  name: string,
+) {
+  if (!activeProject) {
+    return
+  }
+
+  const now =
+    new Date().toISOString()
+
+  const journal: Journal = {
+    id:
+      crypto.randomUUID(),
+
+    name,
+
+    kind:
+      'setting',
+
+    entryIds: [],
+
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  await journalRepository
+    .saveJournal(journal)
+
+  const updatedProject: Project = {
+    ...activeProject,
+
+    journalIds: [
+      ...activeProject.journalIds,
+      journal.id,
+    ],
+
+    updatedAt: now,
+  }
+
+  await projectRepository
+    .saveProject(
+      updatedProject,
+    )
+
+  setActiveProject(
+    updatedProject,
+  )
+
+  setActiveJournal(
+    journal,
+  )
+
+  setProjectDirty(false)
+
+  setIsNewJournalOpen(false)
+}
+
   return (
     <div className="journal-app">
       <MenuBar
-        projectName={
-          activeProject?.name
-        }
+  projectName={
+    activeProject?.name
+  }
 
-        onNewProject={
-          handleNewProject
-        }
+  hasProject={
+    Boolean(activeProject)
+  }
 
-        onLoadProject={
-          handleLoadProject
-        }
+  hasJournals={
+    Boolean(
+      activeProject?.journalIds
+        .length,
+    )
+  }
 
-        onSaveProject={
-          handleSaveProject
-        }
+  hasActiveJournal={
+    Boolean(activeJournal)
+  }
 
-        onCloseProject={
-          handleCloseProject
-        }
+  onNewProject={
+    handleNewProject
+  }
 
-        onDeleteProject={() => {
-          void handleDeleteProject()
-        }}
-      />
+  onLoadProject={
+    handleLoadProject
+  }
+
+  onSaveProject={
+    handleSaveProject
+  }
+
+  onCloseProject={
+    handleCloseProject
+  }
+
+  onDeleteProject={() => {
+    void handleDeleteProject()
+  }}
+
+  onNewJournal={
+    handleNewJournal
+  }
+
+  onOpenJournal={() => {
+    // next step
+  }}
+
+  onCloseJournal={() => {
+    setActiveJournal(null)
+  }}
+
+  onDeleteJournal={() => {
+    // next step
+  }}
+/>
 
       <main className="journal-workspace">
         <section className="journal-main-workspace">
@@ -660,6 +784,20 @@ async function deleteSelectedProject(
     onCancel={
       cancelPendingProjectAction
     }
+  />
+)}
+
+{isNewJournalOpen && (
+  <NewJournalDialog
+    onCreate={
+      createJournal
+    }
+
+    onCancel={() => {
+      setIsNewJournalOpen(
+        false,
+      )
+    }}
   />
 )}
     </div>
