@@ -419,7 +419,7 @@ async function createProject(
     name,
 
     fieldDefinitions: [],
-    entryIds: [],
+    journalIds: [],
 
     createdAt: now,
     updatedAt: now,

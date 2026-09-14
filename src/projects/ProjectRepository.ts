@@ -22,12 +22,12 @@ function normalizeProject(
         ? project.fieldDefinitions
         : [],
 
-    entryIds:
-      Array.isArray(
-        project.entryIds,
-      )
-        ? project.entryIds
-        : [],
+    journalIds:
+        Array.isArray(
+            project.journalIds,
+        )
+            ? project.journalIds
+            : [],
   }
 }
 

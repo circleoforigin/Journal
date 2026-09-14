@@ -1,10 +1,15 @@
+import type {
+  JournalFieldDefinition,
+} from './JournalFieldDefinition'
+
 export interface Project {
   id: string
   name: string
 
-  fieldDefinitions: []
+  fieldDefinitions:
+    JournalFieldDefinition[]
 
-  entryIds: []
+  journalIds: string[]
 
   createdAt: string
   updatedAt: string
