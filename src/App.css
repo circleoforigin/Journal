@@ -83,6 +83,67 @@
 }
 
 /* =========================
+   DROPDOWN MENUS
+   ========================= */
+
+.dropdown-menu {
+  position: absolute;
+
+  top: 100%;
+  left: 0;
+
+  z-index: 1100;
+
+  min-width: 190px;
+  padding: 4px 0;
+
+  background: #252525;
+  border: 1px solid #454545;
+
+  box-shadow:
+    0 6px 16px
+    rgba(0, 0, 0, 0.4);
+}
+
+.dropdown-item {
+  display: block;
+
+  width: 100%;
+  min-height: 28px;
+  padding: 5px 14px;
+
+  border: none;
+  border-radius: 0;
+
+  background: transparent;
+  color: #eeeeee;
+
+  font: inherit;
+  font-size: 14px;
+
+  text-align: left;
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.dropdown-item:hover:not(:disabled) {
+  background: #3a3a3a;
+}
+
+.dropdown-item:disabled {
+  color: #777777;
+  cursor: default;
+}
+
+.dropdown-separator {
+  height: 1px;
+  margin: 3px 8px;
+
+  background: #454545;
+}
+
+/* =========================
    JOURNAL SHELL
    ========================= */
 
@@ -134,23 +195,6 @@
   margin: 0;
 
   color: #999999;
-}
-
-.dropdown-separator {
-  height: 1px;
-  margin: 4px 6px;
-
-  background: #45474e;
-}
-
-.dropdown-item:disabled {
-  color: #707277;
-  cursor: default;
-}
-
-.dropdown-item:disabled:hover {
-  background: transparent;
-  color: #707277;
 }
 
 .dialog-backdrop {

@@ -30,8 +30,17 @@ export function MenuBar({
     setProjectMenuOpen,
   ] = useState(false)
 
+  const [
+    editMenuOpen,
+    setEditMenuOpen,
+  ] = useState(false)
+
+  const anyMenuOpen =
+    projectMenuOpen ||
+    editMenuOpen
+
   useEffect(() => {
-    if (!projectMenuOpen) {
+    if (!anyMenuOpen) {
       return
     }
 
@@ -47,7 +56,7 @@ export function MenuBar({
           target,
         )
       ) {
-        setProjectMenuOpen(false)
+        closeMenus()
       }
     }
 
@@ -62,13 +71,42 @@ export function MenuBar({
         handleOutsidePointerDown,
       )
     }
-  }, [projectMenuOpen])
+  }, [anyMenuOpen])
+
+  function closeMenus() {
+    setProjectMenuOpen(false)
+    setEditMenuOpen(false)
+  }
+
+  function openProjectMenu() {
+    setEditMenuOpen(false)
+
+    setProjectMenuOpen(
+      (open) => !open,
+    )
+  }
+
+  function openEditMenu() {
+    setProjectMenuOpen(false)
+
+    setEditMenuOpen(
+      (open) => !open,
+    )
+  }
 
   function runAction(
     action: () => void,
   ) {
-    setProjectMenuOpen(false)
+    closeMenus()
     action()
+  }
+
+  function runEditCommand(
+    command: string,
+  ) {
+    closeMenus()
+
+    document.execCommand(command)
   }
 
   return (
@@ -80,11 +118,7 @@ export function MenuBar({
         <button
           type="button"
           className="menu-item"
-          onClick={() => {
-            setProjectMenuOpen(
-              (open) => !open,
-            )
-          }}
+          onClick={openProjectMenu}
         >
           Project
         </button>
@@ -143,6 +177,102 @@ export function MenuBar({
               }}
             >
               Delete Project...
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="menu-group">
+        <button
+          type="button"
+          className="menu-item"
+          onClick={openEditMenu}
+        >
+          Edit
+        </button>
+
+        {editMenuOpen && (
+          <div className="dropdown-menu">
+            <button
+              type="button"
+              className="dropdown-item"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                runEditCommand('undo')
+              }}
+            >
+              Undo
+            </button>
+
+            <button
+              type="button"
+              className="dropdown-item"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                runEditCommand('redo')
+              }}
+            >
+              Redo
+            </button>
+
+            <div className="dropdown-separator" />
+
+            <button
+              type="button"
+              className="dropdown-item"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                runEditCommand('cut')
+              }}
+            >
+              Cut
+            </button>
+
+            <button
+              type="button"
+              className="dropdown-item"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                runEditCommand('copy')
+              }}
+            >
+              Copy
+            </button>
+
+            <button
+              type="button"
+              className="dropdown-item"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                runEditCommand('paste')
+              }}
+            >
+              Paste
+            </button>
+
+            <div className="dropdown-separator" />
+
+            <button
+              type="button"
+              className="dropdown-item"
+              onMouseDown={(event) => {
+                event.preventDefault()
+              }}
+              onClick={() => {
+                runEditCommand('selectAll')
+              }}
+            >
+              Select All
             </button>
           </div>
         )}
