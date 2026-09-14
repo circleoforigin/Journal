@@ -3,7 +3,7 @@ export type JournalPrimitiveValue =
   | number
   | boolean
 
-export interface JournalReferenceValue {
+export interface JournalObjectReference {
   moduleId: string
   objectType: string
   objectId: string
@@ -12,4 +12,4 @@ export interface JournalReferenceValue {
 export type JournalValue =
   | JournalPrimitiveValue
   | string[]
-  | JournalReferenceValue
+  | JournalObjectReference

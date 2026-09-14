@@ -14,8 +14,6 @@ export interface JournalFieldItem {
 }
 
 export interface JournalField {
-  fieldDefinitionId: string
-
   value?: JournalValue
 
   items?: JournalFieldItem[]

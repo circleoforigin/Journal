@@ -2,11 +2,9 @@ import type {
   JournalField,
 } from './JournalField'
 
-export interface JournalEntrySource {
-  moduleId: string
-  objectType: string
-  objectId: string
-}
+import type {
+  JournalObjectReference,
+} from './JournalValue'
 
 export interface JournalEntry {
   id: string
@@ -19,7 +17,7 @@ export interface JournalEntry {
     Record<string, JournalField>
 
   source?:
-    JournalEntrySource
+    JournalObjectReference
 
   createdAt: string
   updatedAt: string
