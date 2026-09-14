@@ -27,7 +27,16 @@ export function MenuBar({
   onSaveProject,
   onCloseProject,
   onDeleteProject,
+
+  onNewJournal,
+  onOpenJournal,
+  onCloseJournal,
+  onDeleteJournal,
+
   projectName,
+  hasProject,
+  hasJournals,
+  hasActiveJournal,
 }: MenuBarProps) {
   const menuBarRef =
     useRef<HTMLDivElement>(null)
