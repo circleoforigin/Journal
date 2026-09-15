@@ -613,6 +613,7 @@ height: calc(100% - 8px);
 .journal-entry-field.inline {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
 }
 
 .journal-entry-field.block {
@@ -693,6 +694,33 @@ height: calc(100% - 8px);
   font: inherit;
 
   width: max-content;
+}
+
+.journal-field-items {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.journal-entry-field.inline
+.journal-field-items {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: auto;
+}
+
+.journal-entry-field.block
+.journal-field-items {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.journal-field-item-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .journal-page-number {

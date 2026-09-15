@@ -295,42 +295,13 @@ async function addFieldToEntry(
     .saveEntry(updatedEntry)
 }
 
-async function saveFieldItem(
+async function updateFieldItems(
   fieldDefinitionId: string,
-  item: JournalFieldItem,
+  items: JournalFieldItem[],
 ) {
   if (!activeEntry) {
     return
   }
-
-  const existingField =
-    activeEntry.fields[
-      fieldDefinitionId
-    ]
-
-  if (!existingField) {
-    return
-  }
-
-  const existingIndex =
-    existingField.items.findIndex(
-      (existingItem) =>
-        existingItem.id === item.id,
-    )
-
-  const updatedItems =
-    existingIndex >= 0
-      ? existingField.items.map(
-          (existingItem) =>
-            existingItem.id ===
-            item.id
-              ? item
-              : existingItem,
-        )
-      : [
-          ...existingField.items,
-          item,
-        ]
 
   const updatedEntry: JournalEntry = {
     ...activeEntry,
@@ -339,67 +310,7 @@ async function saveFieldItem(
       ...activeEntry.fields,
 
       [fieldDefinitionId]: {
-        items: updatedItems,
-      },
-    },
-
-    updatedAt:
-      new Date().toISOString(),
-  }
-
-  setEntries(
-    (current) =>
-      current.map(
-        (entry) =>
-          entry.id ===
-          updatedEntry.id
-            ? updatedEntry
-            : entry,
-      ),
-  )
-
-  await entryRepository
-    .saveEntry(updatedEntry)
-}
-
-async function removeFieldItem(
-  fieldDefinitionId: string,
-  itemId: string,
-) {
-  if (!activeEntry) {
-    return
-  }
-
-  const existingField =
-    activeEntry.fields[
-      fieldDefinitionId
-    ]
-
-  if (!existingField) {
-    return
-  }
-
-  const updatedItems =
-    existingField.items
-      .filter(
-        (item) =>
-          item.id !== itemId,
-      )
-      .map(
-        (item, index) => ({
-          ...item,
-          order: index,
-        }),
-      )
-
-  const updatedEntry: JournalEntry = {
-    ...activeEntry,
-
-    fields: {
-      ...activeEntry.fields,
-
-      [fieldDefinitionId]: {
-        items: updatedItems,
+        items,
       },
     },
 
@@ -717,17 +628,12 @@ const titleItem:
     items={
       field?.items ?? []
     }
-    onSaveItem={(item) => {
-      void saveFieldItem(
+
+    onItemsChange={(items) => {
+        void updateFieldItems(
         fieldDefinition.id,
-        item,
-      )
-    }}
-    onRemoveItem={(itemId) => {
-      void removeFieldItem(
-        fieldDefinition.id,
-        itemId,
-      )
+        items,
+        )
     }}
   />
 )
