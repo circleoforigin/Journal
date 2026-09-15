@@ -1,5 +1,7 @@
 import {
   useEffect,
+  useMemo,
+  useRef,
   useState,
 } from 'react'
 
@@ -10,6 +12,8 @@ import { journalRepository } from '../journals/JournalRepository'
 import type { Project } from '../models/Project'
 import type { Journal } from '../models/Journal'
 import { JournalFieldEditor } from './JournalFieldEditor'
+import { useJournalPagination } from '../pagination/useJournalPagination'
+import { JournalPage } from './JournalPage'
 
 interface JournalWorkspaceProps {
   project: Project
@@ -39,6 +43,31 @@ const [
   activeEntryId,
   setActiveEntryId,
 ] = useState<string | null>(null)
+
+const [
+  spreadIndex,
+  setSpreadIndex,
+] = useState(0)
+
+const pageContentRef =
+  useRef<HTMLDivElement | null>(
+    null,
+  )
+
+const readability =
+  useMemo(
+    () => ({
+      fontFamily: 'Arial',
+      fontSize: 14,
+    }),
+    [],
+  )
+
+const languages =
+  useMemo(
+    () => [],
+    [],
+  )
 
 const titleDefinition =
   project.fieldDefinitions.find(
@@ -81,6 +110,49 @@ const activeEntry =
     (entry) =>
       entry.id === activeEntryId,
   ) ?? null
+
+  const pagination =
+  useJournalPagination({
+    entry: activeEntry,
+
+    fieldDefinitions:
+      project.fieldDefinitions,
+
+    pageContentRef,
+
+    readability,
+
+    languages,
+  })  
+
+  useEffect(() => {
+    setSpreadIndex(0)
+  }, [activeEntryId])
+
+  const leftPageIndex =
+  spreadIndex * 2
+
+const rightPageIndex =
+  leftPageIndex + 1
+
+const leftPage =
+  pagination?.pages[
+    leftPageIndex
+  ] ?? null
+
+const rightPage =
+  pagination?.pages[
+    rightPageIndex
+  ] ?? null
+
+  const hasPreviousSpread =
+  spreadIndex > 0
+
+const hasNextSpread =
+  pagination
+    ? leftPageIndex + 2 <
+      pagination.pages.length
+    : false
 
   const availableFieldDefinitions =
   project.fieldDefinitions
@@ -580,6 +652,21 @@ const titleItem:
         <div className="journal-book-area">
           {journal ? (
             <div className="journal-book">
+                <button
+                    type="button"
+                    className="journal-page-turn journal-page-turn-previous"
+                    disabled={!hasPreviousSpread}
+                    aria-label="Previous pages"
+                    onClick={() => {
+                        setSpreadIndex(
+                        (current) =>
+                            Math.max(
+                            0,
+                            current - 1,
+                            ),
+                        )
+                    }}
+                    />
               <div className="journal-page journal-page-left">
                 <div className="journal-page-content">
   {activeEntry && (
@@ -649,13 +736,25 @@ const titleItem:
                 </div>
               </div>
 
-              <div className="journal-page journal-page-right">
-                <div className="journal-page-content" />
+              <JournalPage
+                page={null}
+                pageNumber={2}
+                side="right"
+                contentRef={pageContentRef}
+              />
 
-                <div className="journal-page-number">
-                  2
-                </div>
-              </div>
+              <button
+  type="button"
+  className="journal-page-turn journal-page-turn-next"
+  disabled={!hasNextSpread}
+  aria-label="Next pages"
+  onClick={() => {
+    setSpreadIndex(
+      (current) =>
+        current + 1,
+    )
+  }}
+/>
             </div>
           ) : (
             <div className="journal-no-journal">
