@@ -12,6 +12,7 @@ import type {
 } from '@settingforge/module-sdk'
 
 import { MenuBar } from './components/MenuBar'
+import { JournalWorkspace } from './components/JournalWorkspace'
 
 import type { Project } from './models/Project'
 import type { JournalFieldDefinition } from './models/JournalFieldDefinition'
@@ -995,38 +996,29 @@ async function deleteSelectedJournal(
   )}
 
       <main className="journal-workspace">
-        <section className="journal-main-workspace">
-          {!activeProject ? (
-            <div className="journal-empty">
-              <div className="module-identifier">
-                Journal
-              </div>
+  {!activeProject ? (
+    <section className="journal-main-workspace">
+      <div className="journal-empty">
+        <div className="module-identifier">
+          Journal
+        </div>
 
-              <h2>
-                No Project Loaded
-              </h2>
+        <h2>
+          No Project Loaded
+        </h2>
 
-              <p>
-                Create or load a project to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="journal-empty">
-              <div className="module-identifier">
-                Journal
-              </div>
-
-              <h2>
-                {activeProject.name}
-              </h2>
-
-              <p>
-                Project loaded.
-              </p>
-            </div>
-          )}
-        </section>
-      </main>
+        <p>
+          Create or load a project to get started.
+        </p>
+      </div>
+    </section>
+  ) : (
+    <JournalWorkspace
+      project={activeProject}
+      journal={activeJournal}
+    />
+  )}
+</main>
 
 {isNewProjectOpen && (
   <NewProjectDialog
