@@ -9,6 +9,9 @@ export interface Project {
   fieldDefinitions:
     JournalFieldDefinition[]
 
+  sectionDefinition:
+    JournalSectionDefinition[]
+
   journalIds: string[]
 
   createdAt: string

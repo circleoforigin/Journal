@@ -23,4 +23,6 @@ export interface JournalFieldDefinition {
     JournalFieldBehavior
 
   order: number
+
+  isSystem?: boolean
 }

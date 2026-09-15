@@ -1,16 +1,22 @@
-export type JournalKind =
-  | 'setting'
-  | 'character'
+import type {
+  JournalFieldDefinition,
+} from './JournalFieldDefinition'
+
+import type {
+  JournalSection,
+} from './JournalSection'
 
 export interface Journal {
   id: string
   name: string
 
-  kind: JournalKind
+  ownerName: string
 
-  characterId?: string
+  fieldDefinitions:
+    JournalFieldDefinition[]
 
-  entryIds: string[]
+  sections:
+    JournalSection[]
 
   createdAt: string
   updatedAt: string
