@@ -15,6 +15,7 @@ import { MenuBar } from './components/MenuBar'
 
 import type { Project } from './models/Project'
 import type { JournalFieldDefinition } from './models/JournalFieldDefinition'
+import type { JournalSectionDefinition } from './models/JournalSectionDefinition'
 
 import { projectRepository } from './projects/ProjectRepository'
 
@@ -35,7 +36,7 @@ import { NewJournalDialog } from './journals/NewJournalDialog'
 import { OpenJournalDialog } from './journals/OpenJournalDialog'
 import { DeleteJournalDialog } from './journals/DeleteJournalDialog'
 import { FieldDefinitionsDialog } from './structure/FieldDefinitionsDialog'
-
+import { TocStructureDialog } from './structure/TocStructureDialog'
 
 function App() {
   const [
@@ -638,6 +639,28 @@ function handleTocStructure() {
   setIsTocStructureOpen(true)
 }
 
+function saveTocStructure(
+  sectionDefinitions:
+    JournalSectionDefinition[],
+) {
+  if (!activeProject) {
+    return
+  }
+
+  setActiveProject({
+    ...activeProject,
+
+    sectionDefinitions,
+
+    updatedAt:
+      new Date().toISOString(),
+  })
+
+  setProjectDirty(true)
+
+  setIsTocStructureOpen(false)
+}
+
 function handleNewJournal() {
   if (!activeProject) {
     return
@@ -951,9 +974,25 @@ async function deleteSelectedJournal(
     />
   )}
 
-{isTocStructureOpen && (
-  <div />
-)}
+{isTocStructureOpen &&
+  activeProject && (
+    <TocStructureDialog
+      sectionDefinitions={
+        activeProject
+          .sectionDefinitions
+      }
+
+      onSave={
+        saveTocStructure
+      }
+
+      onCancel={() => {
+        setIsTocStructureOpen(
+          false,
+        )
+      }}
+    />
+  )}
 
       <main className="journal-workspace">
         <section className="journal-main-workspace">

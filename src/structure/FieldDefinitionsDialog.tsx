@@ -346,7 +346,13 @@ export function FieldDefinitionsDialog({
 
   return (
     <div className="dialog-backdrop">
-      <div className="dialog structure-dialog">
+      <div
+        className="dialog structure-dialog"
+        onClick={() => {
+            setSelectedPresetIndex(null)
+            setSelectedFieldId(null)
+        }}
+        >
         <h2>
           Field Definitions
         </h2>
@@ -385,7 +391,8 @@ export function FieldDefinitionsDialog({
                       ? 'structure-list-item selected'
                       : 'structure-list-item'
                   }
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation()
                     selectPreset(index)
                   }}
                 >
@@ -410,10 +417,12 @@ export function FieldDefinitionsDialog({
                   <button
                     type="button"
                     className="structure-field-select"
-                    onClick={() => {
-                      selectField(
-                        field.id,
-                      )
+                    onClick={(event) => {
+                        event.stopPropagation()
+
+                        selectField(
+                            field.id,
+                        )
                     }}
                   >
                     {field.name}
@@ -432,10 +441,12 @@ export function FieldDefinitionsDialog({
                           disabled={
                             index <= 1
                           }
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation()
+
                             moveField(
-                              field.id,
-                              -1,
+                                field.id,
+                                -1,
                             )
                           }}
                         >
@@ -449,10 +460,12 @@ export function FieldDefinitionsDialog({
                             fields.length -
                               1
                           }
-                          onClick={() => {
+                          onClick={(event) => {
+                            event.stopPropagation()
+
                             moveField(
-                              field.id,
-                              1,
+                                field.id,
+                                1,
                             )
                           }}
                         >

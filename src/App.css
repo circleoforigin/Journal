@@ -418,3 +418,28 @@
 .structure-custom-row button {
   white-space: nowrap;
 }
+
+.structure-list-item,
+.structure-field-select {
+  background: #303030;
+  color: #eeeeee;
+}
+
+.structure-list-item:hover,
+.structure-field-select:hover {
+  background: #363636;
+  color: #ffffff;
+}
+
+.structure-list-item.selected,
+.structure-included-row.selected {
+  background: #ffffff;
+  color: #000000;
+  outline: none;
+}
+
+.structure-included-row.selected
+.structure-field-select {
+  background: #ffffff;
+  color: #000000;
+}
