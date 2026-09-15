@@ -464,6 +464,7 @@ async function createProject(
     name,
 
     fieldDefinitions: [],
+    sectionDefinitions: [],
     journalIds: [],
 
     createdAt: now,
@@ -605,20 +606,14 @@ async function createJournal(
     new Date().toISOString()
 
   const journal: Journal = {
-    id:
-      crypto.randomUUID(),
-
+    id: crypto.randomUUID(),
     name,
-
-    kind:
-      'setting',
-
+    ownerName: 'Master',
     entryIds: [],
-
     createdAt: now,
     updatedAt: now,
   }
-
+  
   await journalRepository
     .saveJournal(journal)
 

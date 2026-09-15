@@ -22,6 +22,13 @@ function normalizeProject(
         ? project.fieldDefinitions
         : [],
 
+    sectionDefinitions:
+        Array.isArray(
+            project.sectionDefinitions,
+        )
+            ? project.sectionDefinitions
+            : [],
+
     journalIds:
         Array.isArray(
             project.journalIds,
