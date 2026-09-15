@@ -794,13 +794,20 @@ async function deleteSelectedJournal(
     )
 
   setAvailableJournals(
-    journals.filter(
+  journals
+    .filter(
       (
         candidate,
       ): candidate is Journal =>
         candidate !== null,
+    )
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(
+          right.name,
+        ),
     ),
-  )
+)
 
   if (
     updatedProject.journalIds
