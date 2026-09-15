@@ -58,19 +58,43 @@ function ItemEditor({
       ? item.value
       : ''
 
-  useLayoutEffect(() => {
-    const textarea =
-      textareaRef.current
+ function resizeTextarea() {
+  const textarea =
+    textareaRef.current
 
-    if (!textarea) {
-      return
-    }
+  if (!textarea) {
+    return
+  }
 
-    textarea.style.height = 'auto'
+  textarea.style.height = 'auto'
 
-    textarea.style.height =
-      `${textarea.scrollHeight}px`
-  }, [value])
+  textarea.style.height =
+    `${textarea.scrollHeight}px`
+}
+
+useLayoutEffect(() => {
+  resizeTextarea()
+}, [value])
+
+useEffect(() => {
+  const textarea =
+    textareaRef.current
+
+  if (!textarea) {
+    return
+  }
+
+  const observer =
+    new ResizeObserver(() => {
+      resizeTextarea()
+    })
+
+  observer.observe(textarea)
+
+  return () => {
+    observer.disconnect()
+  }
+}, [])
 
   function insertIndentedLineBreak() {
     const textarea =
