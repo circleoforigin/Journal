@@ -2,6 +2,10 @@ import type {
   JournalFieldDefinition,
 } from './JournalFieldDefinition'
 
+import type {
+  JournalSectionDefinition,
+} from './JournalSectionDefinition'
+
 export interface Project {
   id: string
   name: string
@@ -9,7 +13,7 @@ export interface Project {
   fieldDefinitions:
     JournalFieldDefinition[]
 
-  sectionDefinition:
+  sectionDefinitions:
     JournalSectionDefinition[]
 
   journalIds: string[]

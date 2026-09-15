@@ -9,6 +9,8 @@ import type {
 export interface JournalEntry {
   id: string
 
+  sectionDefinitionId: string
+
   fields:
     Record<string, JournalField>
 
