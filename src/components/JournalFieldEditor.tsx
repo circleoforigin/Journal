@@ -27,30 +27,60 @@ interface JournalFieldEditorProps {
 interface ItemEditorProps {
   item: JournalFieldItem
 
+  className?: string
+
   autoFocus?: boolean
 
-  className?: string
+  onCommit: (
+    item: JournalFieldItem,
+    value: string,
+  ) => void
+
+  onCreateAfter: (
+    item: JournalFieldItem,
+    value: string,
+  ) => void
+
+  onDiscardEmpty: (
+    item: JournalFieldItem,
+  ) => void
 
   onHeightChange?: (
     height: number,
   ) => void
+}
 
-  onChange: (
-    value: string,
-  ) => void
+function getStringValue(
+  item: JournalFieldItem,
+) {
+  return typeof item.value === 'string'
+    ? item.value
+    : ''
+}
 
-  onBlur: () => void
+function createTransientItem(
+  order: number,
+): JournalFieldItem {
+  const now =
+    new Date().toISOString()
 
-  onCreateAfter: () => void
+  return {
+    id: crypto.randomUUID(),
+    order,
+    value: '',
+    source: 'master',
+    createdAt: now,
+    updatedAt: now,
+  }
 }
 
 function ItemEditor({
   item,
-  autoFocus = false,
   className = '',
-  onChange,
-  onBlur,
+  autoFocus = false,
+  onCommit,
   onCreateAfter,
+  onDiscardEmpty,
   onHeightChange,
 }: ItemEditorProps) {
   const textareaRef =
@@ -58,45 +88,127 @@ function ItemEditor({
       null,
     )
 
-  const value =
-    typeof item.value === 'string'
-      ? item.value
-      : ''
+  const [
+    draft,
+    setDraft,
+  ] = useState(
+    getStringValue(item),
+  )
 
- function resizeTextarea(
-  textarea:
-    HTMLTextAreaElement,
-) {
-  textarea.style.height = 'auto'
+  /*
+   * If the persisted Item changes from
+   * outside this editor, synchronize it.
+   *
+   * Normal typing does NOT come through
+   * here because typing is local draft
+   * state now.
+   */
+  useEffect(() => {
+    setDraft(
+      getStringValue(item),
+    )
+  }, [
+    item.id,
+    item.value,
+  ])
 
-  const height =
-    textarea.scrollHeight
+  function resizeTextarea() {
+    const textarea =
+      textareaRef.current
 
-  textarea.style.height =
-    `${height}px`
+    if (!textarea) {
+      return
+    }
 
-  onHeightChange?.(height)
-}
+    textarea.style.height = 'auto'
 
-useLayoutEffect(() => {
-  const textarea =
-    textareaRef.current
+    const nextHeight =
+      textarea.scrollHeight
 
-  if (!textarea) {
-    return
+    textarea.style.height =
+      `${nextHeight}px`
+
+    onHeightChange?.(
+      nextHeight,
+    )
   }
 
-  resizeTextarea(textarea)
-}, [value])
+  useLayoutEffect(() => {
+    resizeTextarea()
+  }, [draft])
+
+  useEffect(() => {
+    if (!autoFocus) {
+      return
+    }
+
+    const textarea =
+      textareaRef.current
+
+    if (!textarea) {
+      return
+    }
+
+    textarea.focus()
+
+    const end =
+      textarea.value.length
+
+    textarea.setSelectionRange(
+      end,
+      end,
+    )
+  }, [autoFocus])
+
+  useEffect(() => {
+    const textarea =
+      textareaRef.current
+
+    if (!textarea) {
+      return
+    }
+
+    const observer =
+      new ResizeObserver(() => {
+        resizeTextarea()
+      })
+
+    observer.observe(
+      textarea,
+    )
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
+  function commit() {
+    if (!draft.trim()) {
+      onDiscardEmpty(
+        item,
+      )
+
+      return
+    }
+
+    if (
+      draft ===
+      getStringValue(item)
+    ) {
+      return
+    }
+
+    onCommit(
+      item,
+      draft,
+    )
+  }
 
   function insertIndentedLineBreak() {
     const textarea =
       textareaRef.current
 
-    if (
-      !textarea ||
-      !value.trim()
-    ) {
+    if (!textarea) {
       return
     }
 
@@ -107,13 +219,13 @@ useLayoutEffect(() => {
       textarea.selectionEnd
 
     const lineStart =
-      value.lastIndexOf(
+      draft.lastIndexOf(
         '\n',
         start - 1,
       ) + 1
 
     const currentLine =
-      value.slice(
+      draft.slice(
         lineStart,
         start,
       )
@@ -123,26 +235,32 @@ useLayoutEffect(() => {
         /^[\t ]*/,
       )?.[0] ?? ''
 
-    const nextValue =
-      value.slice(0, start) +
+    const nextDraft =
+      draft.slice(
+        0,
+        start,
+      ) +
       '\n' +
       indentation +
-      value.slice(end)
+      draft.slice(end)
 
     const nextCursor =
       start +
       1 +
       indentation.length
 
-    onChange(nextValue)
+    setDraft(
+      nextDraft,
+    )
 
-    requestAnimationFrame(() => {
-      textarea.selectionStart =
-        nextCursor
-
-      textarea.selectionEnd =
-        nextCursor
-    })
+    requestAnimationFrame(
+      () => {
+        textarea.setSelectionRange(
+          nextCursor,
+          nextCursor,
+        )
+      },
+    )
   }
 
   return (
@@ -152,20 +270,16 @@ useLayoutEffect(() => {
         `journal-entry-field-input ${className}`
           .trim()
       }
-      value={value}
+      value={draft}
       rows={1}
-      autoFocus={autoFocus}
       onChange={(event) => {
-  const textarea =
-    event.currentTarget
-
-  resizeTextarea(textarea)
-
-  onChange(
-    textarea.value,
-  )
-}}
-      onBlur={onBlur}
+        setDraft(
+          event.currentTarget.value,
+        )
+      }}
+      onBlur={() => {
+        commit()
+      }}
       onKeyDown={(event) => {
         if (
           event.key !== 'Enter'
@@ -175,16 +289,20 @@ useLayoutEffect(() => {
 
         event.preventDefault()
 
-        if (!value.trim()) {
+        if (!draft.trim()) {
           return
         }
 
         if (event.shiftKey) {
           insertIndentedLineBreak()
+
           return
         }
 
-        onCreateAfter()
+        onCreateAfter(
+          item,
+          draft,
+        )
       }}
     />
   )
@@ -194,48 +312,25 @@ export function JournalFieldEditor({
   fieldDefinition,
   items,
   onItemsChange,
-}: JournalFieldEditorProps) 
-{
+}: JournalFieldEditorProps) {
   const [
-    firstItemHeight,
-    setFirstItemHeight,
-  ] = useState(21)
-  
-  const firstRowRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    )
-
-  const labelRef =
-    useRef<HTMLElement | null>(
-      null,
-    )
+    transientItems,
+    setTransientItems,
+  ] = useState<
+    JournalFieldItem[]
+  >([])
 
   const [
     focusedItemId,
     setFocusedItemId,
-  ] = useState<string | null>(
-    null,
-  )
+  ] = useState<
+    string | null
+  >(null)
 
-  const temporaryItemRef =
-    useRef<JournalFieldItem | null>(
-      null,
-    )
-
-  if (!temporaryItemRef.current) {
-    const now =
-      new Date().toISOString()
-
-    temporaryItemRef.current = {
-      id: crypto.randomUUID(),
-      order: 0,
-      value: '',
-      source: 'master',
-      createdAt: now,
-      updatedAt: now,
-    }
-  }
+  const [
+    firstItemHeight,
+    setFirstItemHeight,
+  ] = useState(21)
 
   const sortedItems =
     [...items].sort(
@@ -244,56 +339,139 @@ export function JournalFieldEditor({
         right.order,
     )
 
-  const displayItems =
+  /*
+   * A completely empty Field still needs
+   * one editable Item on screen, but that
+   * Item must not exist in persistence yet.
+   */
+  const emptyFieldItemRef =
+    useRef<
+      JournalFieldItem | null
+    >(null)
+
+  if (
+    sortedItems.length === 0 &&
+    transientItems.length === 0 &&
+    !emptyFieldItemRef.current
+  ) {
+    emptyFieldItemRef.current =
+      createTransientItem(0)
+  }
+
+  if (
     sortedItems.length > 0
-      ? sortedItems
-      : [
-          temporaryItemRef.current,
-        ]
+  ) {
+    emptyFieldItemRef.current =
+      null
+  }
+
+  const displayItems = [
+    ...sortedItems,
+    ...transientItems,
+  ].sort(
+    (left, right) =>
+      left.order -
+      right.order,
+  )
+
+  if (
+    displayItems.length === 0 &&
+    emptyFieldItemRef.current
+  ) {
+    displayItems.push(
+      emptyFieldItemRef.current,
+    )
+  }
 
   const firstItem =
     displayItems[0]
 
   const remainingItems =
-    displayItems.slice(1)  
+    displayItems.slice(1)
 
-  const isBlock = firstItemHeight > 24;
+  const isBlock =
+    firstItemHeight > 24
 
-  function changeItem(
+  function isTransient(
+    item: JournalFieldItem,
+  ) {
+    return (
+      transientItems.some(
+        (transientItem) =>
+          transientItem.id ===
+          item.id,
+      ) ||
+      emptyFieldItemRef
+        .current?.id ===
+        item.id
+    )
+  }
+
+  function buildCommittedItem(
     item: JournalFieldItem,
     value: string,
-  ) {
+  ): JournalFieldItem {
     const now =
       new Date().toISOString()
 
-    if (
-      item.id ===
-      temporaryItemRef.current?.id
-    ) {
-      if (!value) {
-        return
-      }
+    return {
+      ...item,
+      value,
+      updatedAt: now,
+    }
+  }
 
-      const newItem:
-        JournalFieldItem = {
-        id: crypto.randomUUID(),
-        order: 0,
+  function commitItem(
+    item: JournalFieldItem,
+    value: string,
+  ) {
+    const committedItem =
+      buildCommittedItem(
+        item,
         value,
-        source: 'master',
-        createdAt: now,
-        updatedAt: now,
-      }
-
-      temporaryItemRef.current =
-        null
-
-      setFocusedItemId(
-        newItem.id,
       )
 
-      onItemsChange([
-        newItem,
-      ])
+    if (isTransient(item)) {
+      const nextItems = [
+        ...sortedItems,
+        committedItem,
+      ]
+        .sort(
+          (left, right) =>
+            left.order -
+            right.order,
+        )
+        .map(
+          (
+            existingItem,
+            index,
+          ) => ({
+            ...existingItem,
+            order: index,
+          }),
+        )
+
+      setTransientItems(
+        (current) =>
+          current.filter(
+            (transientItem) =>
+              transientItem.id !==
+              item.id,
+          ),
+      )
+
+      if (
+        emptyFieldItemRef
+          .current?.id ===
+        item.id
+      ) {
+        emptyFieldItemRef.current =
+          null
+      }
+
+      onItemsChange(
+        nextItems,
+      )
 
       return
     }
@@ -303,30 +481,35 @@ export function JournalFieldEditor({
         (existingItem) =>
           existingItem.id ===
           item.id
-            ? {
-                ...existingItem,
-                value,
-                updatedAt: now,
-              }
+            ? committedItem
             : existingItem,
       ),
     )
   }
 
-  function removeIfEmpty(
+  function discardEmpty(
     item: JournalFieldItem,
   ) {
-    if (
-      item.id ===
-      temporaryItemRef.current?.id
-    ) {
+    if (isTransient(item)) {
+      setTransientItems(
+        (current) =>
+          current.filter(
+            (transientItem) =>
+              transientItem.id !==
+              item.id,
+          ),
+      )
+
+      /*
+       * Keep the permanent empty-field
+       * editor available when the Field
+       * still has no persisted Items.
+       */
       return
     }
 
     const value =
-      typeof item.value === 'string'
-        ? item.value
-        : ''
+      getStringValue(item)
 
     if (value.trim()) {
       return
@@ -340,7 +523,10 @@ export function JournalFieldEditor({
             item.id,
         )
         .map(
-          (existingItem, index) => ({
+          (
+            existingItem,
+            index,
+          ) => ({
             ...existingItem,
             order: index,
           }),
@@ -350,105 +536,166 @@ export function JournalFieldEditor({
 
   function createAfter(
     item: JournalFieldItem,
+    value: string,
   ) {
-    const value =
-      typeof item.value === 'string'
-        ? item.value
-        : ''
-
     if (!value.trim()) {
       return
     }
 
-    const itemIndex =
-      sortedItems.findIndex(
+    /*
+     * Enter is a commit boundary.
+     *
+     * Commit the current Item first if
+     * necessary, then create the next Item
+     * only in local UI state.
+     */
+    let baseItems =
+      sortedItems
+
+    const committedItem =
+      buildCommittedItem(
+        item,
+        value,
+      )
+
+    if (isTransient(item)) {
+      baseItems = [
+        ...sortedItems,
+        committedItem,
+      ]
+    } else {
+      baseItems =
+        sortedItems.map(
+          (existingItem) =>
+            existingItem.id ===
+            item.id
+              ? committedItem
+              : existingItem,
+        )
+    }
+
+    baseItems =
+      [...baseItems]
+        .sort(
+          (left, right) =>
+            left.order -
+            right.order,
+        )
+
+    const currentIndex =
+      baseItems.findIndex(
         (existingItem) =>
           existingItem.id ===
           item.id,
       )
 
-    if (itemIndex < 0) {
+    if (currentIndex < 0) {
       return
     }
 
-    const now =
-      new Date().toISOString()
+    /*
+     * Make room in the persisted ordering
+     * for the future Item, but do not
+     * persist an empty Item.
+     */
+    const normalizedItems =
+      baseItems.map(
+        (
+          existingItem,
+          index,
+        ) => ({
+          ...existingItem,
+          order: index,
+        }),
+      )
 
-    const newItem:
-      JournalFieldItem = {
-      id: crypto.randomUUID(),
-      order: itemIndex + 1,
-      value: '',
-      source: 'master',
-      createdAt: now,
-      updatedAt: now,
+    const newTransientItem =
+      createTransientItem(
+        currentIndex + 1,
+      )
+
+    const shiftedItems =
+      normalizedItems.map(
+        (existingItem) =>
+          existingItem.order >
+          currentIndex
+            ? {
+                ...existingItem,
+                order:
+                  existingItem.order +
+                  1,
+              }
+            : existingItem,
+      )
+
+    if (isTransient(item)) {
+      setTransientItems(
+        (current) =>
+          current.filter(
+            (transientItem) =>
+              transientItem.id !==
+              item.id,
+          ),
+      )
+
+      if (
+        emptyFieldItemRef
+          .current?.id ===
+        item.id
+      ) {
+        emptyFieldItemRef.current =
+          null
+      }
     }
 
-    const nextItems = [
-      ...sortedItems.slice(
-        0,
-        itemIndex + 1,
-      ),
-
-      newItem,
-
-      ...sortedItems
-        .slice(
-          itemIndex + 1,
-        )
-        .map(
-          (existingItem) => ({
-            ...existingItem,
-            order:
-              existingItem.order + 1,
-          }),
-        ),
-    ]
-
-    setFocusedItemId(
-      newItem.id,
+    onItemsChange(
+      shiftedItems,
     )
 
-    onItemsChange(
-      nextItems,
+    setTransientItems(
+      (current) => [
+        ...current.filter(
+          (transientItem) =>
+            transientItem.id !==
+            item.id,
+        ),
+        newTransientItem,
+      ],
+    )
+
+    setFocusedItemId(
+      newTransientItem.id,
     )
   }
 
   function renderItem(
-  item: JournalFieldItem,
-  className = '',
-  onHeightChange?: (
-    height: number,
-  ) => void,
-) {
+    item: JournalFieldItem,
+    className = '',
+    onHeightChange?: (
+      height: number,
+    ) => void,
+  ) {
     return (
       <ItemEditor
         key={item.id}
         item={item}
         className={className}
-        onHeightChange={
-            onHeightChange
-        }
         autoFocus={
           item.id ===
           focusedItemId
         }
-        onChange={(value) => {
-          changeItem(
-            item,
-            value,
-          )
-        }}
-        onBlur={() => {
-          removeIfEmpty(
-            item,
-          )
-        }}
-        onCreateAfter={() => {
-          createAfter(
-            item,
-          )
-        }}
+        onHeightChange={
+          onHeightChange
+        }
+        onCommit={
+          commitItem
+        }
+        onDiscardEmpty={
+          discardEmpty
+        }
+        onCreateAfter={
+          createAfter
+        }
       />
     )
   }
@@ -456,7 +703,6 @@ export function JournalFieldEditor({
   return (
     <div className="journal-field">
       <div
-        ref={firstRowRef}
         className={
           isBlock
             ? 'journal-field-first-row block'
@@ -464,7 +710,6 @@ export function JournalFieldEditor({
         }
       >
         <strong
-          ref={labelRef}
           className="journal-entry-field-label"
         >
           {fieldDefinition.name}
@@ -472,13 +717,14 @@ export function JournalFieldEditor({
         </strong>
 
         {renderItem(
-            firstItem,
-            'journal-field-first-item',
-            setFirstItemHeight,
-        )}      
+          firstItem,
+          'journal-field-first-item',
+          setFirstItemHeight,
+        )}
       </div>
 
-      {remainingItems.length > 0 && (
+      {remainingItems.length >
+        0 && (
         <div className="journal-field-following-items">
           {remainingItems.map(
             (item) =>
