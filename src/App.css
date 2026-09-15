@@ -1073,3 +1073,59 @@ height: calc(100% - 8px);
 
   text-align: center;
 }
+
+.journal-page-content {
+  position: absolute;
+  inset: 34px 38px 46px;
+}
+
+.journal-page-entry-title,
+.journal-page-field-label,
+.journal-page-item-fragment {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.journal-page-entry-title {
+  color: #202020;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+  white-space: pre-wrap;
+}
+
+.journal-page-field-label {
+  color: #202020;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: pre-wrap;
+}
+
+.journal-page-item-fragment {
+  color: #202020;
+}
+
+.journal-page-item-text {
+  width: 100%;
+  height: 100%;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.journal-page-item-node {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 1px solid #555;
+  background: transparent;
+  transform: translateY(-50%);
+  cursor: pointer;
+}

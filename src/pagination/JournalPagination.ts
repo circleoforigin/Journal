@@ -1,70 +1,45 @@
 import type {
-  JournalFieldDefinition,
-} from '../models/JournalFieldDefinition'
-
-import type {
-  JournalFieldItem,
+  JournalFieldItemSource,
 } from '../models/JournalField'
 
-export interface JournalItemFragment {
-  type: 'item'
-
-  fieldDefinitionId: string
-  itemId: string
-  runId: string
-
-  text: string
-
-  fontFamily: string
-  fontSize: number
-
-  sourceType:
-    | 'text'
-    | 'language'
-
-  languageId?: string
-  translated?: boolean
-
-  startOffset: number
-  endOffset: number
-
-  isFirstFragment: boolean
-  isLastFragment: boolean
-
-  item: JournalFieldItem
-}
-
-export interface JournalEntryTitleFragment {
-  type: 'entryTitle'
-
+export interface JournalPageTitleFragment {
+  type: 'title'
   entryId: string
   text: string
+  top: number
+  height: number
 }
 
-export interface JournalFieldStartFragment {
-  type: 'fieldStart'
-
+export interface JournalPageFieldFragment {
+  type: 'field'
+  entryId: string
   fieldDefinitionId: string
+  text: string
+  top: number
+  height: number
+}
 
-  fieldDefinition:
-    JournalFieldDefinition
+export interface JournalPageItemFragment {
+  type: 'item'
+  entryId: string
+  fieldDefinitionId: string
+  itemId: string
+  source: JournalFieldItemSource
+  text: string
+  top: number
+  height: number
 }
 
 export type JournalPageFragment =
-  | JournalEntryTitleFragment
-  | JournalFieldStartFragment
-  | JournalItemFragment
+  | JournalPageTitleFragment
+  | JournalPageFieldFragment
+  | JournalPageItemFragment
 
 export interface JournalPageLayout {
   pageIndex: number
-
-  fragments:
-    JournalPageFragment[]
+  fragments: JournalPageFragment[]
 }
 
-export interface JournalEntryPagination {
-  entryId: string
-
-  pages:
-    JournalPageLayout[]
+export interface JournalPaginationResult {
+  pages: JournalPageLayout[]
 }

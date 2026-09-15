@@ -1,58 +1,32 @@
 import type {
-  JournalEntry,
-} from '../models/JournalEntry'
+  JournalDocument,
+  JournalDocumentBlock,
+} from './JournalDocument'
 
 import type {
-  JournalFieldDefinition,
-} from '../models/JournalFieldDefinition'
-
-import type {
-  JournalFieldItem,
-} from '../models/JournalField'
-
-import {
-  resolveJournalItemText,
-} from './JournalTextResolver'
-
-import type {
-  JournalTextResolverOptions,
-} from './JournalTextResolver'
-
-import type {
-  JournalRenderableTextRun,
-} from './JournalRenderableText'
-
-import type {
-  JournalEntryPagination,
-  JournalItemFragment,
+  JournalPageFragment,
   JournalPageLayout,
+  JournalPaginationResult,
 } from './JournalPagination'
 
 export interface JournalPaginationMetrics {
   pageWidth: number
   pageHeight: number
-
-  firstPageReservedHeight: number
-
-  fieldGap: number
-  itemGap: number
-
-  measureText: (
-    text: string,
-    fontFamily: string,
-    fontSize: number,
-  ) => number
-
-  getLineHeight: (
-    fontFamily: string,
-    fontSize: number,
-  ) => number
+  fontFamily: string
+  fontSize: number
+  lineHeight: number
+  titleFontSize: number
+  titleLineHeight: number
+  fieldFontSize: number
+  fieldLineHeight: number
+  titleBottomGap: number
+  fieldTopGap: number
+  fieldBottomGap: number
+  itemBottomGap: number
 }
 
-interface RunSlice {
-  startOffset: number
-  endOffset: number
-  lineCount: number
+interface WrappedLine {
+  text: string
 }
 
 function createPage(
@@ -64,175 +38,113 @@ function createPage(
   }
 }
 
-function getItemText(
-  item: JournalFieldItem,
-) {
-  return typeof item.value ===
-    'string'
-    ? item.value
-    : String(
-        item.value ?? '',
-      )
-}
+function createContext():
+  CanvasRenderingContext2D {
+  const canvas =
+    document.createElement('canvas')
 
-function findRunSlice(
-  run: JournalRenderableTextRun,
-  availableWidth: number,
-  availableHeight: number,
-  metrics:
-    JournalPaginationMetrics,
-): RunSlice {
-  const lineHeight =
-    metrics.getLineHeight(
-      run.fontFamily,
-      run.fontSize,
+  const context =
+    canvas.getContext('2d')
+
+  if (!context) {
+    throw new Error(
+      'Unable to create Journal text measurement context.',
     )
-
-  const availableLines =
-    Math.floor(
-      availableHeight /
-      lineHeight,
-    )
-
-  if (
-    availableLines <= 0 ||
-    !run.text
-  ) {
-    return {
-      startOffset: 0,
-      endOffset: 0,
-      lineCount: 0,
-    }
   }
 
-  let offset = 0
-  let lineStart = 0
-  let linesUsed = 1
+  return context
+}
 
-  let lastBreakOffset = 0
+function setFont(
+  context:
+    CanvasRenderingContext2D,
+  fontFamily: string,
+  fontSize: number,
+  fontWeight = '400',
+): void {
+  context.font =
+    `${fontWeight} ${fontSize}px ${fontFamily}`
+}
 
-  while (
-    offset <
-    run.text.length
+function wrapText(
+  context:
+    CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+): WrappedLine[] {
+  const paragraphs =
+    text.split('\n')
+
+  const lines:
+    WrappedLine[] = []
+
+  for (
+    let paragraphIndex = 0;
+    paragraphIndex <
+    paragraphs.length;
+    paragraphIndex += 1
   ) {
-    const character =
-      run.text[offset]
+    const paragraph =
+      paragraphs[paragraphIndex]
 
-    if (
-      character === ' ' ||
-      character === '\t' ||
-      character === '-' ||
-      character === '\n'
-    ) {
-      lastBreakOffset =
-        offset + 1
-    }
-
-    if (
-      character === '\n'
-    ) {
-      if (
-        linesUsed >=
-        availableLines
-      ) {
-        return {
-          startOffset: 0,
-
-          endOffset:
-            lastBreakOffset ||
-            offset,
-
-          lineCount:
-            linesUsed,
-        }
-      }
-
-      linesUsed += 1
-      offset += 1
-      lineStart = offset
-      lastBreakOffset = offset
-
+    if (!paragraph) {
+      lines.push({
+        text: '',
+      })
       continue
     }
 
-    const candidate =
-      run.text.slice(
-        lineStart,
-        offset + 1,
-      )
+    const words =
+      paragraph.split(/\s+/)
 
-    const width =
-      metrics.measureText(
-        candidate,
-        run.fontFamily,
-        run.fontSize,
-      )
+    let currentLine = ''
 
-    if (
-      width >
-      availableWidth
-    ) {
-      if (
-        linesUsed >=
-        availableLines
-      ) {
-        const preferredBreak =
-          lastBreakOffset >
-          lineStart
-            ? lastBreakOffset
-            : offset
-
-        return {
-          startOffset: 0,
-
-          endOffset:
-            Math.max(
-              preferredBreak,
-              1,
-            ),
-
-          lineCount:
-            linesUsed,
-        }
-      }
-
-      linesUsed += 1
+    for (const word of words) {
+      const candidate =
+        currentLine
+          ? `${currentLine} ${word}`
+          : word
 
       if (
-        lastBreakOffset >
-        lineStart
+        context.measureText(
+          candidate,
+        ).width <= maxWidth
       ) {
-        lineStart =
-          lastBreakOffset
-      } else {
-        lineStart =
-          offset
+        currentLine =
+          candidate
+        continue
       }
+
+      if (currentLine) {
+        lines.push({
+          text: currentLine,
+        })
+      }
+
+      currentLine = word
     }
 
-    offset += 1
+    if (currentLine) {
+      lines.push({
+        text: currentLine,
+      })
+    }
   }
 
-  return {
-    startOffset: 0,
-
-    endOffset:
-      run.text.length,
-
-    lineCount:
-      linesUsed,
-  }
+  return lines.length
+    ? lines
+    : [{ text: '' }]
 }
 
-export function paginateJournalEntry(
-  entry: JournalEntry,
-  fieldDefinitions:
-    JournalFieldDefinition[],
-  resolverOptions:
-    JournalTextResolverOptions,
+export function paginateJournalDocument(
+  journalDocument:
+    JournalDocument,
   metrics:
     JournalPaginationMetrics,
-): JournalEntryPagination {
+): JournalPaginationResult {
+  const context =
+    createContext()
+
   const pages:
     JournalPageLayout[] = [
       createPage(0),
@@ -241,40 +153,9 @@ export function paginateJournalEntry(
   let currentPage =
     pages[0]
 
-  let usedHeight = metrics.firstPageReservedHeight
+  let usedHeight = 0
 
-  const titleDefinition =
-  fieldDefinitions.find(
-    (definition) =>
-      definition.isSystem &&
-      definition.name ===
-        'Title',
-  )
-
-const titleItem =
-  titleDefinition
-    ? entry.fields[
-        titleDefinition.id
-      ]?.items[0]
-    : undefined
-
-const titleValue =
-  titleItem?.value
-
-const titleText =
-  typeof titleValue ===
-    'string' &&
-  titleValue.trim()
-    ? titleValue
-    : 'New Entry'
-
-currentPage.fragments.push({
-  type: 'entryTitle',
-  entryId: entry.id,
-  text: titleText,
-})
-
-  function nextPage() {
+  const startNextPage = () => {
     currentPage =
       createPage(
         pages.length,
@@ -287,263 +168,212 @@ currentPage.fragments.push({
     usedHeight = 0
   }
 
-  const normalLineHeight =
-    metrics.getLineHeight(
-      resolverOptions
-        .readability
-        .fontFamily,
-
-      resolverOptions
-        .readability
-        .fontSize,
-    )
-
-  const orderedFields =
-    fieldDefinitions
-      .filter(
-        (definition) =>
-          !definition.isSystem &&
-          entry.fields[
-            definition.id
-          ],
-      )
-      .sort(
-        (left, right) =>
-          left.order -
-          right.order,
-      )
-
-  for (
-    const fieldDefinition
-    of orderedFields
-  ) {
-    const field =
-      entry.fields[
-        fieldDefinition.id
-      ]
-
-    if (!field) {
-      continue
-    }
-
+  const ensureHeight = (
+    requiredHeight: number,
+  ) => {
     if (
       usedHeight > 0 &&
       usedHeight +
-        normalLineHeight >
+        requiredHeight >
         metrics.pageHeight
     ) {
-      nextPage()
+      startNextPage()
     }
+  }
 
-    currentPage.fragments.push({
-      type: 'fieldStart',
+  const addSingleBlock = (
+    block:
+      JournalDocumentBlock,
+    fontSize: number,
+    lineHeight: number,
+    fontWeight: string,
+    topGap: number,
+    bottomGap: number,
+  ) => {
+    setFont(
+      context,
+      metrics.fontFamily,
+      fontSize,
+      fontWeight,
+    )
 
-      fieldDefinitionId:
-        fieldDefinition.id,
+    const lines =
+      wrapText(
+        context,
+        block.text,
+        metrics.pageWidth,
+      )
 
-      fieldDefinition,
-    })
+    const blockHeight =
+      lines.length *
+      lineHeight
+
+    ensureHeight(
+      topGap +
+        blockHeight +
+        bottomGap,
+    )
 
     usedHeight +=
-      normalLineHeight
+      topGap
 
-    const items =
-  [...field.items].sort(
-    (left, right) => {
-      if (
-        left.source !==
-        right.source
-      ) {
-        return left.source ===
-          'master'
-          ? -1
-          : 1
+    const text =
+      lines
+        .map(
+          (line) =>
+            line.text,
+        )
+        .join('\n')
+
+    const fragment:
+      JournalPageFragment = {
+        ...block,
+        text,
+        top: usedHeight,
+        height: blockHeight,
       }
 
-      return (
-        left.order -
-        right.order
+    currentPage.fragments.push(
+      fragment,
+    )
+
+    usedHeight +=
+      blockHeight +
+      bottomGap
+  }
+
+  const addItemBlock = (
+    block:
+      Extract<
+        JournalDocumentBlock,
+        { type: 'item' }
+      >,
+  ) => {
+    setFont(
+      context,
+      metrics.fontFamily,
+      metrics.fontSize,
+    )
+
+    const lines =
+      wrapText(
+        context,
+        block.text,
+        metrics.pageWidth,
       )
-    },
-  )
 
-    for (
-      let itemIndex = 0;
-      itemIndex <
-      items.length;
-      itemIndex += 1
+    let lineIndex = 0
+
+    while (
+      lineIndex <
+      lines.length
     ) {
-      const item =
-        items[itemIndex]
+      const remainingHeight =
+        metrics.pageHeight -
+        usedHeight
 
-      const rawItemText =
-        getItemText(item)
+      const linesThatFit =
+        Math.floor(
+          remainingHeight /
+            metrics.lineHeight,
+        )
 
       if (
-        !rawItemText.trim()
+        linesThatFit <= 0
       ) {
+        startNextPage()
         continue
       }
 
-      if (
-        itemIndex > 0
-      ) {
-        usedHeight +=
-          metrics.itemGap
-      }
-
-      const renderableItem =
-        resolveJournalItemText(
-          fieldDefinition.id,
-          item,
-          resolverOptions,
+      const fragmentLines =
+        lines.slice(
+          lineIndex,
+          lineIndex +
+            linesThatFit,
         )
 
-      for (
-        const run
-        of renderableItem.runs
+      const fragmentHeight =
+        fragmentLines.length *
+        metrics.lineHeight
+
+      currentPage.fragments.push({
+        ...block,
+        text:
+          fragmentLines
+            .map(
+              (line) =>
+                line.text,
+            )
+            .join('\n'),
+        top: usedHeight,
+        height:
+          fragmentHeight,
+      })
+
+      usedHeight +=
+        fragmentHeight
+
+      lineIndex +=
+        fragmentLines.length
+
+      if (
+        lineIndex <
+        lines.length
       ) {
-        let remainingText =
-          run.text
-
-        let runOffset = 0
-
-        while (
-          remainingText.length >
-          0
-        ) {
-          const availableHeight =
-            metrics.pageHeight -
-            usedHeight
-
-          const workingRun:
-            JournalRenderableTextRun = {
-            ...run,
-            text:
-              remainingText,
-          }
-
-          const slice =
-            findRunSlice(
-              workingRun,
-              metrics.pageWidth,
-              availableHeight,
-              metrics,
-            )
-
-          if (
-            slice.endOffset <= 0
-          ) {
-            nextPage()
-            continue
-          }
-
-          const fragmentText =
-            remainingText.slice(
-              slice.startOffset,
-              slice.endOffset,
-            )
-
-          const fragment:
-            JournalItemFragment = {
-            type: 'item',
-
-            fieldDefinitionId:
-              fieldDefinition.id,
-
-            itemId:
-              item.id,
-
-            runId:
-              run.id,
-
-            text:
-              fragmentText,
-
-            fontFamily:
-              run.fontFamily,
-
-            fontSize:
-              run.fontSize,
-
-            sourceType:
-              run.sourceType,
-
-            languageId:
-              run.languageId,
-
-            translated:
-              run.translated,
-
-            startOffset:
-              runOffset,
-
-            endOffset:
-              runOffset +
-              fragmentText.length,
-
-            isFirstFragment:
-              runOffset === 0,
-
-            isLastFragment:
-              slice.endOffset ===
-              remainingText.length,
-
-            item,
-          }
-
-          currentPage
-            .fragments
-            .push(
-              fragment,
-            )
-
-          const lineHeight =
-            metrics.getLineHeight(
-              run.fontFamily,
-              run.fontSize,
-            )
-
-          usedHeight +=
-            slice.lineCount *
-            lineHeight
-
-          runOffset +=
-            fragmentText.length
-
-          remainingText =
-            remainingText.slice(
-              slice.endOffset,
-            )
-
-          if (
-            remainingText.length >
-            0
-          ) {
-            nextPage()
-          }
-        }
+        startNextPage()
       }
     }
 
     usedHeight +=
-      metrics.fieldGap
+      metrics.itemBottomGap
+  }
+
+  for (
+    const block
+    of journalDocument.blocks
+  ) {
+    switch (block.type) {
+      case 'title':
+        addSingleBlock(
+          block,
+          metrics.titleFontSize,
+          metrics.titleLineHeight,
+          '600',
+          0,
+          metrics.titleBottomGap,
+        )
+        break
+
+      case 'field':
+        addSingleBlock(
+          block,
+          metrics.fieldFontSize,
+          metrics.fieldLineHeight,
+          '700',
+          metrics.fieldTopGap,
+          metrics.fieldBottomGap,
+        )
+        break
+
+      case 'item':
+        addItemBlock(
+          block,
+        )
+        break
+    }
   }
 
   if (
-  pages.length % 2 !== 0
-) {
-  pages.push(
-    createPage(
-      pages.length,
-    ),
-  )
-}
+    pages.length % 2 !== 0
+  ) {
+    pages.push(
+      createPage(
+        pages.length,
+      ),
+    )
+  }
 
   return {
-    entryId:
-      entry.id,
-
     pages,
   }
 }

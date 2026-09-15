@@ -1,4 +1,6 @@
-import type { RefObject } from 'react'
+import type {
+  RefObject,
+} from 'react'
 
 import type {
   JournalPageLayout,
@@ -6,102 +8,120 @@ import type {
 
 interface JournalPageProps {
   page:
-    JournalPageLayout | null
-
+    JournalPageLayout | undefined
   pageNumber: number
-
-  side:
-    | 'left'
-    | 'right'
-
   contentRef?:
     RefObject<HTMLDivElement | null>
+  fontFamily: string
+  fontSize: number
+  showEditNode: (
+    source: 'master' | 'user',
+  ) => boolean
+  onEditItem: (
+    entryId: string,
+    fieldDefinitionId: string,
+    itemId: string,
+  ) => void
 }
 
 export function JournalPage({
   page,
   pageNumber,
-  side,
   contentRef,
+  fontFamily,
+  fontSize,
+  showEditNode,
+  onEditItem,
 }: JournalPageProps) {
   return (
-    <div
-      className={
-        `journal-page journal-page-${side}`
-      }
-    >
+    <div className="journal-page">
       <div
         ref={contentRef}
         className="journal-page-content"
       >
         {page?.fragments.map(
-          (
-            fragment,
-            index,
-          ) => {
-            if (
-  fragment.type ===
-  'entryTitle'
-) {
-  return (
-    <div
-      key={
-        `title:${fragment.entryId}`
-      }
-      className="journal-page-entry-title"
-    >
-      {fragment.text}
-    </div>
-  )
-}
-            
+          (fragment, index) => {
             if (
               fragment.type ===
-              'fieldStart'
+              'title'
             ) {
               return (
                 <div
-                  key={
-                    `field:${fragment.fieldDefinitionId}:${index}`
-                  }
-                  className="journal-page-field-label"
+                  key={`title-${fragment.entryId}-${index}`}
+                  className="journal-page-entry-title"
+                  style={{
+                    top:
+                      fragment.top,
+                    height:
+                      fragment.height,
+                  }}
                 >
-                  {
-                    fragment
-                      .fieldDefinition
-                      .name
-                  }
+                  {fragment.text}
                 </div>
               )
             }
 
-            return (
-              <span
-                key={
-                  `${fragment.itemId}:${fragment.runId}:${fragment.startOffset}:${index}`
-                }
-                className={
-                  fragment.sourceType ===
-                  'language'
-                    ? 'journal-page-text-run journal-page-language-run'
-                    : 'journal-page-text-run'
-                }
-                style={{
-                  fontFamily:
-                    fragment.fontFamily,
+            if (
+              fragment.type ===
+              'field'
+            ) {
+              return (
+                <div
+                  key={`field-${fragment.fieldDefinitionId}-${index}`}
+                  className="journal-page-field-label"
+                  style={{
+                    top:
+                      fragment.top,
+                    height:
+                      fragment.height,
+                  }}
+                >
+                  {fragment.text}
+                </div>
+              )
+            }
 
-                  fontSize:
-                    `${fragment.fontSize}px`,
+            const nodeVisible =
+              showEditNode(
+                fragment.source,
+              )
+
+            return (
+              <div
+                key={`item-${fragment.itemId}-${index}`}
+                className="journal-page-item-fragment"
+                style={{
+                  top:
+                    fragment.top,
+                  height:
+                    fragment.height,
                 }}
-                data-item-id={
-                  fragment.itemId
-                }
-                data-run-id={
-                  fragment.runId
-                }
               >
-                {fragment.text}
-              </span>
+                {nodeVisible && (
+                  <button
+                    type="button"
+                    className="journal-page-item-node"
+                    aria-label="Edit field item"
+                    onClick={() =>
+                      onEditItem(
+                        fragment.entryId,
+                        fragment.fieldDefinitionId,
+                        fragment.itemId,
+                      )
+                    }
+                  />
+                )}
+
+                <div
+                  className="journal-page-item-text"
+                  style={{
+                    fontFamily,
+                    fontSize,
+                  }}
+                >
+                  {fragment.text}
+                </div>
+              </div>
             )
           },
         )}
