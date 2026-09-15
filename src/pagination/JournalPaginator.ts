@@ -32,6 +32,8 @@ export interface JournalPaginationMetrics {
   pageWidth: number
   pageHeight: number
 
+  firstPageReservedHeight: number
+
   fieldGap: number
   itemGap: number
 
@@ -239,7 +241,7 @@ export function paginateJournalEntry(
   let currentPage =
     pages[0]
 
-  let usedHeight = 0
+  let usedHeight = metrics.firstPageReservedHeight
 
   function nextPage() {
     currentPage =
@@ -315,11 +317,24 @@ export function paginateJournalEntry(
       normalLineHeight
 
     const items =
-      [...field.items].sort(
-        (left, right) =>
-          left.order -
-          right.order,
+  [...field.items].sort(
+    (left, right) => {
+      if (
+        left.source !==
+        right.source
+      ) {
+        return left.source ===
+          'master'
+          ? -1
+          : 1
+      }
+
+      return (
+        left.order -
+        right.order
       )
+    },
+  )
 
     for (
       let itemIndex = 0;

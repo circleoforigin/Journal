@@ -1,3 +1,5 @@
+import type { RefObject } from 'react'
+
 import type {
   JournalPageLayout,
 } from '../pagination/JournalPagination'
@@ -11,12 +13,16 @@ interface JournalPageProps {
   side:
     | 'left'
     | 'right'
+
+  contentRef?:
+    RefObject<HTMLDivElement | null>
 }
 
 export function JournalPage({
   page,
   pageNumber,
   side,
+  contentRef,
 }: JournalPageProps) {
   return (
     <div
@@ -24,7 +30,10 @@ export function JournalPage({
         `journal-page journal-page-${side}`
       }
     >
-      <div className="journal-page-content">
+      <div
+        ref={contentRef}
+        className="journal-page-content"
+      >
         {page?.fragments.map(
           (
             fragment,
