@@ -478,7 +478,16 @@ async function createProject(
 
     name,
 
-    fieldDefinitions: [],
+    fieldDefinitions: [
+    {
+      id: crypto.randomUUID(),
+      name: 'Title',
+      valueType: 'text',
+      behavior: 'single',
+      order: 0,
+      isSystem: true,
+    },
+    ],
     sectionDefinitions: [],
     journalIds: [],
 

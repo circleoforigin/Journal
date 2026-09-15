@@ -91,6 +91,37 @@ const activeEntry =
       entry.id === activeEntryId,
   ) ?? null
 
+  const availableFieldDefinitions =
+  project.fieldDefinitions
+    .filter(
+      (field) =>
+        !field.isSystem &&
+        activeEntry &&
+        !activeEntry.fields[
+          field.id
+        ],
+    )
+    .sort(
+      (left, right) =>
+        left.order -
+        right.order,
+    )
+
+    const activeFieldDefinitions =
+  project.fieldDefinitions
+    .filter(
+      (field) =>
+        !field.isSystem &&
+        activeEntry?.fields[
+          field.id
+        ],
+    )
+    .sort(
+      (left, right) =>
+        left.order -
+        right.order,
+    )
+
   useEffect(() => {
   let cancelled = false
 
@@ -208,6 +239,60 @@ async function createEntry(
   onJournalChange(
     updatedJournal,
   )
+}
+
+async function addFieldToEntry(
+  fieldDefinitionId: string,
+) {
+  if (!activeEntry) {
+    return
+  }
+
+  const fieldDefinition =
+    project.fieldDefinitions.find(
+      (field) =>
+        field.id ===
+        fieldDefinitionId,
+    )
+
+  if (
+    !fieldDefinition ||
+    fieldDefinition.isSystem ||
+    activeEntry.fields[
+      fieldDefinition.id
+    ]
+  ) {
+    return
+  }
+
+  const updatedEntry: JournalEntry = {
+    ...activeEntry,
+
+    fields: {
+      ...activeEntry.fields,
+
+      [fieldDefinition.id]: {
+        value: '',
+      },
+    },
+
+    updatedAt:
+      new Date().toISOString(),
+  }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
 }
 
 async function updateEntryTitle(
@@ -356,13 +441,40 @@ async function updateEntryTitle(
           </span>
 
           <select
-            disabled
-            defaultValue=""
-          >
-            <option value="">
-              Select field...
-            </option>
-          </select>
+  disabled={
+    !activeEntry ||
+    availableFieldDefinitions
+      .length === 0
+  }
+  value=""
+  onChange={(event) => {
+    const fieldDefinitionId =
+      event.target.value
+
+    if (!fieldDefinitionId) {
+      return
+    }
+
+    void addFieldToEntry(
+      fieldDefinitionId,
+    )
+  }}
+>
+  <option value="">
+    Select field...
+  </option>
+
+  {availableFieldDefinitions.map(
+    (field) => (
+      <option
+        key={field.id}
+        value={field.id}
+      >
+        {field.name}
+      </option>
+    ),
+  )}
+</select>
         </div>
       </aside>
 
