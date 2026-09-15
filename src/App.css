@@ -723,6 +723,65 @@ height: calc(100% - 8px);
   box-sizing: border-box;
 }
 
+.journal-field {
+  width: 100%;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.journal-field-first-row {
+  position: relative;
+  width: 100%;
+}
+
+.journal-field-first-row.inline {
+  display: flex;
+  align-items: baseline;
+}
+
+.journal-field-first-row.inline
+.journal-entry-field-label {
+  flex: 0 0 auto;
+  margin-right: 4px;
+}
+
+.journal-field-first-row.inline
+.journal-field-first-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.journal-field-first-row.block {
+  display: block;
+}
+
+.journal-field-first-row.block
+.journal-entry-field-label {
+  display: block;
+  width: fit-content;
+  margin: 0 0 5px;
+  text-decoration: underline;
+}
+
+.journal-field-first-row.block
+.journal-field-first-item {
+  display: block;
+  width: 100%;
+  text-align: justify;
+}
+
+.journal-field-following-items {
+  width: 100%;
+}
+
+.journal-field-following-item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: justify;
+}
+
 .journal-page-number {
   position: absolute;
 
