@@ -601,47 +601,10 @@ height: calc(100% - 8px);
   margin-top: 28px;
 }
 
-.journal-entry-field {
-  width: 100%;
-
-  margin-bottom: 12px;
-
-  font-size: 14px;
-  line-height: 1.3;
-}
-
-.journal-entry-field.inline {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-
-.journal-entry-field.block {
-  display: block;
-}
-
 .journal-entry-field-label {
   color: #202020;
 
   white-space: nowrap;
-}
-
-.journal-entry-field.inline
-.journal-entry-field-label {
-  flex: 0 0 auto;
-
-  margin-right: 4px;
-}
-
-.journal-entry-field.block
-.journal-entry-field-label {
-  display: block;
-
-  width: fit-content;
-
-  margin: 0 0 5px;
-
-  text-decoration: underline;
 }
 
 .journal-entry-field-input {
@@ -675,13 +638,6 @@ height: calc(100% - 8px);
   background: transparent;
 }
 
-.journal-entry-field.block
-.journal-entry-field-input {
-  display: block;
-  text-align: justify;
-  width: 100%;
-}
-
 .journal-field-measure {
   position: absolute;
 
@@ -694,33 +650,6 @@ height: calc(100% - 8px);
   font: inherit;
 
   width: max-content;
-}
-
-.journal-field-items {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-}
-
-.journal-entry-field.inline
-.journal-field-items {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  width: auto;
-}
-
-.journal-entry-field.block
-.journal-field-items {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.journal-field-item-input {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .journal-field {
@@ -772,13 +701,19 @@ height: calc(100% - 8px);
 }
 
 .journal-field-following-items {
+  display: flex;
+  flex-direction: column;
   width: 100%;
 }
 
 .journal-field-following-item {
   display: block;
+
   width: 100%;
   box-sizing: border-box;
+
+  margin-top: 6px;
+
   text-align: justify;
 }
 
