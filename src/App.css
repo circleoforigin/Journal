@@ -612,6 +612,7 @@ height: calc(100% - 8px);
 
   min-width: 0;
   min-height: 21px;
+  box-sizing: border-box;
 
   margin: 0;
   padding: 0;

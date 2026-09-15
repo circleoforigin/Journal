@@ -58,25 +58,17 @@ function ItemEditor({
       ? item.value
       : ''
 
- function resizeTextarea() {
-  const textarea =
-    textareaRef.current
-
-  if (!textarea) {
-    return
-  }
-
-  textarea.style.height = 'auto'
+ function resizeTextarea(
+  textarea:
+    HTMLTextAreaElement,
+) {
+  textarea.style.height = '0px'
 
   textarea.style.height =
     `${textarea.scrollHeight}px`
 }
 
 useLayoutEffect(() => {
-  resizeTextarea()
-}, [value])
-
-useEffect(() => {
   const textarea =
     textareaRef.current
 
@@ -84,17 +76,8 @@ useEffect(() => {
     return
   }
 
-  const observer =
-    new ResizeObserver(() => {
-      resizeTextarea()
-    })
-
-  observer.observe(textarea)
-
-  return () => {
-    observer.disconnect()
-  }
-}, [])
+  resizeTextarea(textarea)
+}, [value])
 
   function insertIndentedLineBreak() {
     const textarea =
@@ -163,10 +146,15 @@ useEffect(() => {
       rows={1}
       autoFocus={autoFocus}
       onChange={(event) => {
-        onChange(
-          event.target.value,
-        )
-      }}
+  const textarea =
+    event.currentTarget
+
+  resizeTextarea(textarea)
+
+  onChange(
+    textarea.value,
+  )
+}}
       onBlur={onBlur}
       onKeyDown={(event) => {
         if (
