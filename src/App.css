@@ -996,3 +996,27 @@ height: calc(100% - 8px);
   background: #ffffff;
   color: #000000;
 }
+
+/* =========================
+   PAGINATED PAGE CONTENT
+   ========================= */
+
+.journal-page-field-label {
+  display: block;
+
+  margin: 0 0 5px;
+
+  color: #202020;
+
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.journal-page-text-run {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.journal-page-language-run {
+  white-space: pre-wrap;
+}
