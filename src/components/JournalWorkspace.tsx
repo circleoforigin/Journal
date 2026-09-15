@@ -3,25 +3,17 @@ import {
   useState,
 } from 'react'
 
-import type {
-  JournalEntry,
-} from '../models/JournalEntry'
+import type { JournalEntry } from '../models/JournalEntry'
 
-import {
-  entryRepository,
-} from '../entries/EntryRepository'
+import { entryRepository } from '../entries/EntryRepository'
 
-import {
-  journalRepository,
-} from '../journals/JournalRepository'
+import { journalRepository } from '../journals/JournalRepository'
 
-import type {
-  Project,
-} from '../models/Project'
+import type { Project } from '../models/Project'
 
-import type {
-  Journal,
-} from '../models/Journal'
+import type { Journal } from '../models/Journal'
+
+import { JournalFieldEditor } from './JournalFieldEditor'
 
 interface JournalWorkspaceProps {
   project: Project
@@ -295,6 +287,54 @@ async function addFieldToEntry(
     .saveEntry(updatedEntry)
 }
 
+async function updateEntryField(
+  fieldDefinitionId: string,
+  value: string,
+) {
+  if (!activeEntry) {
+    return
+  }
+
+  const existingField =
+    activeEntry.fields[
+      fieldDefinitionId
+    ]
+
+  if (!existingField) {
+    return
+  }
+
+  const updatedEntry: JournalEntry = {
+    ...activeEntry,
+
+    fields: {
+      ...activeEntry.fields,
+
+      [fieldDefinitionId]: {
+        ...existingField,
+        value,
+      },
+    },
+
+    updatedAt:
+      new Date().toISOString(),
+  }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+}
+
 async function updateEntryTitle(
   value: string,
 ) {
@@ -521,6 +561,7 @@ async function updateEntryTitle(
               <div className="journal-page journal-page-left">
                 <div className="journal-page-content">
   {activeEntry && (
+  <>
     <input
       key={activeEntry.id}
       className="journal-entry-title"
@@ -547,7 +588,41 @@ async function updateEntryTitle(
       }}
       aria-label="Entry title"
     />
-  )}
+
+    <div className="journal-entry-fields">
+      {activeFieldDefinitions.map(
+        (fieldDefinition) => {
+          const field =
+            activeEntry.fields[
+              fieldDefinition.id
+            ]
+
+          const value =
+            typeof field?.value ===
+            'string'
+              ? field.value
+              : ''
+
+          return (
+  <JournalFieldEditor
+    key={fieldDefinition.id}
+    fieldDefinition={
+      fieldDefinition
+    }
+    value={value}
+    onCommit={(newValue) => {
+      void updateEntryField(
+        fieldDefinition.id,
+        newValue,
+      )
+    }}
+  />
+)
+        },
+      )}
+    </div>
+  </>
+)}
 </div>
 
                 <div className="journal-page-number">
