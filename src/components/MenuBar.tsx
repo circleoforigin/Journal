@@ -14,6 +14,8 @@ interface MenuBarProps {
   onOpenJournal: () => void
   onCloseJournal: () => void
   onDeleteJournal: () => void
+  onFieldDefinitions: () => void
+  onTocStructure: () => void
 
   projectName?: string
   hasProject: boolean
@@ -27,6 +29,8 @@ export function MenuBar({
   onSaveProject,
   onCloseProject,
   onDeleteProject,
+  onFieldDefinitions,
+  onTocStructure,
 
   onNewJournal,
   onOpenJournal,
@@ -56,10 +60,16 @@ export function MenuBar({
     setJournalsMenuOpen,
     ] = useState(false)
 
+  const [
+    structureMenuOpen,
+    setStructureMenuOpen,
+    ] = useState(false)
+
   const anyMenuOpen =
-  projectMenuOpen ||
-  editMenuOpen ||
-  journalsMenuOpen
+    projectMenuOpen ||
+    editMenuOpen ||
+    journalsMenuOpen ||
+    structureMenuOpen
 
   useEffect(() => {
     if (!anyMenuOpen) {
@@ -99,11 +109,13 @@ export function MenuBar({
     setProjectMenuOpen(false)
     setEditMenuOpen(false)
     setJournalsMenuOpen(false)
+    setStructureMenuOpen(false)
   }
 
   function openProjectMenu() {
     setEditMenuOpen(false)
     setJournalsMenuOpen(false)
+    setStructureMenuOpen(false)
     setProjectMenuOpen(
         (open) => !open)
     }
@@ -111,6 +123,7 @@ export function MenuBar({
   function openEditMenu() {
     setProjectMenuOpen(false)
     setJournalsMenuOpen(false)
+    setStructureMenuOpen(false)
     setEditMenuOpen(
     (open) => !open)
   }  
@@ -118,8 +131,16 @@ export function MenuBar({
   function openJournalsMenu() {
     setProjectMenuOpen(false)
     setEditMenuOpen(false)
-
+    setStructureMenuOpen(false)
     setJournalsMenuOpen(
+        (open) => !open)
+  }
+
+  function openStructureMenu() {
+    setProjectMenuOpen(false)
+    setEditMenuOpen(false)
+    setJournalsMenuOpen(false)
+    setStructureMenuOpen(
         (open) => !open)
   }
 
@@ -370,6 +391,46 @@ export function MenuBar({
         }}
       >
         Delete Journal...
+      </button>
+    </div>
+  )}
+</div>
+
+<div className="menu-group">
+  <button
+    type="button"
+    className="menu-item"
+    onClick={openStructureMenu}
+  >
+    Structure
+  </button>
+
+  {structureMenuOpen && (
+    <div className="dropdown-menu">
+      <button
+        type="button"
+        className="dropdown-item"
+        disabled={!hasProject}
+        onClick={() => {
+          runAction(
+            onFieldDefinitions,
+          )
+        }}
+      >
+        Field Definitions...
+      </button>
+
+      <button
+        type="button"
+        className="dropdown-item"
+        disabled={!hasProject}
+        onClick={() => {
+          runAction(
+            onTocStructure,
+          )
+        }}
+      >
+        Table of Contents...
       </button>
     </div>
   )}

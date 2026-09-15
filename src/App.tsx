@@ -14,6 +14,7 @@ import type {
 import { MenuBar } from './components/MenuBar'
 
 import type { Project } from './models/Project'
+import type { JournalFieldDefinition } from './models/JournalFieldDefinition'
 
 import { projectRepository } from './projects/ProjectRepository'
 
@@ -33,6 +34,8 @@ import { journalRepository } from './journals/JournalRepository'
 import { NewJournalDialog } from './journals/NewJournalDialog'
 import { OpenJournalDialog } from './journals/OpenJournalDialog'
 import { DeleteJournalDialog } from './journals/DeleteJournalDialog'
+import { FieldDefinitionsDialog } from './structure/FieldDefinitionsDialog'
+
 
 function App() {
   const [
@@ -68,6 +71,16 @@ const [
   availableJournals,
   setAvailableJournals,
 ] = useState<Journal[]>([])
+
+const [
+  isFieldDefinitionsOpen,
+  setIsFieldDefinitionsOpen,
+] = useState(false)
+
+const [
+  isTocStructureOpen,
+  setIsTocStructureOpen,
+] = useState(false)
 
   const [
     projectDirty,
@@ -587,6 +600,44 @@ async function deleteSelectedProject(
   )
 }
 
+function handleFieldDefinitions() {
+  if (!activeProject) {
+    return
+  }
+
+  setIsFieldDefinitionsOpen(true)
+}
+
+function saveFieldDefinitions(
+  fieldDefinitions:
+    JournalFieldDefinition[],
+) {
+  if (!activeProject) {
+    return
+  }
+
+  setActiveProject({
+    ...activeProject,
+
+    fieldDefinitions,
+
+    updatedAt:
+      new Date().toISOString(),
+  })
+
+  setProjectDirty(true)
+
+  setIsFieldDefinitionsOpen(false)
+}
+
+function handleTocStructure() {
+  if (!activeProject) {
+    return
+  }
+
+  setIsTocStructureOpen(true)
+}
+
 function handleNewJournal() {
   if (!activeProject) {
     return
@@ -613,7 +664,7 @@ async function createJournal(
     createdAt: now,
     updatedAt: now,
   }
-  
+
   await journalRepository
     .saveJournal(journal)
 
@@ -869,7 +920,40 @@ async function deleteSelectedJournal(
   onDeleteJournal={() => {
     void handleDeleteJournal()
   }}
+
+  onFieldDefinitions={
+    handleFieldDefinitions
+  }
+
+  onTocStructure={
+    handleTocStructure
+  }
+
 />
+
+{isFieldDefinitionsOpen &&
+  activeProject && (
+    <FieldDefinitionsDialog
+      fieldDefinitions={
+        activeProject
+          .fieldDefinitions
+      }
+
+      onSave={
+        saveFieldDefinitions
+      }
+
+      onCancel={() => {
+        setIsFieldDefinitionsOpen(
+          false,
+        )
+      }}
+    />
+  )}
+
+{isTocStructureOpen && (
+  <div />
+)}
 
       <main className="journal-workspace">
         <section className="journal-main-workspace">
