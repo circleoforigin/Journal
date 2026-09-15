@@ -710,6 +710,8 @@ height: calc(100% - 8px);
 .journal-field-following-item {
   display: block;
 
+  flex: none;
+
   width: 100%;
   box-sizing: border-box;
 
