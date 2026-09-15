@@ -530,6 +530,16 @@ currentPage.fragments.push({
       metrics.fieldGap
   }
 
+  if (
+  pages.length % 2 !== 0
+) {
+  pages.push(
+    createPage(
+      pages.length,
+    ),
+  )
+}
+
   return {
     entryId:
       entry.id,

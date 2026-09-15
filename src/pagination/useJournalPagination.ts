@@ -131,9 +131,10 @@ export function useJournalPagination({
     return () => {
       observer.disconnect()
     }
-  }, [
-    pageContentRef,
-  ])
+ }, [
+  pageContentRef,
+  entry?.id,
+])
 
   return useMemo(() => {
     if (
