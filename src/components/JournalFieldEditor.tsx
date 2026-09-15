@@ -122,8 +122,17 @@ function ItemEditor({
   }
 
   useLayoutEffect(() => {
-    resizeTextarea()
-  }, [draft])
+  const frame =
+    requestAnimationFrame(() => {
+      resizeTextarea()
+    })
+
+  return () => {
+    cancelAnimationFrame(
+      frame,
+    )
+  }
+}, [draft])
 
   useEffect(() => {
     if (!autoFocus) {
@@ -146,29 +155,7 @@ function ItemEditor({
       end,
       end,
     )
-  }, [autoFocus])
-
-  useEffect(() => {
-    const textarea =
-      textareaRef.current
-
-    if (!textarea) {
-      return
-    }
-
-    const observer =
-      new ResizeObserver(() => {
-        resizeTextarea()
-      })
-
-    observer.observe(
-      textarea,
-    )
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+  }, [autoFocus])  
 
   function commit() {
     if (!draft.trim()) {
