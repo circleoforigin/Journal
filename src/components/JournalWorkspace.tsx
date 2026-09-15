@@ -667,74 +667,13 @@ const titleItem:
                         )
                     }}
                     />
-              <div className="journal-page journal-page-left">
-                <div className="journal-page-content">
-  {activeEntry && (
-  <>
-    <input
-      key={activeEntry.id}
-      className="journal-entry-title"
-      defaultValue={
-        getEntryTitle(
-          activeEntry,
-        )
-      }
-      onBlur={(event) => {
-        void updateEntryTitle(
-          event.currentTarget.value
-            .trim(),
-        )
-      }}
-      onKeyDown={(event) => {
-        if (
-          event.key === 'Enter'
-        ) {
-          event.preventDefault()
-
-          event.currentTarget
-            .blur()
-        }
-      }}
-      aria-label="Entry title"
-    />
-
-    <div className="journal-entry-fields">
-      {activeFieldDefinitions.map(
-        (fieldDefinition) => {
-          const field =
-            activeEntry.fields[
-              fieldDefinition.id
-            ]          
-
-          return (
-  <JournalFieldEditor
-    key={fieldDefinition.id}
-    fieldDefinition={
-      fieldDefinition
-    }
-    items={
-      field?.items ?? []
-    }
-
-    onItemsChange={(items) => {
-        void updateFieldItems(
-        fieldDefinition.id,
-        items,
-        )
-    }}
-  />
-)
-        },
-      )}
-    </div>
-  </>
-)}
-</div>
-
-                <div className="journal-page-number">
-                  1
-                </div>
-              </div>
+              <JournalPage
+  page={leftPage}
+  pageNumber={
+    leftPageIndex + 1
+  }
+  side="left"
+/>
 
               <JournalPage
   page={rightPage}
