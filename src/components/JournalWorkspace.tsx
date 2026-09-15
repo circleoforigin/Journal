@@ -737,11 +737,13 @@ const titleItem:
               </div>
 
               <JournalPage
-                page={null}
-                pageNumber={2}
-                side="right"
-                contentRef={pageContentRef}
-              />
+  page={rightPage}
+  pageNumber={
+    rightPageIndex + 1
+  }
+  side="right"
+  contentRef={pageContentRef}
+/>
 
               <button
   type="button"

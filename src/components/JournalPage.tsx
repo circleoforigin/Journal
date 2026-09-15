@@ -40,6 +40,22 @@ export function JournalPage({
             index,
           ) => {
             if (
+  fragment.type ===
+  'entryTitle'
+) {
+  return (
+    <div
+      key={
+        `title:${fragment.entryId}`
+      }
+      className="journal-page-entry-title"
+    >
+      {fragment.text}
+    </div>
+  )
+}
+            
+            if (
               fragment.type ===
               'fieldStart'
             ) {

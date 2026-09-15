@@ -34,6 +34,13 @@ export interface JournalItemFragment {
   item: JournalFieldItem
 }
 
+export interface JournalEntryTitleFragment {
+  type: 'entryTitle'
+
+  entryId: string
+  text: string
+}
+
 export interface JournalFieldStartFragment {
   type: 'fieldStart'
 
@@ -44,6 +51,7 @@ export interface JournalFieldStartFragment {
 }
 
 export type JournalPageFragment =
+  | JournalEntryTitleFragment
   | JournalFieldStartFragment
   | JournalItemFragment
 

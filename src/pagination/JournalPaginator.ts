@@ -243,6 +243,37 @@ export function paginateJournalEntry(
 
   let usedHeight = metrics.firstPageReservedHeight
 
+  const titleDefinition =
+  fieldDefinitions.find(
+    (definition) =>
+      definition.isSystem &&
+      definition.name ===
+        'Title',
+  )
+
+const titleItem =
+  titleDefinition
+    ? entry.fields[
+        titleDefinition.id
+      ]?.items[0]
+    : undefined
+
+const titleValue =
+  titleItem?.value
+
+const titleText =
+  typeof titleValue ===
+    'string' &&
+  titleValue.trim()
+    ? titleValue
+    : 'New Entry'
+
+currentPage.fragments.push({
+  type: 'entryTitle',
+  entryId: entry.id,
+  text: titleText,
+})
+
   function nextPage() {
     currentPage =
       createPage(
