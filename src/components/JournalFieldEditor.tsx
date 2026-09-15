@@ -31,6 +31,12 @@ interface ItemEditorProps {
 
   autoFocus?: boolean
 
+  onFocus?: () => void
+
+  onBlurred?: (
+    value: string,
+  ) => void
+
   onCommit: (
     item: JournalFieldItem,
     value: string,
@@ -43,10 +49,6 @@ interface ItemEditorProps {
 
   onDiscardEmpty: (
     item: JournalFieldItem,
-  ) => void
-
-  onHeightChange?: (
-    height: number,
   ) => void
 }
 
@@ -78,10 +80,11 @@ function ItemEditor({
   item,
   className = '',
   autoFocus = false,
+  onFocus,
+  onBlurred,
   onCommit,
   onCreateAfter,
   onDiscardEmpty,
-  onHeightChange,
 }: ItemEditorProps) {
   const textareaRef =
     useRef<HTMLTextAreaElement | null>(
@@ -95,14 +98,6 @@ function ItemEditor({
     getStringValue(item),
   )
 
-  /*
-   * If the persisted Item changes from
-   * outside this editor, synchronize it.
-   *
-   * Normal typing does NOT come through
-   * here because typing is local draft
-   * state now.
-   */
   useEffect(() => {
     setDraft(
       getStringValue(item),
@@ -122,15 +117,8 @@ function ItemEditor({
 
     textarea.style.height = 'auto'
 
-    const nextHeight =
-      textarea.scrollHeight
-
     textarea.style.height =
-      `${nextHeight}px`
-
-    onHeightChange?.(
-      nextHeight,
-    )
+      `${textarea.scrollHeight}px`
   }
 
   useLayoutEffect(() => {
@@ -277,8 +265,15 @@ function ItemEditor({
           event.currentTarget.value,
         )
       }}
+      onFocus={() => {
+        onFocus?.()
+      }}
       onBlur={() => {
         commit()
+
+        onBlurred?.(
+          draft,
+        )
       }}
       onKeyDown={(event) => {
         if (
@@ -328,9 +323,29 @@ export function JournalFieldEditor({
   >(null)
 
   const [
-    firstItemHeight,
-    setFirstItemHeight,
-  ] = useState(21)
+    firstItemInline,
+    setFirstItemInline,
+  ] = useState(false)
+
+  const fieldRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
+
+  const labelMeasureRef =
+    useRef<HTMLSpanElement | null>(
+      null,
+    )
+
+  const valueMeasureRef =
+    useRef<HTMLSpanElement | null>(
+      null,
+    )
+
+  const emptyFieldItemRef =
+    useRef<
+      JournalFieldItem | null
+    >(null)
 
   const sortedItems =
     [...items].sort(
@@ -338,16 +353,6 @@ export function JournalFieldEditor({
         left.order -
         right.order,
     )
-
-  /*
-   * A completely empty Field still needs
-   * one editable Item on screen, but that
-   * Item must not exist in persistence yet.
-   */
-  const emptyFieldItemRef =
-    useRef<
-      JournalFieldItem | null
-    >(null)
 
   if (
     sortedItems.length === 0 &&
@@ -389,8 +394,100 @@ export function JournalFieldEditor({
   const remainingItems =
     displayItems.slice(1)
 
-  const isBlock =
-    firstItemHeight > 24
+  function evaluateFirstItemInline(
+    value: string,
+  ) {
+    const field =
+      fieldRef.current
+
+    const label =
+      labelMeasureRef.current
+
+    const valueMeasure =
+      valueMeasureRef.current
+
+    if (
+      !field ||
+      !label ||
+      !valueMeasure
+    ) {
+      setFirstItemInline(false)
+
+      return
+    }
+
+    /*
+     * An intentional line break means
+     * this Item is inherently multiline.
+     */
+    if (value.includes('\n')) {
+      setFirstItemInline(false)
+
+      return
+    }
+
+    valueMeasure.textContent =
+      value || ' '
+
+    const availableWidth =
+      field.clientWidth
+
+    const requiredWidth =
+      label.scrollWidth +
+      4 +
+      valueMeasure.scrollWidth
+
+    setFirstItemInline(
+      requiredWidth <=
+        availableWidth,
+    )
+  }
+
+  /*
+   * Reevaluate whenever a different
+   * persisted Item becomes Item 0.
+   *
+   * New/transient Items deliberately
+   * remain block until they lose focus.
+   */
+  useLayoutEffect(() => {
+    if (!firstItem) {
+      setFirstItemInline(false)
+
+      return
+    }
+
+    const isTransientFirst =
+      transientItems.some(
+        (transientItem) =>
+          transientItem.id ===
+          firstItem.id,
+      ) ||
+      emptyFieldItemRef
+        .current?.id ===
+        firstItem.id
+
+    if (isTransientFirst) {
+      setFirstItemInline(false)
+
+      return
+    }
+
+    if (
+      focusedItemId ===
+      firstItem.id
+    ) {
+      setFirstItemInline(false)
+
+      return
+    }
+
+    evaluateFirstItemInline(
+      getStringValue(firstItem),
+    )
+  }, [
+    firstItem?.id,
+  ])
 
   function isTransient(
     item: JournalFieldItem,
@@ -500,11 +597,6 @@ export function JournalFieldEditor({
           ),
       )
 
-      /*
-       * Keep the permanent empty-field
-       * editor available when the Field
-       * still has no persisted Items.
-       */
       return
     }
 
@@ -542,13 +634,6 @@ export function JournalFieldEditor({
       return
     }
 
-    /*
-     * Enter is a commit boundary.
-     *
-     * Commit the current Item first if
-     * necessary, then create the next Item
-     * only in local UI state.
-     */
     let baseItems =
       sortedItems
 
@@ -575,12 +660,11 @@ export function JournalFieldEditor({
     }
 
     baseItems =
-      [...baseItems]
-        .sort(
-          (left, right) =>
-            left.order -
-            right.order,
-        )
+      [...baseItems].sort(
+        (left, right) =>
+          left.order -
+          right.order,
+      )
 
     const currentIndex =
       baseItems.findIndex(
@@ -593,11 +677,6 @@ export function JournalFieldEditor({
       return
     }
 
-    /*
-     * Make room in the persisted ordering
-     * for the future Item, but do not
-     * persist an empty Item.
-     */
     const normalizedItems =
       baseItems.map(
         (
@@ -671,9 +750,7 @@ export function JournalFieldEditor({
   function renderItem(
     item: JournalFieldItem,
     className = '',
-    onHeightChange?: (
-      height: number,
-    ) => void,
+    isFirstItem = false,
   ) {
     return (
       <ItemEditor
@@ -684,9 +761,41 @@ export function JournalFieldEditor({
           item.id ===
           focusedItemId
         }
-        onHeightChange={
-          onHeightChange
-        }
+        onFocus={() => {
+          setFocusedItemId(
+            item.id,
+          )
+
+          if (isFirstItem) {
+            /*
+             * Editing Item 0 always
+             * happens beneath the label.
+             */
+            setFirstItemInline(
+              false,
+            )
+          }
+        }}
+        onBlurred={(value) => {
+          setFocusedItemId(
+            (current) =>
+              current === item.id
+                ? null
+                : current,
+          )
+
+          if (isFirstItem) {
+            /*
+             * Only after editing finishes
+             * do we decide whether Item 0
+             * is short enough to display
+             * beside its Field label.
+             */
+            evaluateFirstItemInline(
+              value,
+            )
+          }
+        }}
         onCommit={
           commitItem
         }
@@ -703,25 +812,40 @@ export function JournalFieldEditor({
   return (
     <div className="journal-field">
       <div
+        ref={fieldRef}
         className={
-          isBlock
-            ? 'journal-field-first-row block'
-            : 'journal-field-first-row inline'
+          firstItemInline
+            ? 'journal-field-first-row inline'
+            : 'journal-field-first-row block'
         }
       >
         <strong
           className="journal-entry-field-label"
         >
           {fieldDefinition.name}
-          {!isBlock && ' -'}
+          {firstItemInline && ' -'}
         </strong>
 
         {renderItem(
           firstItem,
           'journal-field-first-item',
-          setFirstItemHeight,
+          true,
         )}
       </div>
+
+      <span
+        ref={labelMeasureRef}
+        className="journal-field-measure"
+        aria-hidden="true"
+      >
+        {fieldDefinition.name} -
+      </span>
+
+      <span
+        ref={valueMeasureRef}
+        className="journal-field-measure"
+        aria-hidden="true"
+      />
 
       {remainingItems.length >
         0 && (
