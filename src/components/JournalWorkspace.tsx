@@ -11,14 +11,13 @@ import { entryRepository } from '../entries/EntryRepository'
 import { journalRepository } from '../journals/JournalRepository'
 import type { Project } from '../models/Project'
 import type { Journal } from '../models/Journal'
-import { JournalFieldEditor } from './JournalFieldEditor'
-import { useJournalPagination } from '../pagination/useJournalPagination'
 import { JournalPage } from './JournalPage'
+import { buildJournalDocument } from '../pagination/JournalDocumentBuilder'
+import {
+  paginateJournalDocument,
+  type JournalPaginationMetrics,
+} from '../pagination/JournalPaginator'
 
-interface JournalWorkspaceProps {
-  project: Project
-  journal: Journal | null
-}
 interface JournalWorkspaceProps {
   project: Project
   journal: Journal | null
@@ -49,24 +48,19 @@ const [
   setSpreadIndex,
 ] = useState(0)
 
+const [
+  fontFamily,
+  setFontFamily,
+] = useState('Arial')
+
+const [
+  fontSize,
+  setFontSize,
+] = useState(14)
+
 const pageContentRef =
   useRef<HTMLDivElement | null>(
     null,
-  )
-
-const readability =
-  useMemo(
-    () => ({
-      fontFamily: 'Arial',
-      fontSize: 14,
-    }),
-    [],
-  )
-
-const languages =
-  useMemo(
-    () => [],
-    [],
   )
 
 const titleDefinition =
@@ -111,19 +105,109 @@ const activeEntry =
       entry.id === activeEntryId,
   ) ?? null
 
-  const pagination =
-  useJournalPagination({
-    entry: activeEntry,
-
-    fieldDefinitions:
+ const journalDocument =
+  useMemo(
+    () =>
+      activeEntry
+        ? buildJournalDocument(
+            activeEntry,
+            project.fieldDefinitions,
+          )
+        : null,
+    [
+      activeEntry,
       project.fieldDefinitions,
+    ],
+  )
 
-    pageContentRef,
+const paginationMetrics:
+  JournalPaginationMetrics =
+  useMemo(
+    () => ({
+      pageWidth: 0,
+      pageHeight: 0,
+      fontFamily,
+      fontSize,
+      lineHeight: 21,
+      titleFontSize: 22,
+      titleLineHeight: 30,
+      fieldFontSize: 14,
+      fieldLineHeight: 21,
+      titleBottomGap: 28,
+      fieldTopGap: 24,
+      fieldBottomGap: 6,
+      itemBottomGap: 6,
+    }),
+    [
+        fontFamily,
+        fontSize,
+    ],
+  )
 
-    readability,
+const [pageSize, setPageSize] =
+  useState({
+    width: 0,
+    height: 0,
+  })
 
-    languages,
-  })  
+const pagination =
+  useMemo(() => {
+    if (
+      !journalDocument ||
+      pageSize.width <= 0 ||
+      pageSize.height <= 0
+    ) {
+      return null
+    }
+
+    return paginateJournalDocument(
+      journalDocument,
+      {
+        ...paginationMetrics,
+        pageWidth:
+          pageSize.width,
+        pageHeight:
+          pageSize.height,
+      },
+    )
+  }, [
+    journalDocument,
+    pageSize,
+    paginationMetrics,
+  ])
+
+  useEffect(() => {
+  const element =
+    pageContentRef.current
+
+  if (!element) {
+    return
+  }
+
+  const updateSize = () => {
+    setPageSize({
+      width:
+        element.clientWidth,
+      height:
+        element.clientHeight,
+    })
+  }
+
+  updateSize()
+
+  const observer =
+    new ResizeObserver(
+      updateSize,
+    )
+
+  observer.observe(element)
+
+  return () => {
+    observer.disconnect()
+  }
+}, [
+  activeEntry?.id,
+])
 
   useEffect(() => {
     setSpreadIndex(0)
@@ -474,6 +558,38 @@ const titleItem:
     .saveEntry(updatedEntry)
 }  
 
+function showEditNode(
+  source: 'master' | 'user',
+): boolean {
+  if (!journal) {
+    return false
+  }
+
+  if (
+    journal.ownerName ===
+    'Master'
+  ) {
+    return true
+  }
+
+  return source === 'user'
+}
+
+function handleEditItem(
+  entryId: string,
+  fieldDefinitionId: string,
+  itemId: string,
+) {
+  console.log(
+    'Edit Journal Item',
+    {
+      entryId,
+      fieldDefinitionId,
+      itemId,
+    },
+  )
+}
+
   return (
     <div className="journal-editor">
       <aside className="journal-inspector">
@@ -621,32 +737,62 @@ const titleItem:
           </div>
 
           <div className="journal-format-controls">
-            <button
-              type="button"
-              disabled={!journal}
-              title="Bold"
-            >
-              <strong>B</strong>
-            </button>
+  <label>
+    Font
 
-            <button
-              type="button"
-              disabled={!journal}
-              title="Italic"
-            >
-              <em>I</em>
-            </button>
+    <select
+      disabled={!journal}
+      value={fontFamily}
+      onChange={(event) => {
+        setFontFamily(
+          event.target.value,
+        )
+      }}
+    >
+      <option value="Arial">
+        Arial
+      </option>
 
-            <button
-              type="button"
-              disabled={!journal}
-              title="Underline"
-            >
-              <span className="journal-underline">
-                U
-              </span>
-            </button>
-          </div>
+      <option value="Georgia">
+        Georgia
+      </option>
+
+      <option value="Times New Roman">
+        Times New Roman
+      </option>
+
+      <option value="Verdana">
+        Verdana
+      </option>
+    </select>
+  </label>
+
+  <label>
+    Size
+
+    <select
+      disabled={!journal}
+      value={fontSize}
+      onChange={(event) => {
+        setFontSize(
+          Number(
+            event.target.value,
+          ),
+        )
+      }}
+    >
+      <option value={10}>10</option>
+      <option value={11}>11</option>
+      <option value={12}>12</option>
+      <option value={14}>14</option>
+      <option value={16}>16</option>
+      <option value={18}>18</option>
+      <option value={20}>20</option>
+      <option value={22}>22</option>
+      <option value={24}>24</option>
+    </select>
+  </label>
+</div>
         </header>
 
         <div className="journal-book-area">
@@ -668,21 +814,23 @@ const titleItem:
                     }}
                     />
               <JournalPage
-  page={leftPage}
-  pageNumber={
-    leftPageIndex + 1
-  }
-  side="left"
-/>
+                page={leftPage ?? undefined}
+                pageNumber={leftPageIndex + 1}
+                fontFamily={fontFamily}
+                fontSize={fontSize}
+                showEditNode={showEditNode}
+                onEditItem={handleEditItem}
+              />
 
               <JournalPage
-  page={rightPage}
-  pageNumber={
-    rightPageIndex + 1
-  }
-  side="right"
-  contentRef={pageContentRef}
-/>
+                page={rightPage ?? undefined}
+                pageNumber={rightPageIndex + 1}
+                contentRef={pageContentRef}
+                fontFamily={fontFamily}
+                fontSize={fontSize}
+                showEditNode={showEditNode}
+                onEditItem={handleEditItem}
+              />
 
               <button
   type="button"
