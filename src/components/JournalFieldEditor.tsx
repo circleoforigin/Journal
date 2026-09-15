@@ -9,22 +9,66 @@ import type {
   JournalFieldDefinition,
 } from '../models/JournalFieldDefinition'
 
+import type {
+  JournalFieldItem,
+} from '../models/JournalField'
+
 interface JournalFieldEditorProps {
   fieldDefinition:
     JournalFieldDefinition
 
-  value: string
+  items: JournalFieldItem[]
 
-  onCommit: (
-    value: string,
+  onSaveItem: (
+    item: JournalFieldItem,
+  ) => void
+
+  onRemoveItem: (
+    itemId: string,
   ) => void
 }
 
-export function JournalFieldEditor({
+interface JournalFieldItemEditorProps {
+  fieldDefinition:
+    JournalFieldDefinition
+
+  item: JournalFieldItem
+
+  onSave: (
+    item: JournalFieldItem,
+  ) => void
+
+  onRemove: (
+    itemId: string,
+  ) => void
+
+  onCreateAfter: (
+    item: JournalFieldItem,
+  ) => void
+}
+
+function JournalFieldItemEditor({
   fieldDefinition,
-  value,
-  onCommit,
-}: JournalFieldEditorProps) {
+  item,
+  onSave,
+  onRemove,
+  onCreateAfter,
+}: JournalFieldItemEditorProps) {
+  const fieldRef =
+    useRef<HTMLDivElement | null>(
+      null,
+    )
+
+  const labelRef =
+    useRef<HTMLElement | null>(
+      null,
+    )
+
+  const measureRef =
+    useRef<HTMLSpanElement | null>(
+      null,
+    )
+
   const textareaRef =
     useRef<HTMLTextAreaElement | null>(
       null,
@@ -38,62 +82,79 @@ export function JournalFieldEditor({
   const [
     draft,
     setDraft,
-  ] = useState(value)
+  ] = useState(
+    typeof item.value === 'string'
+      ? item.value
+      : '',
+  )
 
   useEffect(() => {
-    setDraft(value)
-  }, [value])
+    setDraft(
+      typeof item.value === 'string'
+        ? item.value
+        : '',
+    )
+  }, [
+    item.id,
+    item.value,
+  ])
 
-  function measure() {
-    const textarea =
-      textareaRef.current
+  function measureLayout() {
+    const field =
+      fieldRef.current
 
-    if (!textarea) {
+    const label =
+      labelRef.current
+
+    const measure =
+      measureRef.current
+
+    if (
+      !field ||
+      !label ||
+      !measure
+    ) {
       return
     }
 
-    /*
-     * First measure the value using
-     * the available inline width.
-     */
-    textarea.style.height = 'auto'
+    const requiredWidth =
+      label.scrollWidth +
+      4 +
+      measure.scrollWidth
 
-    const lineHeight =
-      Number.parseFloat(
-        window
-          .getComputedStyle(textarea)
-          .lineHeight,
-      )
+    const nextIsBlock =
+      requiredWidth >
+      field.clientWidth
 
-    const needsBlock =
-      textarea.scrollHeight >
-      lineHeight + 2
-
-    setIsBlock(needsBlock)
+    setIsBlock(
+      (current) =>
+        current === nextIsBlock
+          ? current
+          : nextIsBlock,
+    )
   }
 
   useLayoutEffect(() => {
-    measure()
-  }, [
-    draft,
-    isBlock,
-  ])
+    measureLayout()
+  }, [draft])
 
   useEffect(() => {
-    const handleResize = () => {
-      measure()
+    const field =
+      fieldRef.current
+
+    if (!field) {
+      return
     }
 
-    window.addEventListener(
-      'resize',
-      handleResize,
-    )
+    const observer =
+      new ResizeObserver(() => {
+        measureLayout()
+      })
+
+    observer.observe(field)
 
     return () => {
-      window.removeEventListener(
-        'resize',
-        handleResize,
-      )
+      observer.disconnect()
     }
   }, [])
 
@@ -101,31 +162,105 @@ export function JournalFieldEditor({
     const textarea =
       textareaRef.current
 
-    if (
-      !textarea ||
-      !isBlock
-    ) {
+    if (!textarea) {
       return
     }
 
-    textarea.style.height = 'auto'
-
     textarea.style.height =
-      `${textarea.scrollHeight}px`
+      'auto'
+
+    if (isBlock) {
+      textarea.style.height =
+        `${textarea.scrollHeight}px`
+    }
   }, [
     draft,
     isBlock,
   ])
 
+  function commit() {
+    if (!draft.trim()) {
+      onRemove(item.id)
+      return
+    }
+
+    onSave({
+      ...item,
+      value: draft,
+      updatedAt:
+        new Date().toISOString(),
+    })
+  }
+
+  function insertIndentedLineBreak() {
+    const textarea =
+      textareaRef.current
+
+    if (
+      !textarea ||
+      !draft.trim()
+    ) {
+      return
+    }
+
+    const start =
+      textarea.selectionStart
+
+    const end =
+      textarea.selectionEnd
+
+    const lineStart =
+      draft.lastIndexOf(
+        '\n',
+        start - 1,
+      ) + 1
+
+    const currentLine =
+      draft.slice(
+        lineStart,
+        start,
+      )
+
+    const indentation =
+      currentLine.match(
+        /^[\t ]*/,
+      )?.[0] ?? ''
+
+    const nextValue =
+      draft.slice(0, start) +
+      '\n' +
+      indentation +
+      draft.slice(end)
+
+    const nextCursor =
+      start +
+      1 +
+      indentation.length
+
+    setDraft(nextValue)
+
+    requestAnimationFrame(() => {
+      textarea.selectionStart =
+        nextCursor
+
+      textarea.selectionEnd =
+        nextCursor
+    })
+  }
+
   return (
     <div
+      ref={fieldRef}
       className={
         isBlock
           ? 'journal-entry-field block'
           : 'journal-entry-field inline'
       }
     >
-      <strong className="journal-entry-field-label">
+      <strong
+        ref={labelRef}
+        className="journal-entry-field-label"
+      >
         {fieldDefinition.name}
         {!isBlock && ' -'}
       </strong>
@@ -140,13 +275,150 @@ export function JournalFieldEditor({
             event.target.value,
           )
         }}
-        onBlur={() => {
-          onCommit(draft)
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (
+            event.key !== 'Enter'
+          ) {
+            return
+          }
+
+          event.preventDefault()
+
+          if (!draft.trim()) {
+            return
+          }
+
+          if (event.shiftKey) {
+            insertIndentedLineBreak()
+            return
+          }
+
+          commit()
+
+          onCreateAfter(item)
         }}
         aria-label={
           fieldDefinition.name
         }
       />
+
+      <span
+        ref={measureRef}
+        className="journal-field-measure"
+        aria-hidden="true"
+      >
+        {draft || ' '}
+      </span>
     </div>
+  )
+}
+
+export function JournalFieldEditor({
+  fieldDefinition,
+  items,
+  onSaveItem,
+  onRemoveItem,
+}: JournalFieldEditorProps) {
+  const sortedItems =
+    [...items].sort(
+      (left, right) =>
+        left.order -
+        right.order,
+    )
+
+  const displayItems =
+    sortedItems.length > 0
+      ? sortedItems
+      : [
+          {
+            id: crypto.randomUUID(),
+            order: 0,
+            value: '',
+            source:
+              'master' as const,
+            createdAt:
+              new Date()
+                .toISOString(),
+            updatedAt:
+              new Date()
+                .toISOString(),
+          },
+        ]
+
+  function createAfter(
+    item: JournalFieldItem,
+  ) {
+    const nextOrder =
+      item.order + 1
+
+    const shiftedItems =
+      sortedItems.map(
+        (existingItem) =>
+          existingItem.order >=
+          nextOrder
+            ? {
+                ...existingItem,
+                order:
+                  existingItem.order +
+                  1,
+              }
+            : existingItem,
+      )
+
+    for (
+      const shiftedItem
+      of shiftedItems
+    ) {
+      if (
+        shiftedItem.order !==
+        sortedItems.find(
+          (existingItem) =>
+            existingItem.id ===
+            shiftedItem.id,
+        )?.order
+      ) {
+        onSaveItem(
+          shiftedItem,
+        )
+      }
+    }
+
+    const now =
+      new Date().toISOString()
+
+    onSaveItem({
+      id: crypto.randomUUID(),
+      order: nextOrder,
+      value: '',
+      source: 'master',
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
+  return (
+    <>
+      {displayItems.map(
+        (item) => (
+          <JournalFieldItemEditor
+            key={item.id}
+            fieldDefinition={
+              fieldDefinition
+            }
+            item={item}
+            onSave={
+              onSaveItem
+            }
+            onRemove={
+              onRemoveItem
+            }
+            onCreateAfter={
+              createAfter
+            }
+          />
+        ),
+      )}
+    </>
   )
 }

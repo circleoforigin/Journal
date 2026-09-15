@@ -4,15 +4,11 @@ import {
 } from 'react'
 
 import type { JournalEntry } from '../models/JournalEntry'
-
+import type { JournalFieldItem } from '../models/JournalField'
 import { entryRepository } from '../entries/EntryRepository'
-
 import { journalRepository } from '../journals/JournalRepository'
-
 import type { Project } from '../models/Project'
-
 import type { Journal } from '../models/Journal'
-
 import { JournalFieldEditor } from './JournalFieldEditor'
 
 interface JournalWorkspaceProps {
@@ -66,10 +62,13 @@ function getEntryTitle(
     return 'New Entry'
   }
 
-  const value =
+  const titleItem =
     entry.fields[
       titleDefinition.id
-    ]?.value
+    ]?.items[0]
+
+  const value =
+    titleItem?.value
 
   return typeof value === 'string' &&
     value.trim()
@@ -191,10 +190,19 @@ async function createEntry(
     sectionDefinitionId,
 
     fields: {
-      [titleDefinition.id]: {
+  [titleDefinition.id]: {
+    items: [
+      {
+        id: crypto.randomUUID(),
+        order: 0,
         value: 'New Entry',
+        source: 'master',
+        createdAt: now,
+        updatedAt: now,
       },
-    },
+    ],
+  },
+},
 
     createdAt: now,
     updatedAt: now,
@@ -264,7 +272,74 @@ async function addFieldToEntry(
       ...activeEntry.fields,
 
       [fieldDefinition.id]: {
-        value: '',
+        items: [],
+        },
+    },
+
+    updatedAt:
+      new Date().toISOString(),
+  }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+}
+
+async function saveFieldItem(
+  fieldDefinitionId: string,
+  item: JournalFieldItem,
+) {
+  if (!activeEntry) {
+    return
+  }
+
+  const existingField =
+    activeEntry.fields[
+      fieldDefinitionId
+    ]
+
+  if (!existingField) {
+    return
+  }
+
+  const existingIndex =
+    existingField.items.findIndex(
+      (existingItem) =>
+        existingItem.id === item.id,
+    )
+
+  const updatedItems =
+    existingIndex >= 0
+      ? existingField.items.map(
+          (existingItem) =>
+            existingItem.id ===
+            item.id
+              ? item
+              : existingItem,
+        )
+      : [
+          ...existingField.items,
+          item,
+        ]
+
+  const updatedEntry: JournalEntry = {
+    ...activeEntry,
+
+    fields: {
+      ...activeEntry.fields,
+
+      [fieldDefinitionId]: {
+        items: updatedItems,
       },
     },
 
@@ -287,9 +362,9 @@ async function addFieldToEntry(
     .saveEntry(updatedEntry)
 }
 
-async function updateEntryField(
+async function removeFieldItem(
   fieldDefinitionId: string,
-  value: string,
+  itemId: string,
 ) {
   if (!activeEntry) {
     return
@@ -304,6 +379,19 @@ async function updateEntryField(
     return
   }
 
+  const updatedItems =
+    existingField.items
+      .filter(
+        (item) =>
+          item.id !== itemId,
+      )
+      .map(
+        (item, index) => ({
+          ...item,
+          order: index,
+        }),
+      )
+
   const updatedEntry: JournalEntry = {
     ...activeEntry,
 
@@ -311,8 +399,7 @@ async function updateEntryField(
       ...activeEntry.fields,
 
       [fieldDefinitionId]: {
-        ...existingField,
-        value,
+        items: updatedItems,
       },
     },
 
@@ -345,6 +432,34 @@ async function updateEntryTitle(
     return
   }
 
+  const existingTitleItem =
+  activeEntry.fields[
+    titleDefinition.id
+  ]?.items[0]
+
+const now =
+  new Date().toISOString()
+
+const titleItem:
+  JournalFieldItem = {
+  id:
+    existingTitleItem?.id ??
+    crypto.randomUUID(),
+
+  order: 0,
+
+  value:
+    value || 'New Entry',
+
+  source: 'master',
+
+  createdAt:
+    existingTitleItem
+      ?.createdAt ?? now,
+
+  updatedAt: now,
+}
+
   const updatedEntry: JournalEntry = {
     ...activeEntry,
 
@@ -352,17 +467,13 @@ async function updateEntryTitle(
       ...activeEntry.fields,
 
       [titleDefinition.id]: {
-        ...activeEntry.fields[
-          titleDefinition.id
+        items: [
+            titleItem,
         ],
-
-        value:
-          value || 'New Entry',
       },
     },
 
-    updatedAt:
-      new Date().toISOString(),
+    updatedAt: now,
   }
 
   setEntries(
@@ -595,13 +706,7 @@ async function updateEntryTitle(
           const field =
             activeEntry.fields[
               fieldDefinition.id
-            ]
-
-          const value =
-            typeof field?.value ===
-            'string'
-              ? field.value
-              : ''
+            ]          
 
           return (
   <JournalFieldEditor
@@ -609,11 +714,19 @@ async function updateEntryTitle(
     fieldDefinition={
       fieldDefinition
     }
-    value={value}
-    onCommit={(newValue) => {
-      void updateEntryField(
+    items={
+      field?.items ?? []
+    }
+    onSaveItem={(item) => {
+      void saveFieldItem(
         fieldDefinition.id,
-        newValue,
+        item,
+      )
+    }}
+    onRemoveItem={(itemId) => {
+      void removeFieldItem(
+        fieldDefinition.id,
+        itemId,
       )
     }}
   />

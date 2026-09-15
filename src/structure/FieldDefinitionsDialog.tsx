@@ -3,7 +3,6 @@ import {
 } from 'react'
 
 import type {
-  JournalFieldBehavior,
   JournalFieldDefinition,
   JournalFieldValueType,
 } from '../models/JournalFieldDefinition'
@@ -56,7 +55,6 @@ export function FieldDefinitionsDialog({
             id: crypto.randomUUID(),
             name: 'Title',
             valueType: 'text',
-            behavior: 'single',
             order: 0,
             isSystem: true,
           }
@@ -106,15 +104,7 @@ export function FieldDefinitionsDialog({
     useState<JournalFieldValueType>(
       'richText',
     )
-
-  const [
-    customBehavior,
-    setCustomBehavior,
-  ] =
-    useState<JournalFieldBehavior>(
-      'single',
-    )
-
+ 
   const availablePresets =
     fieldPresets
       .map(
@@ -290,15 +280,13 @@ export function FieldDefinitionsDialog({
     }
 
     const field:
-      JournalFieldDefinition = {
-        id: crypto.randomUUID(),
-        name,
-        valueType:
-          customValueType,
-        behavior:
-          customBehavior,
-        order: fields.length,
-      }
+  JournalFieldDefinition = {
+    id: crypto.randomUUID(),
+    name,
+    valueType:
+      customValueType,
+    order: fields.length,
+}
 
     setFields(
       normalizeOrder([
@@ -545,38 +533,7 @@ export function FieldDefinitionsDialog({
                   Reference
                 </option>
               </select>
-            </label>
-
-            <label>
-              <span>
-                Behavior
-              </span>
-
-              <select
-                value={
-                  customBehavior
-                }
-                onChange={(event) => {
-                  setCustomBehavior(
-                    event.target
-                      .value as
-                      JournalFieldBehavior,
-                  )
-                }}
-              >
-                <option value="single">
-                  Single
-                </option>
-
-                <option value="collection">
-                  Collection
-                </option>
-
-                <option value="log">
-                  Log
-                </option>
-              </select>
-            </label>
+            </label>            
 
             <button
               type="button"

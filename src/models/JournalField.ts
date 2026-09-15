@@ -2,6 +2,10 @@ import type {
   JournalValue,
 } from './JournalValue'
 
+export type JournalFieldItemSource =
+  | 'master'
+  | 'user'
+
 export interface JournalFieldItem {
   id: string
 
@@ -9,12 +13,14 @@ export interface JournalFieldItem {
 
   value: JournalValue
 
+  source: JournalFieldItemSource
+
+  userId?: string
+
   createdAt: string
   updatedAt: string
 }
 
 export interface JournalField {
-  value?: JournalValue
-
-  items?: JournalFieldItem[]
+  items: JournalFieldItem[]
 }

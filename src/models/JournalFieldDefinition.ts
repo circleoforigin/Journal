@@ -7,21 +7,13 @@ export type JournalFieldValueType =
   | 'tags'
   | 'reference'
 
-export type JournalFieldBehavior =
-  | 'single'
-  | 'collection'
-  | 'log'
-
 export interface JournalFieldDefinition {
   id: string
   name: string
 
   valueType:
     JournalFieldValueType
-
-  behavior:
-    JournalFieldBehavior
-
+ 
   order: number
 
   isSystem?: boolean

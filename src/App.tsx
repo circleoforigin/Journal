@@ -483,7 +483,6 @@ async function createProject(
       id: crypto.randomUUID(),
       name: 'Title',
       valueType: 'text',
-      behavior: 'single',
       order: 0,
       isSystem: true,
     },
