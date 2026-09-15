@@ -31,6 +31,10 @@ interface ItemEditorProps {
 
   className?: string
 
+  onHeightChange?: (
+    height: number,
+  ) => void
+
   onChange: (
     value: string,
   ) => void
@@ -47,6 +51,7 @@ function ItemEditor({
   onChange,
   onBlur,
   onCreateAfter,
+  onHeightChange,
 }: ItemEditorProps) {
   const textareaRef =
     useRef<HTMLTextAreaElement | null>(
@@ -62,10 +67,15 @@ function ItemEditor({
   textarea:
     HTMLTextAreaElement,
 ) {
-  textarea.style.height = '0px'
+  textarea.style.height = 'auto'
+
+  const height =
+    textarea.scrollHeight
 
   textarea.style.height =
-    `${textarea.scrollHeight}px`
+    `${height}px`
+
+  onHeightChange?.(height)
 }
 
 useLayoutEffect(() => {
@@ -184,7 +194,13 @@ export function JournalFieldEditor({
   fieldDefinition,
   items,
   onItemsChange,
-}: JournalFieldEditorProps) {
+}: JournalFieldEditorProps) 
+{
+  const [
+    firstItemHeight,
+    setFirstItemHeight,
+  ] = useState(21)
+  
   const firstRowRef =
     useRef<HTMLDivElement | null>(
       null,
@@ -194,16 +210,6 @@ export function JournalFieldEditor({
     useRef<HTMLElement | null>(
       null,
     )
-
-  const measureRef =
-    useRef<HTMLSpanElement | null>(
-      null,
-    )
-
-  const [
-    isBlock,
-    setIsBlock,
-  ] = useState(false)
 
   const [
     focusedItemId,
@@ -249,72 +255,9 @@ export function JournalFieldEditor({
     displayItems[0]
 
   const remainingItems =
-    displayItems.slice(1)
+    displayItems.slice(1)  
 
-  const firstValue =
-    typeof firstItem.value ===
-    'string'
-      ? firstItem.value
-      : ''
-
-  function measureLayout() {
-    const row =
-      firstRowRef.current
-
-    const label =
-      labelRef.current
-
-    const measure =
-      measureRef.current
-
-    if (
-      !row ||
-      !label ||
-      !measure
-    ) {
-      return
-    }
-
-    const requiredWidth =
-      label.scrollWidth +
-      4 +
-      measure.scrollWidth
-
-    const nextIsBlock =
-      requiredWidth >
-      row.clientWidth
-
-    setIsBlock(
-      (current) =>
-        current === nextIsBlock
-          ? current
-          : nextIsBlock,
-    )
-  }
-
-  useLayoutEffect(() => {
-    measureLayout()
-  }, [firstValue])
-
-  useEffect(() => {
-    const row =
-      firstRowRef.current
-
-    if (!row) {
-      return
-    }
-
-    const observer =
-      new ResizeObserver(() => {
-        measureLayout()
-      })
-
-    observer.observe(row)
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+  const isBlock = firstItemHeight > 24;
 
   function changeItem(
     item: JournalFieldItem,
@@ -472,14 +415,20 @@ export function JournalFieldEditor({
   }
 
   function renderItem(
-    item: JournalFieldItem,
-    className = '',
-  ) {
+  item: JournalFieldItem,
+  className = '',
+  onHeightChange?: (
+    height: number,
+  ) => void,
+) {
     return (
       <ItemEditor
         key={item.id}
         item={item}
         className={className}
+        onHeightChange={
+            onHeightChange
+        }
         autoFocus={
           item.id ===
           focusedItemId
@@ -523,17 +472,10 @@ export function JournalFieldEditor({
         </strong>
 
         {renderItem(
-          firstItem,
-          'journal-field-first-item',
-        )}
-
-        <span
-          ref={measureRef}
-          className="journal-field-measure"
-          aria-hidden="true"
-        >
-          {firstValue || ' '}
-        </span>
+            firstItem,
+            'journal-field-first-item',
+            setFirstItemHeight,
+        )}      
       </div>
 
       {remainingItems.length > 0 && (
