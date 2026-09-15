@@ -1,3 +1,20 @@
+import {
+  useEffect,
+  useState,
+} from 'react'
+
+import type {
+  JournalEntry,
+} from '../models/JournalEntry'
+
+import {
+  entryRepository,
+} from '../entries/EntryRepository'
+
+import {
+  journalRepository,
+} from '../journals/JournalRepository'
+
 import type {
   Project,
 } from '../models/Project'
@@ -10,11 +27,38 @@ interface JournalWorkspaceProps {
   project: Project
   journal: Journal | null
 }
+interface JournalWorkspaceProps {
+  project: Project
+  journal: Journal | null
+
+  onJournalChange: (
+    journal: Journal,
+  ) => void
+}
 
 export function JournalWorkspace({
   project,
   journal,
-}: JournalWorkspaceProps) {
+  onJournalChange,
+}: JournalWorkspaceProps) 
+{
+const [
+  entries,
+  setEntries,
+] = useState<JournalEntry[]>([])
+
+const [
+  activeEntryId,
+  setActiveEntryId,
+] = useState<string | null>(null)
+
+const titleDefinition =
+  project.fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Title',
+  )
+
   const sections =
     [...project.sectionDefinitions]
       .sort(
@@ -22,6 +66,194 @@ export function JournalWorkspace({
           left.order -
           right.order,
       )
+
+function getEntryTitle(
+  entry: JournalEntry,
+): string {
+  if (!titleDefinition) {
+    return 'New Entry'
+  }
+
+  const value =
+    entry.fields[
+      titleDefinition.id
+    ]?.value
+
+  return typeof value === 'string' &&
+    value.trim()
+      ? value
+      : 'New Entry'
+}
+
+const activeEntry =
+  entries.find(
+    (entry) =>
+      entry.id === activeEntryId,
+  ) ?? null
+
+  useEffect(() => {
+  let cancelled = false
+
+  async function loadEntries() {
+    if (!journal) {
+      setEntries([])
+      setActiveEntryId(null)
+      return
+    }
+
+    const loaded =
+      await Promise.all(
+        journal.entryIds.map(
+          (entryId) =>
+            entryRepository
+              .loadEntry(entryId),
+        ),
+      )
+
+    if (cancelled) {
+      return
+    }
+
+    const validEntries =
+      loaded.filter(
+        (
+          entry,
+        ): entry is JournalEntry =>
+          entry !== null,
+      )
+
+    setEntries(validEntries)
+
+    setActiveEntryId(
+      (current) => {
+        if (
+          current &&
+          validEntries.some(
+            (entry) =>
+              entry.id === current,
+          )
+        ) {
+          return current
+        }
+
+        return validEntries[0]?.id ??
+          null
+      },
+    )
+  }
+
+  void loadEntries()
+
+  return () => {
+    cancelled = true
+  }
+}, [journal?.id])
+
+async function createEntry(
+  sectionDefinitionId: string,
+) {
+  if (
+    !journal ||
+    !titleDefinition
+  ) {
+    return
+  }
+
+  const now =
+    new Date().toISOString()
+
+  const entry: JournalEntry = {
+    id: crypto.randomUUID(),
+
+    sectionDefinitionId,
+
+    fields: {
+      [titleDefinition.id]: {
+        value: 'New Entry',
+      },
+    },
+
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  await entryRepository
+    .saveEntry(entry)
+
+  const updatedJournal: Journal = {
+    ...journal,
+
+    entryIds: [
+      ...journal.entryIds,
+      entry.id,
+    ],
+
+    updatedAt: now,
+  }
+
+  await journalRepository
+    .saveJournal(updatedJournal)
+
+  setEntries(
+    (current) => [
+      ...current,
+      entry,
+    ],
+  )
+
+  setActiveEntryId(
+    entry.id,
+  )
+
+  onJournalChange(
+    updatedJournal,
+  )
+}
+
+async function updateEntryTitle(
+  value: string,
+) {
+  if (
+    !activeEntry ||
+    !titleDefinition
+  ) {
+    return
+  }
+
+  const updatedEntry: JournalEntry = {
+    ...activeEntry,
+
+    fields: {
+      ...activeEntry.fields,
+
+      [titleDefinition.id]: {
+        ...activeEntry.fields[
+          titleDefinition.id
+        ],
+
+        value:
+          value || 'New Entry',
+      },
+    },
+
+    updatedAt:
+      new Date().toISOString(),
+  }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+}  
 
   return (
     <div className="journal-editor">
@@ -60,14 +292,58 @@ export function JournalWorkspace({
                     </span>
 
                     <button
-                      type="button"
-                      className="journal-toc-add"
-                      title={`Add entry to ${section.name}`}
-                      disabled={!journal}
-                    >
-                      +
+  type="button"
+  className="journal-toc-add"
+  title={`Add entry to ${section.name}`}
+  disabled={
+    !journal ||
+    !titleDefinition
+  }
+  onClick={() => {
+    void createEntry(
+      section.id,
+    )
+  }}
+>
+  +
                     </button>
                   </div>
+
+                  <div className="journal-toc-entries">
+  {entries
+    .filter(
+      (entry) =>
+        entry.sectionDefinitionId ===
+        section.id,
+    )
+    .sort(
+      (left, right) =>
+        getEntryTitle(left)
+          .localeCompare(
+            getEntryTitle(right),
+          ),
+    )
+    .map(
+      (entry) => (
+        <button
+          key={entry.id}
+          type="button"
+          className={
+            entry.id === activeEntryId
+              ? 'journal-toc-entry active'
+              : 'journal-toc-entry'
+          }
+          onClick={() => {
+            setActiveEntryId(
+              entry.id,
+            )
+          }}
+        >
+          {getEntryTitle(entry)}
+        </button>
+      ),
+    )}
+</div>
                 </div>
               ),
             )
@@ -131,7 +407,36 @@ export function JournalWorkspace({
           {journal ? (
             <div className="journal-book">
               <div className="journal-page journal-page-left">
-                <div className="journal-page-content" />
+                <div className="journal-page-content">
+  {activeEntry && (
+    <input
+      key={activeEntry.id}
+      className="journal-entry-title"
+      defaultValue={
+        getEntryTitle(
+          activeEntry,
+        )
+      }
+      onBlur={(event) => {
+        void updateEntryTitle(
+          event.currentTarget.value
+            .trim(),
+        )
+      }}
+      onKeyDown={(event) => {
+        if (
+          event.key === 'Enter'
+        ) {
+          event.preventDefault()
+
+          event.currentTarget
+            .blur()
+        }
+      }}
+      aria-label="Entry title"
+    />
+  )}
+</div>
 
                 <div className="journal-page-number">
                   1

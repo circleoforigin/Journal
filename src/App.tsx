@@ -1016,6 +1016,10 @@ async function deleteSelectedJournal(
     <JournalWorkspace
       project={activeProject}
       journal={activeJournal}
+
+      onJournalChange={
+        setActiveJournal
+      }
     />
   )}
 </main>

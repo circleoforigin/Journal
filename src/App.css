@@ -377,6 +377,48 @@
     1px solid #45474e;
 }
 
+.journal-toc-entries {
+  display: flex;
+  flex-direction: column;
+}
+
+.journal-toc-entry {
+  width: 100%;
+
+  min-height: 24px;
+
+  padding:
+    3px 16px
+    3px 24px;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+  color: #aaaaaa;
+
+  font: inherit;
+  font-size: 12px;
+
+  text-align: left;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.journal-toc-entry:hover {
+  background: #303136;
+  color: #ffffff;
+}
+
+.journal-toc-entry.active {
+  background: #393a40;
+  color: #ffffff;
+}
+
 /* =========================
    JOURNAL MAIN AREA
    ========================= */
@@ -522,6 +564,37 @@ height: calc(100% - 8px);
 
   inset:
     34px 38px 46px;
+}
+
+.journal-entry-title {
+  display: block;
+
+  width: 100%;
+
+  margin: 0;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+  color: #202020;
+
+  font: inherit;
+  font-size: 22px;
+  font-weight: 600;
+
+  text-align: center;
+
+  cursor: text;
+}
+
+.journal-entry-title:focus {
+  border: 0;
+  outline: 0;
+
+  background: transparent;
 }
 
 .journal-page-number {
