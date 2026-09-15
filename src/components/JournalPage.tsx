@@ -38,6 +38,10 @@ export function JournalPage({
       <div
         ref={contentRef}
         className="journal-page-content"
+        style={{
+            fontFamily,
+            fontSize,
+        }}
       >
         {page?.fragments.map(
           (fragment, index) => {
@@ -51,9 +55,17 @@ export function JournalPage({
                   className="journal-page-entry-title"
                   style={{
                     top:
-                      fragment.top,
+                        fragment.top,
                     height:
-                      fragment.height,
+                        fragment.height,
+                    fontSize:
+                        Math.round(
+                            fontSize * 1.55,
+                        ),
+                    lineHeight:
+                        `${Math.round(
+                            fontSize * 2.1,
+                            )}px`,
                   }}
                 >
                   {fragment.text}
@@ -113,11 +125,7 @@ export function JournalPage({
                 )}
 
                 <div
-                  className="journal-page-item-text"
-                  style={{
-                    fontFamily,
-                    fontSize,
-                  }}
+                    className="journal-page-item-text"
                 >
                   {fragment.text}
                 </div>

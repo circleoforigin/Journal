@@ -128,11 +128,16 @@ const paginationMetrics:
       pageHeight: 0,
       fontFamily,
       fontSize,
-      lineHeight: 21,
-      titleFontSize: 22,
-      titleLineHeight: 30,
-      fieldFontSize: 14,
-      fieldLineHeight: 21,
+      lineHeight:
+        Math.round(fontSize * 1.5),
+      titleFontSize:
+        Math.round(fontSize * 1.55),
+      titleLineHeight:
+        Math.round(fontSize * 2.1),
+      fieldFontSize:
+        fontSize,
+      fieldLineHeight:
+        Math.round(fontSize * 1.5),
       titleBottomGap: 28,
       fieldTopGap: 24,
       fieldBottomGap: 6,
