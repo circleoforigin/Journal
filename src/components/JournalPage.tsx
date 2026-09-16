@@ -159,16 +159,38 @@ export function JournalPage({
             return (
               <div
                 key={`item-${fragment.itemId}-${index}`}
-                className="journal-page-item-fragment"
+                className={
+  fragment.inline
+    ? 'journal-page-item-fragment inline'
+    : 'journal-page-item-fragment'
+}
                 style={{
-                  top:
-                    fragment.top,
-                  height:
-                    fragment.height,
-                }}
+  top:
+    fragment.top,
+  height:
+    fragment.height,
+  left:
+    fragment.left ??
+    0,
+  width:
+    fragment.width ??
+    '100%',
+}}
               >
                 {nodeVisible && (
-  <div className="journal-page-item-controls">
+  <div
+  className="journal-page-item-controls"
+  style={
+    fragment.inline
+      ? {
+          right: 'auto',
+          left:
+            -(fragment.left ?? 0) -
+            16,
+        }
+      : undefined
+  }
+>
     <button
       type="button"
       className="journal-page-item-move journal-page-item-move-up"

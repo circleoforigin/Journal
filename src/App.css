@@ -470,6 +470,35 @@
   gap: 3px;
 }
 
+.journal-format-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  color: #aaaaaa;
+
+  font: inherit;
+  font-size: 12px;
+
+  white-space: nowrap;
+}
+
+.journal-format-controls select {
+  height: 26px;
+
+  padding: 0 6px;
+
+  border:
+    1px solid #45474e;
+  border-radius: 3px;
+
+  background: #292a2e;
+  color: #dddddd;
+
+  font: inherit;
+  font-size: 12px;
+}
+
 .journal-format-controls button {
   width: 28px;
   height: 26px;
@@ -515,8 +544,14 @@
 
   min-width: 0;
   min-height: 0;
+
   box-sizing: border-box;
+
+  padding:
+    10px 20px;
+
   overflow: auto;
+
   background: #202225;
 }
 
@@ -524,19 +559,30 @@
   position: relative;
 
   display: grid;
+
   grid-template-columns:
     475px 475px;
 
   gap: 8px;
-  width: 975px;
-  height: 555px;  
-  justify-self: center;
+
+  width: 958px;
+  height: 555px;
+
+  margin:
+    0 auto;
 
   background: transparent;
 
   box-shadow:
     0 10px 30px
     rgba(0, 0, 0, 0.45);
+}
+
+.journal-book.single-page {
+  grid-template-columns:
+    475px;
+
+  width: 475px;
 }
 
 .journal-page {
@@ -558,7 +604,7 @@
   position: absolute;
 
   inset:
-    34px 38px 46px;
+    34px 38px 48px;
 }
 
 .journal-entry-title {
@@ -686,7 +732,6 @@
   display: block;
   width: fit-content;
   margin: 0 0 5px;
-  text-decoration: underline;
 }
 
 .journal-field-first-row.block
@@ -1004,7 +1049,6 @@
   color: #202020;
 
   font-weight: 700;
-  text-decoration: underline;
 }
 
 .journal-page-text-run {
@@ -1071,9 +1115,13 @@
 .journal-page-field-label,
 .journal-page-item-fragment {
   position: absolute;
+  box-sizing: border-box;
+}
+
+.journal-page-entry-title,
+.journal-page-field-label {
   left: 0;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .journal-page-entry-title {
@@ -1087,7 +1135,6 @@
 .journal-page-field-label {
   color: #202020;
   font-weight: 700;
-  text-decoration: underline;
   white-space: pre-wrap;
 }
 
@@ -1120,6 +1167,18 @@
   gap: 1px;
 
   z-index: 5;
+}
+
+.journal-page-item-fragment.inline
+.journal-page-item-controls {
+  right: auto;
+
+  left:
+    calc(
+      -1 *
+      var(--inline-item-left)
+      - 16px
+    );
 }
 
 .journal-page-item-controls

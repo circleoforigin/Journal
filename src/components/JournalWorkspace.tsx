@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useMemo,
   useState,
 } from 'react'
@@ -44,9 +45,19 @@ const [
 ] = useState<string | null>(null)
 
 const [
-  spreadIndex,
-  setSpreadIndex,
+  pageIndex,
+  setPageIndex,
 ] = useState(0)
+
+const [
+  singlePageMode,
+  setSinglePageMode,
+] = useState(false)
+
+const bookAreaRef =
+  useRef<HTMLDivElement | null>(
+    null,
+  )
 
 const [
   fontFamily,
@@ -131,8 +142,8 @@ const activeEntry =
     ],
   )
 
-const JOURNAL_TEXT_WIDTH = 500
-const JOURNAL_TEXT_HEIGHT = 664
+const JOURNAL_TEXT_WIDTH = 400
+const JOURNAL_TEXT_HEIGHT = 490
 
 const paginationMetrics:
   JournalPaginationMetrics =
@@ -177,17 +188,58 @@ const pagination =
   }, [
     journalDocument,
     paginationMetrics,
-  ])  
+  ])
 
   useEffect(() => {
-    setSpreadIndex(0)
-  }, [activeEntryId])
+  const element =
+    bookAreaRef.current
+
+  if (!element) {
+    return
+  }
+
+  const updatePageMode = () => {
+    /*
+     * Two 475px pages
+     * + 8px gutter
+     * + 20px breathing room
+     * on both sides.
+     */
+    const twoPageMinimumWidth =
+      475 +
+      8 +
+      475 +
+      40
+
+    setSinglePageMode(
+      element.clientWidth <
+        twoPageMinimumWidth,
+    )
+  }
+
+  updatePageMode()
+
+  const observer =
+    new ResizeObserver(
+      updatePageMode,
+    )
+
+  observer.observe(element)
+
+  return () => {
+    observer.disconnect()
+  }
+}, [])
+
+ useEffect(() => {
+  setPageIndex(0)
+}, [activeEntryId])
 
   const leftPageIndex =
-  spreadIndex * 2
+  pageIndex
 
 const rightPageIndex =
-  leftPageIndex + 1
+  pageIndex + 1
 
 const leftPage =
   pagination?.pages[
@@ -195,16 +247,24 @@ const leftPage =
   ] ?? null
 
 const rightPage =
-  pagination?.pages[
-    rightPageIndex
-  ] ?? null
+  !singlePageMode
+    ? pagination?.pages[
+        rightPageIndex
+      ] ?? null
+    : null
 
-  const hasPreviousSpread =
-  spreadIndex > 0
+const pageStep =
+  singlePageMode
+    ? 1
+    : 2
 
-const hasNextSpread =
+const hasPreviousPage =
+  pageIndex > 0
+
+const hasNextPage =
   pagination
-    ? leftPageIndex + 2 <
+    ? pageIndex +
+        pageStep <
       pagination.pages.length
     : false
 
@@ -1127,7 +1187,10 @@ const updatedItems =
 </div>
         </header>
 
-        <div className="journal-book-area">
+        <div
+  ref={bookAreaRef}
+  className="journal-book-area"
+>
             {editingItem && (
   <JournalItemEditor
     value={editingItem.value}
@@ -1151,21 +1214,27 @@ const updatedItems =
   />
 )}
           {journal ? (
-            <div className="journal-book">
+            <div
+  className={
+    singlePageMode
+      ? 'journal-book single-page'
+      : 'journal-book'
+  }
+>
                 <button
                     type="button"
                     className="journal-page-turn journal-page-turn-previous"
-                    disabled={!hasPreviousSpread}
+                    disabled={!hasPreviousPage}
                     aria-label="Previous pages"
                     onClick={() => {
-                        setSpreadIndex(
-                        (current) =>
-                            Math.max(
-                            0,
-                            current - 1,
-                            ),
-                        )
-                    }}
+  setPageIndex(
+    (current) =>
+      Math.max(
+        0,
+        current - pageStep,
+      ),
+  )
+}}
                     />
               <JournalPage
                 page={leftPage ?? undefined}
@@ -1180,6 +1249,7 @@ const updatedItems =
                 onAddItem={addItemToField}
               />
 
+            {!singlePageMode && (
               <JournalPage
                 page={rightPage ?? undefined}
                 pageNumber={rightPageIndex + 1}
@@ -1192,18 +1262,19 @@ const updatedItems =
                 onMoveItem={moveFieldItem}
                 onAddItem={addItemToField}
               />
+            )}
 
               <button
   type="button"
   className="journal-page-turn journal-page-turn-next"
-  disabled={!hasNextSpread}
+  disabled={!hasNextPage}
   aria-label="Next pages"
-  onClick={() => {
-    setSpreadIndex(
-      (current) =>
-        current + 1,
-    )
-  }}
+ onClick={() => {
+  setPageIndex(
+    (current) =>
+      current + pageStep,
+  )
+}}
 />
             </div>
           ) : (

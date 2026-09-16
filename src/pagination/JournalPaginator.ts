@@ -246,13 +246,58 @@ function measureBrowserLines(
       ]
 }
 
+function measureSingleLineWidth(
+  text: string,
+  fontFamily: string,
+  fontSize: number,
+  fontWeight = '400',
+): number {
+  const element =
+    document.createElement('span')
+
+  element.style.position =
+    'absolute'
+  element.style.visibility =
+    'hidden'
+  element.style.pointerEvents =
+    'none'
+  element.style.left =
+    '-100000px'
+  element.style.top =
+    '0'
+
+  element.style.whiteSpace =
+    'pre'
+
+  element.style.fontFamily =
+    fontFamily
+  element.style.fontSize =
+    `${fontSize}px`
+  element.style.fontWeight =
+    fontWeight
+
+  element.textContent =
+    text
+
+  document.body.appendChild(
+    element,
+  )
+
+  const width =
+    element.getBoundingClientRect()
+      .width
+
+  element.remove()
+
+  return width
+}
+
 export function paginateJournalDocument(
   journalDocument:
     JournalDocument,
   metrics:
     JournalPaginationMetrics,
-): JournalPaginationResult 
-{
+): JournalPaginationResult {
   const pages:
     JournalPageLayout[] = [
       createPage(0),
@@ -290,27 +335,30 @@ export function paginateJournalDocument(
   }
 
   const addSingleBlock = (
-  block:
-    Exclude<
+    block:
+      Exclude<
         JournalDocumentBlock,
-        { type: 'item' | 'addItem' }
-    >,
+        {
+          type:
+            | 'item'
+            | 'addItem'
+        }
+      >,
     fontSize: number,
     lineHeight: number,
     fontWeight: string,
     topGap: number,
     bottomGap: number,
   ) => {
-    
-
-    const lines = measureBrowserLines(
+    const lines =
+      measureBrowserLines(
         block.text,
         metrics.pageWidth,
         metrics.fontFamily,
         fontSize,
         lineHeight,
         fontWeight,
-    )
+      )
 
     const blockHeight =
       lines.length *
@@ -326,18 +374,18 @@ export function paginateJournalDocument(
       topGap
 
     const text =
-  lines
-    .map(
-      (line) =>
-        line.text +
-        (
-          line.endsParagraph
-            ? '\n'
-            : ''
-        ),
-    )
-    .join('')
-    .replace(/\n$/, '')
+      lines
+        .map(
+          (line) =>
+            line.text +
+            (
+              line.endsParagraph
+                ? '\n'
+                : ''
+            ),
+        )
+        .join('')
+        .replace(/\n$/, '')
 
     const fragment:
       JournalPageFragment = {
@@ -356,158 +404,267 @@ export function paginateJournalDocument(
       bottomGap
   }
 
- const addItemBlock = (
-  block:
-    Extract<
-      JournalDocumentBlock,
-      { type: 'item' }
-    >,
-) => {
-  const lines =
-    measureBrowserLines(
-      block.text,
-      metrics.pageWidth,
-      metrics.fontFamily,
-      metrics.fontSize,
-      metrics.lineHeight,
-      '400',
-      true,
-    )
-
-  let lineIndex = 0
-
-  while (
-    lineIndex < lines.length
-  ) {
-    const remainingHeight =
-      metrics.pageHeight -
-      usedHeight
-
-    const linesThatFit =
-      Math.floor(
-        remainingHeight /
-          metrics.lineHeight,
+  const addItemBlock = (
+    block:
+      Extract<
+        JournalDocumentBlock,
+        { type: 'item' }
+      >,
+  ) => {
+    const lines =
+      measureBrowserLines(
+        block.text,
+        metrics.pageWidth,
+        metrics.fontFamily,
+        metrics.fontSize,
+        metrics.lineHeight,
+        '400',
+        true,
       )
 
-    if (linesThatFit <= 0) {
-      startNextPage()
-      continue
-    }
+    let lineIndex = 0
 
-    const fragmentLines =
-      lines.slice(
-        lineIndex,
-        lineIndex +
-          linesThatFit,
-      )
-
-    const fragmentHeight =
-      fragmentLines.length *
-      metrics.lineHeight
-
-    const paragraphs:
-      {
-        text: string
-        indented: boolean
-      }[] = []
-
-    for (
-      const line
-      of fragmentLines
+    while (
+      lineIndex < lines.length
     ) {
-      const previous =
-        paragraphs[
-          paragraphs.length - 1
-        ]
+      const remainingHeight =
+        metrics.pageHeight -
+        usedHeight
 
-      /*
-       * Continue the same paragraph
-       * when this is merely another
-       * browser-wrapped physical line.
-       *
-       * We do NOT insert a newline
-       * between those lines.
-       */
+      const linesThatFit =
+        Math.floor(
+          remainingHeight /
+            metrics.lineHeight,
+        )
+
       if (
-        previous &&
-        !line.firstLineOfParagraph
+        linesThatFit <= 0
       ) {
-        previous.text +=
-          line.text
-      } else {
-        paragraphs.push({
-          text: line.text,
-          indented:
-            line.indented &&
-            line.firstLineOfParagraph,
-        })
+        startNextPage()
+        continue
+      }
+
+      const fragmentLines =
+        lines.slice(
+          lineIndex,
+          lineIndex +
+            linesThatFit,
+        )
+
+      const fragmentHeight =
+        fragmentLines.length *
+        metrics.lineHeight
+
+      const paragraphs:
+        {
+          text: string
+          indented: boolean
+        }[] = []
+
+      for (
+        const line
+        of fragmentLines
+      ) {
+        const previous =
+          paragraphs[
+            paragraphs.length - 1
+          ]
+
+        if (
+          previous &&
+          !line.firstLineOfParagraph
+        ) {
+          previous.text +=
+            line.text
+        } else {
+          paragraphs.push({
+            text: line.text,
+            indented:
+              line.indented &&
+              line.firstLineOfParagraph,
+          })
+        }
+      }
+
+      const fragmentText =
+        paragraphs
+          .map(
+            (paragraph) =>
+              paragraph.text,
+          )
+          .join('\n')
+
+      currentPage.fragments.push({
+        ...block,
+        text: fragmentText,
+        paragraphs,
+        top: usedHeight,
+        height:
+          fragmentHeight,
+      })
+
+      usedHeight +=
+        fragmentHeight
+
+      lineIndex +=
+        fragmentLines.length
+
+      if (
+        lineIndex <
+        lines.length
+      ) {
+        startNextPage()
       }
     }
 
-    const fragmentText =
-      paragraphs
-        .map(
-          (paragraph) =>
-            paragraph.text,
-        )
-        .join('\n')
+    usedHeight +=
+      metrics.itemBottomGap
+  }
+
+  const addInlineFieldAndItem = (
+    fieldBlock:
+      Extract<
+        JournalDocumentBlock,
+        { type: 'field' }
+      >,
+    itemBlock:
+      Extract<
+        JournalDocumentBlock,
+        { type: 'item' }
+      >,
+  ): boolean => {
+    /*
+     * Inline form is intentionally
+     * restricted to one stored
+     * paragraph with no semantic
+     * paragraph indent.
+     */
+    if (
+      itemBlock.text.includes(
+        '\n',
+      ) ||
+      itemBlock.text.startsWith(
+        '\t',
+      )
+    ) {
+      return false
+    }
+
+    const separator = ' - '
+
+    const fieldWidth =
+      measureSingleLineWidth(
+        fieldBlock.text +
+          separator,
+        metrics.fontFamily,
+        metrics.fieldFontSize,
+        '700',
+      )
+
+    const itemWidth =
+      measureSingleLineWidth(
+        itemBlock.text,
+        metrics.fontFamily,
+        metrics.fontSize,
+        '400',
+      )
+
+    if (
+      fieldWidth +
+        itemWidth >
+      metrics.pageWidth
+    ) {
+      return false
+    }
+
+    const rowHeight =
+      Math.max(
+        metrics.fieldLineHeight,
+        metrics.lineHeight,
+      )
+
+    ensureHeight(
+      metrics.fieldTopGap +
+        rowHeight +
+        metrics.itemBottomGap,
+    )
+
+    usedHeight +=
+      metrics.fieldTopGap
+
+    const rowTop =
+      usedHeight
 
     currentPage.fragments.push({
-      ...block,
-      text: fragmentText,
-      paragraphs,
-      top: usedHeight,
-      height: fragmentHeight,
+      ...fieldBlock,
+      text:
+        fieldBlock.text +
+        separator,
+      top: rowTop,
+      height: rowHeight,
+    })
+
+    currentPage.fragments.push({
+      ...itemBlock,
+      text: itemBlock.text,
+      paragraphs: [
+        {
+          text:
+            itemBlock.text,
+          indented: false,
+        },
+      ],
+      top: rowTop,
+      height: rowHeight,
+      left: fieldWidth,
+      width:
+        metrics.pageWidth -
+        fieldWidth,
+      inline: true,
     })
 
     usedHeight +=
-      fragmentHeight
+      rowHeight +
+      metrics.itemBottomGap
 
-    lineIndex +=
-      fragmentLines.length
-
-    if (
-      lineIndex < lines.length
-    ) {
-      startNextPage()
-    }
-  }
-
-  usedHeight +=
-    metrics.itemBottomGap
-
-      usedHeight +=
-    metrics.itemBottomGap
+    return true
   }
 
   const addItemTarget = (
-  block:
-    Extract<
-      JournalDocumentBlock,
-      { type: 'addItem' }
-    >,
-) => {
-  const targetHeight =
-    metrics.lineHeight / 2
+    block:
+      Extract<
+        JournalDocumentBlock,
+        { type: 'addItem' }
+      >,
+  ) => {
+    const targetHeight =
+      metrics.lineHeight / 2
 
-  ensureHeight(
-    targetHeight,
-  )
+    ensureHeight(
+      targetHeight,
+    )
 
-  currentPage.fragments.push({
-    ...block,
-    top: usedHeight,
-    height: targetHeight,
-  })
+    currentPage.fragments.push({
+      ...block,
+      top: usedHeight,
+      height: targetHeight,
+    })
 
-  usedHeight +=
-    targetHeight
-}
+    usedHeight +=
+      targetHeight
+  }
 
-  for (
-    const block
-    of journalDocument.blocks
+  let blockIndex = 0
+
+  while (
+    blockIndex <
+    journalDocument.blocks.length
   ) {
+    const block =
+      journalDocument.blocks[
+        blockIndex
+      ]
+
     switch (block.type) {
       case 'title':
         addSingleBlock(
@@ -518,9 +675,42 @@ export function paginateJournalDocument(
           0,
           metrics.titleBottomGap,
         )
+
+        blockIndex += 1
         break
 
-      case 'field':
+      case 'field': {
+        const nextBlock =
+          journalDocument.blocks[
+            blockIndex + 1
+          ]
+
+        const firstItem =
+          nextBlock?.type ===
+            'item' &&
+          nextBlock
+            .fieldDefinitionId ===
+            block
+              .fieldDefinitionId
+            ? nextBlock
+            : null
+
+        if (
+          firstItem &&
+          addInlineFieldAndItem(
+            block,
+            firstItem,
+          )
+        ) {
+          /*
+           * Both the Field label
+           * and its first Item were
+           * consumed together.
+           */
+          blockIndex += 2
+          break
+        }
+
         addSingleBlock(
           block,
           metrics.fieldFontSize,
@@ -529,18 +719,25 @@ export function paginateJournalDocument(
           metrics.fieldTopGap,
           metrics.fieldBottomGap,
         )
+
+        blockIndex += 1
         break
+      }
 
       case 'item':
         addItemBlock(
           block,
         )
+
+        blockIndex += 1
         break
 
       case 'addItem':
         addItemTarget(
-            block,
+          block,
         )
+
+        blockIndex += 1
         break
     }
   }

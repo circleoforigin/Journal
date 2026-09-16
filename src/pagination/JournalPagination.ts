@@ -37,6 +37,9 @@ export interface JournalPageItemFragment {
   paragraphs: JournalPageItemParagraph[]
   top: number
   height: number
+  left?: number
+  width?: number
+  inline?: boolean
 }
 
 export interface JournalPageAddItemFragment {
