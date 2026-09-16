@@ -208,6 +208,12 @@ function wrapText(
         endsParagraph: false,
       })
     }
+
+    if (lines.length > 0) {
+        lines[
+            lines.length - 1
+        ].endsParagraph = true
+}
   }
 
   return lines.length
