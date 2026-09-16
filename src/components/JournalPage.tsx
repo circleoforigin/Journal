@@ -14,6 +14,8 @@ interface JournalPageProps {
     RefObject<HTMLDivElement | null>
   fontFamily: string
   fontSize: number
+  titleFontSize: number
+  titleLineHeight: number
   showEditNode: (
     source: 'master' | 'user',
   ) => boolean
@@ -30,6 +32,8 @@ export function JournalPage({
   contentRef,
   fontFamily,
   fontSize,
+  titleFontSize,
+  titleLineHeight,
   showEditNode,
   onEditItem,
 }: JournalPageProps) {
@@ -46,32 +50,46 @@ export function JournalPage({
         {page?.fragments.map(
           (fragment, index) => {
             if (
-              fragment.type ===
-              'title'
-            ) {
-              return (
-                <div
-                  key={`title-${fragment.entryId}-${index}`}
-                  className="journal-page-entry-title"
-                  style={{
-                    top:
-                        fragment.top,
-                    height:
-                        fragment.height,
-                    fontSize:
-                        Math.round(
-                            fontSize * 1.55,
-                        ),
-                    lineHeight:
-                        `${Math.round(
-                            fontSize * 2.1,
-                            )}px`,
-                  }}
-                >
-                  {fragment.text}
-                </div>
-              )
-            }
+  fragment.type ===
+  'title'
+) {
+  const nodeVisible =
+    showEditNode(
+      fragment.source,
+    )
+
+  return (
+    <div
+      key={`title-${fragment.itemId}-${index}`}
+      className="journal-page-entry-title"
+      style={{
+        top:
+          fragment.top,
+        height:
+          fragment.height,
+        fontSize: titleFontSize,
+        lineHeight:`${titleLineHeight}px`,
+      }}
+    >
+      {nodeVisible && (
+        <button
+          type="button"
+          className="journal-page-item-node journal-page-title-node"
+          aria-label="Edit entry title"
+          onClick={() =>
+            onEditItem(
+              fragment.entryId,
+              fragment.fieldDefinitionId,
+              fragment.itemId,
+            )
+          }
+        />
+      )}
+
+      {fragment.text}
+    </div>
+  )
+}
 
             if (
               fragment.type ===

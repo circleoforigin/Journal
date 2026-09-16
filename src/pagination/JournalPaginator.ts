@@ -27,6 +27,7 @@ export interface JournalPaginationMetrics {
 
 interface WrappedLine {
   text: string
+  endsParagraph: boolean
 }
 
 function createPage(
@@ -97,6 +98,7 @@ function wrapText(
     if (!paragraph) {
       lines.push({
         text: '',
+        endsParagraph: true,
       })
 
       continue
@@ -126,8 +128,8 @@ function wrapText(
 
       if (currentLine) {
         lines.push({
-          text:
-            currentLine,
+          text: currentLine,
+          endsParagraph: false,
         })
 
         currentLine = ''
@@ -183,6 +185,7 @@ function wrapText(
         ) {
           lines.push({
             text: segment,
+            endsParagraph: false,
           })
 
           segment =
@@ -201,15 +204,18 @@ function wrapText(
       currentLine !== ''
     ) {
       lines.push({
-        text:
-          currentLine,
+        text: currentLine,
+        endsParagraph: false,
       })
     }
   }
 
   return lines.length
     ? lines
-    : [{ text: '' }]
+   : [{
+        text: '',
+        endsParagraph: true,
+    }]
 }
 
 export function paginateJournalDocument(
@@ -294,12 +300,18 @@ export function paginateJournalDocument(
       topGap
 
     const text =
-      lines
-        .map(
-          (line) =>
-            line.text,
-        )
-        .join('\n')
+  lines
+    .map(
+      (line) =>
+        line.text +
+        (
+          line.endsParagraph
+            ? '\n'
+            : ''
+        ),
+    )
+    .join('')
+    .replace(/\n$/, '')
 
     const fragment:
       JournalPageFragment = {
@@ -375,12 +387,18 @@ export function paginateJournalDocument(
       currentPage.fragments.push({
         ...block,
         text:
-          fragmentLines
-            .map(
-              (line) =>
-                line.text,
-            )
-            .join('\n'),
+  fragmentLines
+    .map(
+      (line) =>
+        line.text +
+        (
+          line.endsParagraph
+            ? '\n'
+            : ''
+        ),
+    )
+    .join('')
+    .replace(/\n$/, ''),
         top: usedHeight,
         height:
           fragmentHeight,

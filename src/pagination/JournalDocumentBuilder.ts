@@ -46,11 +46,19 @@ export function buildJournalDocument(
       titleItem?.value,
     ).trim() || 'New Entry'
 
-  blocks.push({
-    type: 'title',
-    entryId: entry.id,
-    text: titleText,
-  })
+  if (
+    titleDefinition &&
+    titleItem
+  ) {
+    blocks.push({
+        type: 'title',
+        entryId: entry.id,
+        fieldDefinitionId: titleDefinition.id,
+        itemId: titleItem.id,
+        source: titleItem.source,
+        text: titleText,
+    })
+  }
 
   const orderedFields =
     fieldDefinitions

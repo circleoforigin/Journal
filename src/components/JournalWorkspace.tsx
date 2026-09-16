@@ -59,6 +59,12 @@ const [
   setFontSize,
 ] = useState(14)
 
+const titleFontSize =
+  fontSize * 1.75
+
+const titleLineHeight =
+  titleFontSize * 1.25
+
 const [
   editingItem,
   setEditingItem,
@@ -141,15 +147,13 @@ const paginationMetrics:
       fontSize,
       lineHeight:
         Math.round(fontSize * 1.5),
-      titleFontSize:
-        Math.round(fontSize * 1.55),
-      titleLineHeight:
-        Math.round(fontSize * 2.1),
+      titleFontSize,
+      titleLineHeight,
       fieldFontSize:
         fontSize,
       fieldLineHeight:
         Math.round(fontSize * 1.5),
-      titleBottomGap: 28,
+      titleBottomGap: 4,
       fieldTopGap: 24,
       fieldBottomGap: 6,
       itemBottomGap: 6,
@@ -157,6 +161,8 @@ const paginationMetrics:
     [
         fontFamily,
         fontSize,
+        titleFontSize,
+        titleLineHeight,
     ],
   )
 
@@ -516,6 +522,49 @@ async function updateFieldItems(
     .saveEntry(updatedEntry)
 }
 
+async function removeFieldFromEntry(
+  fieldDefinitionId: string,
+) {
+  if (!activeEntry) {
+    return
+  }
+
+  const {
+    [fieldDefinitionId]:
+      removedField,
+    ...remainingFields
+  } = activeEntry.fields
+
+  if (!removedField) {
+    return
+  }
+
+  const updatedEntry:
+    JournalEntry = {
+    ...activeEntry,
+
+    fields:
+      remainingFields,
+
+    updatedAt:
+      new Date().toISOString(),
+  }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+}
+
 async function updateEntryTitle(
   value: string,
 ) {
@@ -673,22 +722,52 @@ async function confirmEditingItem() {
     return
   }
 
-  const now =
-    new Date().toISOString()
+  const isEmpty =
+  editingItem.value.trim()
+    .length === 0
+
+if (isEmpty) {
+  if (field.items.length === 1) {
+    await removeFieldFromEntry(
+      editingItem.fieldDefinitionId,
+    )
+
+    setEditingItem(null)
+    return
+  }
 
   const updatedItems =
-    field.items.map(
+    field.items.filter(
       (item) =>
-        item.id ===
-        editingItem.itemId
-          ? {
-              ...item,
-              value:
-                editingItem.value,
-              updatedAt: now,
-            }
-          : item,
+        item.id !==
+        editingItem.itemId,
     )
+
+  await updateFieldItems(
+    editingItem.fieldDefinitionId,
+    updatedItems,
+  )
+
+  setEditingItem(null)
+  return
+}
+
+const now =
+  new Date().toISOString()
+
+const updatedItems =
+  field.items.map(
+    (item) =>
+      item.id ===
+      editingItem.itemId
+        ? {
+            ...item,
+            value:
+              editingItem.value,
+            updatedAt: now,
+          }
+        : item,
+  )
 
   await updateFieldItems(
     editingItem.fieldDefinitionId,
@@ -948,6 +1027,8 @@ async function confirmEditingItem() {
                 pageNumber={leftPageIndex + 1}
                 fontFamily={fontFamily}
                 fontSize={fontSize}
+                titleFontSize={titleFontSize}
+                titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
               />
@@ -958,6 +1039,8 @@ async function confirmEditingItem() {
                 contentRef={pageContentRef}
                 fontFamily={fontFamily}
                 fontSize={fontSize}
+                titleFontSize={titleFontSize}
+                titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
               />

@@ -5,6 +5,9 @@ import type {
 export interface JournalDocumentTitleBlock {
   type: 'title'
   entryId: string
+  fieldDefinitionId: string
+  itemId: string
+  source: JournalFieldItemSource
   text: string
 }
 

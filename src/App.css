@@ -1065,7 +1065,6 @@ height: calc(100% - 8px);
   margin: 0 0 28px;
   color: #202020;
   font-weight: bold;
-  font-size: 120%;
   text-align: center;
 }
 
@@ -1109,6 +1108,7 @@ height: calc(100% - 8px);
   white-space: pre-wrap;
   overflow: hidden;
   box-sizing: border-box;
+  text-align: justify;
 }
 
 .journal-page-item-node {
