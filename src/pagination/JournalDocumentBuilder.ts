@@ -143,14 +143,18 @@ export function buildJournalDocument(
           item.source,
         text,
       })
+
+      blocks.push({
+  type: 'addItem',
+  entryId: entry.id,
+  fieldDefinitionId:
+    fieldDefinition.id,
+  afterItemId:
+    item.id,
+})
     }
 
-    blocks.push({
-        type: 'addItem',
-        entryId: entry.id,
-        fieldDefinitionId:
-            fieldDefinition.id,
-    })
+    
   }
 
   return {

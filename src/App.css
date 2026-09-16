@@ -1043,12 +1043,10 @@
 
 .journal-page-field-label {
   display: block;
-
   margin: 0 0 5px;
-
   color: #202020;
-
   font-weight: 700;
+  line-height: 1.5;
 }
 
 .journal-page-text-run {

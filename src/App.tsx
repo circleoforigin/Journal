@@ -192,19 +192,30 @@ const pendingProjectActionRef =
           const loadId =
             payload.loadId
 
+          const masterJournalId =
+            project.journalIds[0]
+
+          const masterJournal =
+            masterJournalId
+              ? await journalRepository
+                .loadJournal(
+                  masterJournalId,
+                )
+              : null
+
           void Promise.resolve()
-  .then(() => {
-    setActiveProject(
-      project,
-    )
+            .then(() => {
+              setActiveProject(
+                project,
+              )
 
-    setActiveJournal(
-      null,
-    )
+              setActiveJournal(
+                masterJournal,
+              )
 
-    setProjectDirty(
-      false,
-    )
+              setProjectDirty(
+                false,
+              )
 
               const loaded:
                 ProjectLoadedPayload = {
@@ -344,11 +355,26 @@ setProjectDirty(
     projectDirty,
   ])
 
- function loadProjectIntoWorkspace(
+async function loadProjectIntoWorkspace(
   project: Project,
 ) {
+  const masterJournalId =
+    project.journalIds[0]
+
+  const masterJournal =
+    masterJournalId
+      ? await journalRepository
+          .loadJournal(
+            masterJournalId,
+          )
+      : null
+
   setActiveProject(project)
-  setActiveJournal(null)
+
+  setActiveJournal(
+    masterJournal,
+  )
+
   setProjectDirty(false)
 }
 
@@ -472,6 +498,16 @@ async function createProject(
   const now =
     new Date().toISOString()
 
+  const masterJournal:
+    Journal = {
+    id: crypto.randomUUID(),
+    name: 'Master Journal',
+    ownerName: 'Master',
+    entryIds: [],
+    createdAt: now,
+    updatedAt: now,
+  }
+
   const project: Project = {
     id:
       crypto.randomUUID(),
@@ -479,27 +515,45 @@ async function createProject(
     name,
 
     fieldDefinitions: [
-    {
-      id: crypto.randomUUID(),
-      name: 'Title',
-      valueType: 'text',
-      order: 0,
-      isSystem: true,
-    },
+      {
+        id:
+          crypto.randomUUID(),
+        name: 'Title',
+        valueType: 'text',
+        order: 0,
+        isSystem: true,
+      },
     ],
+
     sectionDefinitions: [],
-    journalIds: [],
+
+    journalIds: [
+      masterJournal.id,
+    ],
 
     createdAt: now,
     updatedAt: now,
   }
 
-  await projectRepository
-    .saveProject(project)
+  await journalRepository
+    .saveJournal(
+      masterJournal,
+    )
 
-  loadProjectIntoWorkspace(
+  await projectRepository
+    .saveProject(
+      project,
+    )
+
+  setActiveProject(
     project,
   )
+
+  setActiveJournal(
+    masterJournal,
+  )
+
+  setProjectDirty(false)
 
   setIsNewProjectOpen(false)
 }
@@ -538,9 +592,9 @@ async function loadSelectedProject(
     return
   }
 
-  loadProjectIntoWorkspace(
-    project,
-  )
+ await loadProjectIntoWorkspace(
+  project,
+)
 
   setIsLoadProjectOpen(false)
 }

@@ -161,9 +161,9 @@ const paginationMetrics:
         fontSize,
       fieldLineHeight:
         Math.round(fontSize * 1.5),
-      titleBottomGap: 4,
-      fieldTopGap: 24,
-      fieldBottomGap: 6,
+      titleBottomGap: 20,
+      fieldTopGap: 0,
+      fieldBottomGap: 0,
       itemBottomGap: 6,
     }),
     [
@@ -662,6 +662,7 @@ function showEditNode(
 async function addItemToField(
   entryId: string,
   fieldDefinitionId: string,
+  afterItemId: string,
 ) {
   const entry =
     entries.find(
@@ -684,21 +685,45 @@ async function addItemToField(
       ? 'master'
       : 'user'
 
-  const authorityItems =
-    field.items.filter(
+  const anchorItem =
+    field.items.find(
       (item) =>
-        item.source === source,
+        item.id === afterItemId,
     )
 
-  const nextOrder =
-    authorityItems.length === 0
-      ? 0
-      : Math.max(
-          ...authorityItems.map(
-            (item) =>
-              item.order,
-          ),
-        ) + 1
+  if (!anchorItem) {
+    return
+  }
+
+  /*
+   * A Journal may only insert into
+   * its own authority group.
+   */
+  if (anchorItem.source !== source) {
+    return
+  }
+
+  const authorityItems =
+    field.items
+      .filter(
+        (item) =>
+          item.source === source,
+      )
+      .sort(
+        (left, right) =>
+          left.order -
+          right.order,
+      )
+
+  const anchorIndex =
+    authorityItems.findIndex(
+      (item) =>
+        item.id === afterItemId,
+    )
+
+  if (anchorIndex < 0) {
+    return
+  }
 
   const now =
     new Date().toISOString()
@@ -706,7 +731,7 @@ async function addItemToField(
   const newItem:
     JournalFieldItem = {
     id: crypto.randomUUID(),
-    order: nextOrder,
+    order: anchorIndex + 1,
     value:
       'Add your thoughts here...',
     source,
@@ -714,12 +739,55 @@ async function addItemToField(
     updatedAt: now,
   }
 
+  const reorderedAuthorityItems = [
+    ...authorityItems.slice(
+      0,
+      anchorIndex + 1,
+    ),
+    newItem,
+    ...authorityItems.slice(
+      anchorIndex + 1,
+    ),
+  ].map(
+    (item, index) => ({
+      ...item,
+      order: index,
+      updatedAt:
+        item.id === newItem.id
+          ? item.updatedAt
+          : now,
+    }),
+  )
+
+  const reorderedById =
+    new Map(
+      reorderedAuthorityItems.map(
+        (item) => [
+          item.id,
+          item,
+        ],
+      ),
+    )
+
+  const updatedItems =
+    field.items
+      .filter(
+        (item) =>
+          item.source !== source,
+      )
+      .concat(
+        reorderedAuthorityItems,
+      )
+      .map(
+        (item) =>
+          reorderedById.get(
+            item.id,
+          ) ?? item,
+      )
+
   await updateFieldItems(
     fieldDefinitionId,
-    [
-      ...field.items,
-      newItem,
-    ],
+    updatedItems,
   )
 
   setEditingItem({

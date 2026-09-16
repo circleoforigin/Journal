@@ -22,6 +22,7 @@ interface JournalPageProps {
   onAddItem: (
     entryId: string,
     fieldDefinitionId: string,
+    afterItemId: string,
   ) => void
   onEditItem: (
     entryId: string,
@@ -143,6 +144,7 @@ export function JournalPage({
         onAddItem(
           fragment.entryId,
           fragment.fieldDefinitionId,
+          fragment.afterItemId,
         )
       }
     >
@@ -183,10 +185,12 @@ export function JournalPage({
   style={
     fragment.inline
       ? {
-          right: 'auto',
-          left:
-            -(fragment.left ?? 0) -
-            16,
+          left: 'auto',
+          right:
+            `calc(100% + ${
+              (fragment.left ?? 0) +
+              8
+            }px)`,
         }
       : undefined
   }

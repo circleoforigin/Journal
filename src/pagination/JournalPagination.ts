@@ -46,6 +46,7 @@ export interface JournalPageAddItemFragment {
   type: 'addItem'
   entryId: string
   fieldDefinitionId: string
+  afterItemId: string
   top: number
   height: number
 }

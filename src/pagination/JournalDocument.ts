@@ -31,6 +31,7 @@ export interface JournalDocumentAddItemBlock {
   type: 'addItem'
   entryId: string
   fieldDefinitionId: string
+  afterItemId: string
 }
 
 export type JournalDocumentBlock =
