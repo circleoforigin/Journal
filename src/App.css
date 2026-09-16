@@ -1193,6 +1193,60 @@ height: calc(100% - 8px);
   cursor: pointer;
 }
 
+.journal-page-add-item {
+  position: absolute;
+
+  left: 0;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 0;
+
+  border: 1px solid transparent;
+
+  background: transparent;
+  color: transparent;
+
+  font: inherit;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    border-color 80ms ease;
+}
+
+.journal-page-add-item span {
+  opacity: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  color: #777066;
+
+  font-size: 12px;
+  line-height: 1;
+
+  transition:
+    opacity 80ms ease;
+}
+
+.journal-page-add-item:hover,
+.journal-page-add-item:focus-visible {
+  border-color: #777066;
+}
+
+.journal-page-add-item:hover span,
+.journal-page-add-item:focus-visible span {
+  opacity: 1;
+}
+
 .journal-item-editor {
   position: absolute;
   left: 50%;
