@@ -1,7 +1,6 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react'
 
@@ -75,11 +74,6 @@ const [
   value: string
 } | null>(null)
 
-const pageContentRef =
-  useRef<HTMLDivElement | null>(
-    null,
-  )
-
 const titleDefinition =
   project.fieldDefinitions.find(
     (field) =>
@@ -137,12 +131,15 @@ const activeEntry =
     ],
   )
 
+const JOURNAL_TEXT_WIDTH = 500
+const JOURNAL_TEXT_HEIGHT = 664
+
 const paginationMetrics:
   JournalPaginationMetrics =
   useMemo(
     () => ({
-      pageWidth: 0,
-      pageHeight: 0,
+      pageWidth: JOURNAL_TEXT_WIDTH,
+      pageHeight: JOURNAL_TEXT_HEIGHT,
       fontFamily,
       fontSize,
       lineHeight:
@@ -166,70 +163,21 @@ const paginationMetrics:
     ],
   )
 
-const [pageSize, setPageSize] =
-  useState({
-    width: 0,
-    height: 0,
-  })
 
 const pagination =
   useMemo(() => {
-    if (
-      !journalDocument ||
-      pageSize.width <= 0 ||
-      pageSize.height <= 0
-    ) {
+    if (!journalDocument) {
       return null
     }
 
     return paginateJournalDocument(
       journalDocument,
-      {
-        ...paginationMetrics,
-        pageWidth:
-          pageSize.width,
-        pageHeight:
-          pageSize.height,
-      },
+      paginationMetrics,
     )
   }, [
     journalDocument,
-    pageSize,
     paginationMetrics,
-  ])
-
-  useEffect(() => {
-  const element =
-    pageContentRef.current
-
-  if (!element) {
-    return
-  }
-
-  const updateSize = () => {
-    setPageSize({
-      width:
-        element.clientWidth,
-      height:
-        element.clientHeight,
-    })
-  }
-
-  updateSize()
-
-  const observer =
-    new ResizeObserver(
-      updateSize,
-    )
-
-  observer.observe(element)
-
-  return () => {
-    observer.disconnect()
-  }
-}, [
-  activeEntry?.id,
-])
+  ])  
 
   useEffect(() => {
     setSpreadIndex(0)
@@ -1235,7 +1183,6 @@ const updatedItems =
               <JournalPage
                 page={rightPage ?? undefined}
                 pageNumber={rightPageIndex + 1}
-                contentRef={pageContentRef}
                 fontFamily={fontFamily}
                 fontSize={fontSize}
                 titleFontSize={titleFontSize}
