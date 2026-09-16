@@ -22,6 +22,11 @@ export interface JournalPageFieldFragment {
   height: number
 }
 
+export interface JournalPageItemParagraph {
+  text: string
+  indented: boolean
+}
+
 export interface JournalPageItemFragment {
   type: 'item'
   entryId: string
@@ -29,6 +34,7 @@ export interface JournalPageItemFragment {
   itemId: string
   source: JournalFieldItemSource
   text: string
+  paragraphs: JournalPageItemParagraph[]
   top: number
   height: number
 }

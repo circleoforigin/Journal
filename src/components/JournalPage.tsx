@@ -143,10 +143,30 @@ export function JournalPage({
                 )}
 
                 <div
-                    className="journal-page-item-text"
-                >
-                  {fragment.text}
-                </div>
+  className="journal-page-item-text"
+>
+  {fragment.paragraphs.map(
+    (
+      paragraph,
+      paragraphIndex,
+    ) => (
+      <div
+        key={paragraphIndex}
+        style={{
+          margin: 0,
+          padding: 0,
+          textIndent:
+            paragraph.indented
+              ? '2em'
+              : 0,
+        }}
+      >
+        {paragraph.text ||
+          '\u00a0'}
+      </div>
+    ),
+  )}
+</div>
               </div>
             )
           },
