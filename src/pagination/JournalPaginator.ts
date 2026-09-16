@@ -25,11 +25,6 @@ export interface JournalPaginationMetrics {
   itemBottomGap: number
 }
 
-interface WrappedLine {
-  text: string
-  endsParagraph: boolean
-}
-
 function createPage(
   pageIndex: number,
 ): JournalPageLayout {
@@ -39,189 +34,153 @@ function createPage(
   }
 }
 
-function createContext():
-  CanvasRenderingContext2D {
-  const canvas =
-    document.createElement('canvas')
-
-  const context =
-    canvas.getContext('2d')
-
-  if (!context) {
-    throw new Error(
-      'Unable to create Journal text measurement context.',
-    )
-  }
-
-  return context
+interface MeasuredLine {
+  text: string
+  endsParagraph: boolean
 }
 
-function setFont(
-  context:
-    CanvasRenderingContext2D,
+function measureBrowserLines(
+  text: string,
+  width: number,
   fontFamily: string,
   fontSize: number,
+  lineHeight: number,
   fontWeight = '400',
-): void {
-  context.font =
-    `${fontWeight} ${fontSize}px ${fontFamily}`
-}
+  justify = false,
+): MeasuredLine[] {
+  const container =
+    document.createElement('div')
 
-function wrapText(
-  context:
-    CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-): WrappedLine[] {
-  const paragraphs =
-    text.split('\n')
+  container.style.position =
+    'absolute'
+  container.style.visibility =
+    'hidden'
+  container.style.pointerEvents =
+    'none'
+  container.style.left =
+    '-100000px'
+  container.style.top =
+    '0'
 
-  const lines:
-    WrappedLine[] = []
+  container.style.width =
+    `${width}px`
 
-  const tabText = '    '
+  container.style.fontFamily =
+    fontFamily
+  container.style.fontSize =
+    `${fontSize}px`
+  container.style.lineHeight =
+    `${lineHeight}px`
+  container.style.fontWeight =
+    fontWeight
 
-  for (
-    let paragraphIndex = 0;
-    paragraphIndex <
-    paragraphs.length;
-    paragraphIndex += 1
-  ) {
-    const paragraph =
-      paragraphs[
-        paragraphIndex
-      ].replace(
-        /\t/g,
-        tabText,
-      )
+  container.style.whiteSpace =
+    'pre-wrap'
+  container.style.overflowWrap =
+    'break-word'
+  container.style.tabSize =
+    '4'
 
-    if (!paragraph) {
-      lines.push({
-        text: '',
-        endsParagraph: true,
-      })
-
-      continue
-    }
-
-    const tokens =
-      paragraph.match(
-        /[ ]+|[^ ]+/g,
-      ) ?? []
-
-    let currentLine = ''
-
-    for (const token of tokens) {
-      const candidate =
-        currentLine + token
-
-      if (
-        context.measureText(
-          candidate,
-        ).width <= maxWidth
-      ) {
-        currentLine =
-          candidate
-
-        continue
-      }
-
-      if (currentLine) {
-        lines.push({
-          text: currentLine,
-          endsParagraph: false,
-        })
-
-        currentLine = ''
-      }
-
-      /*
-       * If the token is only
-       * whitespace, preserve it
-       * at the beginning of the
-       * next physical line.
-       */
-      if (/^ +$/.test(token)) {
-        currentLine =
-          token
-
-        continue
-      }
-
-      /*
-       * Normal word that fits by
-       * itself starts the next
-       * physical line.
-       */
-      if (
-        context.measureText(
-          token,
-        ).width <= maxWidth
-      ) {
-        currentLine =
-          token
-
-        continue
-      }
-
-      /*
-       * Extremely long unbroken
-       * text is split character
-       * by character so it cannot
-       * overflow the page.
-       */
-      let segment = ''
-
-      for (const character of token) {
-        const segmentCandidate =
-          segment +
-          character
-
-        if (
-          segment &&
-          context.measureText(
-            segmentCandidate,
-          ).width > maxWidth
-        ) {
-          lines.push({
-            text: segment,
-            endsParagraph: false,
-          })
-
-          segment =
-            character
-        } else {
-          segment =
-            segmentCandidate
-        }
-      }
-
-      currentLine =
-        segment
-    }
-
-    if (
-      currentLine !== ''
-    ) {
-      lines.push({
-        text: currentLine,
-        endsParagraph: false,
-      })
-    }
-
-    if (lines.length > 0) {
-        lines[
-            lines.length - 1
-        ].endsParagraph = true
-}
+  if (justify) {
+    container.style.textAlign =
+      'justify'
   }
 
-  return lines.length
-    ? lines
-   : [{
-        text: '',
-        endsParagraph: true,
-    }]
+  const textNode =
+    document.createTextNode(text)
+
+  container.appendChild(textNode)
+  document.body.appendChild(container)
+
+  const lines: MeasuredLine[] = []
+
+  let lineStart = 0
+  let previousTop:
+    number | null = null
+
+  for (
+    let index = 0;
+    index < text.length;
+    index += 1
+  ) {
+    const range =
+      document.createRange()
+
+    range.setStart(
+      textNode,
+      index,
+    )
+
+    range.setEnd(
+      textNode,
+      index + 1,
+    )
+
+    const rect =
+      range.getBoundingClientRect()
+
+    const currentTop =
+      Math.round(rect.top)
+
+    if (
+      previousTop !== null &&
+      currentTop !== previousTop
+    ) {
+      const lineText =
+        text.slice(
+          lineStart,
+          index,
+        )
+
+      lines.push({
+        text:
+          lineText.replace(
+            /\n$/,
+            '',
+          ),
+        endsParagraph:
+          lineText.endsWith(
+            '\n',
+          ),
+      })
+
+      lineStart =
+        index
+    }
+
+    previousTop =
+      currentTop
+  }
+
+  if (
+    lineStart < text.length
+  ) {
+    const lineText =
+      text.slice(lineStart)
+
+    lines.push({
+      text:
+        lineText.replace(
+          /\n$/,
+          '',
+        ),
+      endsParagraph:
+        lineText.endsWith(
+          '\n',
+        ),
+    })
+  }
+
+  if (lines.length === 0) {
+    lines.push({
+      text: '',
+      endsParagraph: true,
+    })
+  }
+
+  container.remove()
+
+  return lines
 }
 
 export function paginateJournalDocument(
@@ -229,10 +188,8 @@ export function paginateJournalDocument(
     JournalDocument,
   metrics:
     JournalPaginationMetrics,
-): JournalPaginationResult {
-  const context =
-    createContext()
-
+): JournalPaginationResult 
+{
   const pages:
     JournalPageLayout[] = [
       createPage(0),
@@ -278,19 +235,16 @@ export function paginateJournalDocument(
     topGap: number,
     bottomGap: number,
   ) => {
-    setFont(
-      context,
-      metrics.fontFamily,
-      fontSize,
-      fontWeight,
-    )
+    
 
-    const lines =
-      wrapText(
-        context,
+    const lines = measureBrowserLines(
         block.text,
         metrics.pageWidth,
-      )
+        metrics.fontFamily,
+        fontSize,
+        lineHeight,
+        fontWeight,
+    )
 
     const blockHeight =
       lines.length *
@@ -342,19 +296,17 @@ export function paginateJournalDocument(
         JournalDocumentBlock,
         { type: 'item' }
       >,
-  ) => {
-    setFont(
-      context,
-      metrics.fontFamily,
-      metrics.fontSize,
-    )
+  ) => {   
 
-    const lines =
-      wrapText(
-        context,
+    const lines = measureBrowserLines(
         block.text,
         metrics.pageWidth,
-      )
+        metrics.fontFamily,
+        metrics.fontSize,
+        metrics.lineHeight,
+        '400',
+        true,
+    )
 
     let lineIndex = 0
 

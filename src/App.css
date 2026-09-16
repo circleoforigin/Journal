@@ -1109,6 +1109,7 @@ height: calc(100% - 8px);
   overflow: hidden;
   box-sizing: border-box;
   text-align: justify;
+  tab-size: 4;
 }
 
 .journal-page-item-node {
