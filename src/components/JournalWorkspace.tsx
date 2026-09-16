@@ -12,6 +12,7 @@ import { journalRepository } from '../journals/JournalRepository'
 import type { Project } from '../models/Project'
 import type { Journal } from '../models/Journal'
 import { JournalPage } from './JournalPage'
+import { JournalItemEditor } from './JournalItemEditor'
 import { buildJournalDocument } from '../pagination/JournalDocumentBuilder'
 import {
   paginateJournalDocument,
@@ -57,6 +58,16 @@ const [
   fontSize,
   setFontSize,
 ] = useState(14)
+
+const [
+  editingItem,
+  setEditingItem,
+] = useState<{
+  entryId: string
+  fieldDefinitionId: string
+  itemId: string
+  value: string
+} | null>(null)
 
 const pageContentRef =
   useRef<HTMLDivElement | null>(
@@ -434,7 +445,20 @@ async function addFieldToEntry(
 
       [fieldDefinition.id]: {
         items: [],
-        },
+        },[fieldDefinition.id]: {
+  items: [
+    {
+      id: crypto.randomUUID(),
+      order: 0,
+      value: 'Add your thoughts here...',
+      source: 'master',
+      createdAt:
+        new Date().toISOString(),
+      updatedAt:
+        new Date().toISOString(),
+    },
+  ],
+},
     },
 
     updatedAt:
@@ -585,14 +609,36 @@ function handleEditItem(
   fieldDefinitionId: string,
   itemId: string,
 ) {
-  console.log(
-    'Edit Journal Item',
-    {
-      entryId,
-      fieldDefinitionId,
-      itemId,
-    },
-  )
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id === entryId,
+    )
+
+  const item =
+    entry?.fields[
+      fieldDefinitionId
+    ]?.items.find(
+      (candidate) =>
+        candidate.id === itemId,
+    )
+
+  if (!entry || !item) {
+    return
+  }
+
+  setEditingItem({
+    entryId,
+    fieldDefinitionId,
+    itemId,
+
+    value:
+      typeof item.value === 'string'
+        ? item.value
+        : String(
+            item.value ?? '',
+          ),
+  })
 }
 
   return (
@@ -801,6 +847,25 @@ function handleEditItem(
         </header>
 
         <div className="journal-book-area">
+            {editingItem && (
+  <JournalItemEditor
+    value={editingItem.value}
+    onChange={(value) => {
+      setEditingItem(
+        (current) =>
+          current
+            ? {
+                ...current,
+                value,
+              }
+            : null,
+      )
+    }}
+    onClose={() => {
+      setEditingItem(null)
+    }}
+  />
+)}
           {journal ? (
             <div className="journal-book">
                 <button

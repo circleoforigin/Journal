@@ -510,7 +510,7 @@
 
 .journal-book-area {
   flex: 1;
-
+  position: relative;
   min-width: 0;
   min-height: 0;
 
@@ -1061,15 +1061,11 @@ height: calc(100% - 8px);
 
 .journal-page-entry-title {
   display: block;
-
   width: 100%;
-
   margin: 0 0 28px;
-
   color: #202020;
   font-weight: bold;
   font-size: 120%;
-
   text-align: center;
 }
 
@@ -1126,4 +1122,48 @@ height: calc(100% - 8px);
   background: transparent;
   transform: translateY(-50%);
   cursor: pointer;
+}
+
+.journal-item-editor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 420px;
+  height: 240px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  background: #f7f7f7;
+  border: 1px solid #777;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 20;
+}
+
+.journal-item-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-bottom: 1px solid #aaa;
+}
+
+.journal-item-editor-toolbar button {
+  min-width: 28px;
+  height: 28px;
+}
+
+.journal-item-editor-close {
+  margin-left: auto;
+}
+
+.journal-item-editor-input {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  padding: 10px;
+  border: 0;
+  outline: 0;
+  background: #fff;
+  font: inherit;
+  overflow: auto;
 }
