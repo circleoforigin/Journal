@@ -84,31 +84,31 @@ export function JournalItemEditor({
     )
   }}
   onKeyDown={(event) => {
-    if (event.key !== 'Enter') {
+    if (event.key !== 'Tab') {
       return
     }
 
     event.preventDefault()
 
-    const textarea = event.currentTarget
+    const textarea =
+      event.currentTarget
 
-    const start = textarea.selectionStart
+    const start =
+      textarea.selectionStart
 
-    const end = textarea.selectionEnd    
-
-    const insertion = '\n\t'
+    const end =
+      textarea.selectionEnd
 
     const nextValue =
       value.slice(0, start) +
-      insertion +
+      '\t' +
       value.slice(end)
 
     onChange(nextValue)
 
     requestAnimationFrame(() => {
       const position =
-        start +
-        insertion.length
+        start + 1
 
       textarea.setSelectionRange(
         position,
