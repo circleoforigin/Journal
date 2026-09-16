@@ -39,6 +39,8 @@ interface MeasuredLine {
   endsParagraph: boolean
 }
 
+const PARAGRAPH_INDENT_EM = 2
+
 function measureBrowserLines(
   text: string,
   width: number,
@@ -86,11 +88,36 @@ function measureBrowserLines(
       'justify'
   }
 
-  const textNode =
-    document.createTextNode(text)
+  const paragraphs =
+  text.split('\n')
 
-  container.appendChild(textNode)
-  document.body.appendChild(container)
+const measurementText =
+  paragraphs
+    .map((paragraph) =>
+      paragraph.startsWith('\t')
+        ? paragraph.slice(1)
+        : paragraph,
+    )
+    .join('\n')
+
+const hasLeadingIndent =
+  paragraphs.some(
+    (paragraph) =>
+      paragraph.startsWith('\t'),
+  )
+
+if (hasLeadingIndent) {
+  container.style.textIndent =
+    `${PARAGRAPH_INDENT_EM}em`
+}
+
+const textNode =
+  document.createTextNode(
+    measurementText,
+  )
+
+container.appendChild(textNode)
+document.body.appendChild(container)
 
   const lines: MeasuredLine[] = []
 
@@ -100,7 +127,7 @@ function measureBrowserLines(
 
   for (
     let index = 0;
-    index < text.length;
+    index < measurementText.length;
     index += 1
   ) {
     const range =
@@ -127,7 +154,7 @@ function measureBrowserLines(
       currentTop !== previousTop
     ) {
       const lineText =
-        text.slice(
+        measurementText.slice(
           lineStart,
           index,
         )
@@ -153,10 +180,10 @@ function measureBrowserLines(
   }
 
   if (
-    lineStart < text.length
+    lineStart < measurementText.length
   ) {
     const lineText =
-      text.slice(lineStart)
+      measurementText.slice(lineStart)
 
     lines.push({
       text:
