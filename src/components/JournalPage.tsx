@@ -19,10 +19,14 @@ interface JournalPageProps {
   showEditNode: (
     source: 'master' | 'user',
   ) => boolean
- onEditItem: (
-  entryId: string,
-  fieldDefinitionId: string,
-  itemId: string,
+  onAddItem: (
+    entryId: string,
+    fieldDefinitionId: string,
+  ) => void
+  onEditItem: (
+    entryId: string,
+    fieldDefinitionId: string,
+    itemId: string,
 ) => void
 
 onMoveItem: (
@@ -42,6 +46,7 @@ export function JournalPage({
   titleFontSize,
   titleLineHeight,
   showEditNode,
+  onAddItem,
   onEditItem,
   onMoveItem,
 }: JournalPageProps) {
@@ -80,6 +85,89 @@ export function JournalPage({
       }}
     >
       {nodeVisible && (
+  <button
+    type="button"
+    className="journal-page-item-node journal-page-title-node"
+    aria-label="Edit entry title"
+    onClick={() =>
+      onEditItem(
+        fragment.entryId,
+        fragment.fieldDefinitionId,
+        fragment.itemId,
+      )
+    }
+  />
+)}
+      {fragment.text}
+    </div>
+  )
+}
+
+            if (
+              fragment.type ===
+              'field'
+            ) {
+              return (
+                <div
+                  key={`field-${fragment.fieldDefinitionId}-${index}`}
+                  className="journal-page-field-label"
+                  style={{
+                    top:
+                      fragment.top,
+                    height:
+                      fragment.height,
+                  }}
+                >
+                  {fragment.text}
+                </div>
+              )
+            }
+
+            if (
+  fragment.type ===
+  'addItem'
+) {
+  return (
+    <button
+      key={`add-item-${fragment.fieldDefinitionId}-${index}`}
+      type="button"
+      className="journal-page-add-item"
+      style={{
+        top:
+          fragment.top,
+        height:
+          fragment.height,
+      }}
+      aria-label="Add field item"
+      onClick={() =>
+        onAddItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+        )
+      }
+    >
+      <span>+</span>
+    </button>
+  )
+}
+
+            const nodeVisible =
+              showEditNode(
+                fragment.source,
+              )
+
+            return (
+              <div
+                key={`item-${fragment.itemId}-${index}`}
+                className="journal-page-item-fragment"
+                style={{
+                  top:
+                    fragment.top,
+                  height:
+                    fragment.height,
+                }}
+              >
+                {nodeVisible && (
   <div className="journal-page-item-controls">
     <button
       type="button"
@@ -127,62 +215,6 @@ export function JournalPage({
     </button>
   </div>
 )}
-
-      {fragment.text}
-    </div>
-  )
-}
-
-            if (
-              fragment.type ===
-              'field'
-            ) {
-              return (
-                <div
-                  key={`field-${fragment.fieldDefinitionId}-${index}`}
-                  className="journal-page-field-label"
-                  style={{
-                    top:
-                      fragment.top,
-                    height:
-                      fragment.height,
-                  }}
-                >
-                  {fragment.text}
-                </div>
-              )
-            }
-
-            const nodeVisible =
-              showEditNode(
-                fragment.source,
-              )
-
-            return (
-              <div
-                key={`item-${fragment.itemId}-${index}`}
-                className="journal-page-item-fragment"
-                style={{
-                  top:
-                    fragment.top,
-                  height:
-                    fragment.height,
-                }}
-              >
-                {nodeVisible && (
-                  <button
-                    type="button"
-                    className="journal-page-item-node"
-                    aria-label="Edit field item"
-                    onClick={() =>
-                      onEditItem(
-                        fragment.entryId,
-                        fragment.fieldDefinitionId,
-                        fragment.itemId,
-                      )
-                    }
-                  />
-                )}
 
                 <div
   className="journal-page-item-text"

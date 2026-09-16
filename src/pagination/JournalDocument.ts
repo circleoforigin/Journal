@@ -27,10 +27,17 @@ export interface JournalDocumentItemBlock {
   text: string
 }
 
+export interface JournalDocumentAddItemBlock {
+  type: 'addItem'
+  entryId: string
+  fieldDefinitionId: string
+}
+
 export type JournalDocumentBlock =
   | JournalDocumentTitleBlock
   | JournalDocumentFieldBlock
   | JournalDocumentItemBlock
+  | JournalDocumentAddItemBlock
 
 export interface JournalDocument {
   entryId: string

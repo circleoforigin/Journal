@@ -144,6 +144,13 @@ export function buildJournalDocument(
         text,
       })
     }
+
+    blocks.push({
+        type: 'addItem',
+        entryId: entry.id,
+        fieldDefinitionId:
+            fieldDefinition.id,
+    })
   }
 
   return {

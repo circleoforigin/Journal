@@ -651,6 +651,78 @@ function showEditNode(
   return source === 'user'
 }
 
+async function addItemToField(
+  entryId: string,
+  fieldDefinitionId: string,
+) {
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id === entryId,
+    )
+
+  const field =
+    entry?.fields[
+      fieldDefinitionId
+    ]
+
+  if (!entry || !field) {
+    return
+  }
+
+  const source:
+    JournalFieldItem['source'] =
+    journal?.ownerName === 'Master'
+      ? 'master'
+      : 'user'
+
+  const authorityItems =
+    field.items.filter(
+      (item) =>
+        item.source === source,
+    )
+
+  const nextOrder =
+    authorityItems.length === 0
+      ? 0
+      : Math.max(
+          ...authorityItems.map(
+            (item) =>
+              item.order,
+          ),
+        ) + 1
+
+  const now =
+    new Date().toISOString()
+
+  const newItem:
+    JournalFieldItem = {
+    id: crypto.randomUUID(),
+    order: nextOrder,
+    value:
+      'Add your thoughts here...',
+    source,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  await updateFieldItems(
+    fieldDefinitionId,
+    [
+      ...field.items,
+      newItem,
+    ],
+  )
+
+  setEditingItem({
+    entryId,
+    fieldDefinitionId,
+    itemId: newItem.id,
+    value:
+      'Add your thoughts here...',
+  })
+}
+
 async function moveFieldItem(
   entryId: string,
   fieldDefinitionId: string,
@@ -1157,6 +1229,7 @@ const updatedItems =
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
                 onMoveItem={moveFieldItem}
+                onAddItem={addItemToField}
               />
 
               <JournalPage
@@ -1170,6 +1243,7 @@ const updatedItems =
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
                 onMoveItem={moveFieldItem}
+                onAddItem={addItemToField}
               />
 
               <button

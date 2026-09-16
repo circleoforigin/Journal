@@ -292,8 +292,8 @@ export function paginateJournalDocument(
   const addSingleBlock = (
   block:
     Exclude<
-      JournalDocumentBlock,
-      { type: 'item' }
+        JournalDocumentBlock,
+        { type: 'item' | 'addItem' }
     >,
     fontSize: number,
     lineHeight: number,
@@ -480,6 +480,30 @@ export function paginateJournalDocument(
     metrics.itemBottomGap
   }
 
+  const addItemTarget = (
+  block:
+    Extract<
+      JournalDocumentBlock,
+      { type: 'addItem' }
+    >,
+) => {
+  const targetHeight =
+    metrics.lineHeight / 2
+
+  ensureHeight(
+    targetHeight,
+  )
+
+  currentPage.fragments.push({
+    ...block,
+    top: usedHeight,
+    height: targetHeight,
+  })
+
+  usedHeight +=
+    targetHeight
+}
+
   for (
     const block
     of journalDocument.blocks
@@ -510,6 +534,12 @@ export function paginateJournalDocument(
       case 'item':
         addItemBlock(
           block,
+        )
+        break
+
+      case 'addItem':
+        addItemTarget(
+            block,
         )
         break
     }

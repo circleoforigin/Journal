@@ -39,10 +39,19 @@ export interface JournalPageItemFragment {
   height: number
 }
 
+export interface JournalPageAddItemFragment {
+  type: 'addItem'
+  entryId: string
+  fieldDefinitionId: string
+  top: number
+  height: number
+}
+
 export type JournalPageFragment =
   | JournalPageTitleFragment
   | JournalPageFieldFragment
   | JournalPageItemFragment
+  | JournalPageAddItemFragment
 
 export interface JournalPageLayout {
   pageIndex: number
