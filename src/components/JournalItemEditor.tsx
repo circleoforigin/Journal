@@ -10,14 +10,18 @@ interface JournalItemEditorProps {
     value: string,
   ) => void
 
+  onConfirm: () => void
+
   onClose: () => void
 }
 
 export function JournalItemEditor({
   value,
   onChange,
+  onConfirm,
   onClose,
-}: JournalItemEditorProps) {
+}: JournalItemEditorProps)
+{
   const textareaRef =
     useRef<HTMLTextAreaElement | null>(
       null,
@@ -51,26 +55,68 @@ export function JournalItemEditor({
           <u>U</u>
         </button>
 
+<button
+  type="button"
+  className="journal-item-editor-confirm"
+  title="Confirm changes"
+  onClick={onConfirm}
+>
+  Confirm
+</button>
+
         <button
           type="button"
           className="journal-item-editor-close"
           title="Close editor"
           onClick={onClose}
         >
-          ×
+          Cancel
         </button>
       </div>
 
       <textarea
-        ref={textareaRef}
-        className="journal-item-editor-input"
-        value={value}
-        onChange={(event) => {
-          onChange(
-            event.target.value,
-          )
-        }}
-      />
+  ref={textareaRef}
+  className="journal-item-editor-input"
+  value={value}
+  onChange={(event) => {
+    onChange(
+      event.target.value,
+    )
+  }}
+  onKeyDown={(event) => {
+    if (event.key !== 'Enter') {
+      return
+    }
+
+    event.preventDefault()
+
+    const textarea = event.currentTarget
+
+    const start = textarea.selectionStart
+
+    const end = textarea.selectionEnd    
+
+    const insertion = '\n\t'
+
+    const nextValue =
+      value.slice(0, start) +
+      insertion +
+      value.slice(end)
+
+    onChange(nextValue)
+
+    requestAnimationFrame(() => {
+      const position =
+        start +
+        insertion.length
+
+      textarea.setSelectionRange(
+        position,
+        position,
+      )
+    })
+  }}
+/>
     </div>
   )
 }

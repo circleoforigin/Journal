@@ -444,8 +444,6 @@ async function addFieldToEntry(
       ...activeEntry.fields,
 
       [fieldDefinition.id]: {
-        items: [],
-        },[fieldDefinition.id]: {
   items: [
     {
       id: crypto.randomUUID(),
@@ -639,6 +637,65 @@ function handleEditItem(
             item.value ?? '',
           ),
   })
+}
+
+async function confirmEditingItem() {
+  if (!editingItem) {
+    return
+  }
+
+  if (
+    titleDefinition &&
+    editingItem.fieldDefinitionId ===
+      titleDefinition.id
+  ) {
+    await updateEntryTitle(
+      editingItem.value,
+    )
+
+    setEditingItem(null)
+    return
+  }
+
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id ===
+        editingItem.entryId,
+    )
+
+  const field =
+    entry?.fields[
+      editingItem.fieldDefinitionId
+    ]
+
+  if (!entry || !field) {
+    return
+  }
+
+  const now =
+    new Date().toISOString()
+
+  const updatedItems =
+    field.items.map(
+      (item) =>
+        item.id ===
+        editingItem.itemId
+          ? {
+              ...item,
+              value:
+                editingItem.value,
+              updatedAt: now,
+            }
+          : item,
+    )
+
+  await updateFieldItems(
+    editingItem.fieldDefinitionId,
+    updatedItems,
+  )
+
+  setEditingItem(null)
 }
 
   return (
@@ -860,6 +917,9 @@ function handleEditItem(
               }
             : null,
       )
+    }}
+    onConfirm={() => {
+        void confirmEditingItem()
     }}
     onClose={() => {
       setEditingItem(null)
