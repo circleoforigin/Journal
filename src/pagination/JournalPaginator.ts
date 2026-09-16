@@ -78,6 +78,8 @@ function wrapText(
   const lines:
     WrappedLine[] = []
 
+  const tabText = '    '
+
   for (
     let paragraphIndex = 0;
     paragraphIndex <
@@ -85,25 +87,31 @@ function wrapText(
     paragraphIndex += 1
   ) {
     const paragraph =
-      paragraphs[paragraphIndex]
+      paragraphs[
+        paragraphIndex
+      ].replace(
+        /\t/g,
+        tabText,
+      )
 
     if (!paragraph) {
       lines.push({
         text: '',
       })
+
       continue
     }
 
-    const words =
-      paragraph.split(/\s+/)
+    const tokens =
+      paragraph.match(
+        /[ ]+|[^ ]+/g,
+      ) ?? []
 
     let currentLine = ''
 
-    for (const word of words) {
+    for (const token of tokens) {
       const candidate =
-        currentLine
-          ? `${currentLine} ${word}`
-          : word
+        currentLine + token
 
       if (
         context.measureText(
@@ -112,21 +120,89 @@ function wrapText(
       ) {
         currentLine =
           candidate
+
         continue
       }
 
       if (currentLine) {
         lines.push({
-          text: currentLine,
+          text:
+            currentLine,
         })
+
+        currentLine = ''
       }
 
-      currentLine = word
+      /*
+       * If the token is only
+       * whitespace, preserve it
+       * at the beginning of the
+       * next physical line.
+       */
+      if (/^ +$/.test(token)) {
+        currentLine =
+          token
+
+        continue
+      }
+
+      /*
+       * Normal word that fits by
+       * itself starts the next
+       * physical line.
+       */
+      if (
+        context.measureText(
+          token,
+        ).width <= maxWidth
+      ) {
+        currentLine =
+          token
+
+        continue
+      }
+
+      /*
+       * Extremely long unbroken
+       * text is split character
+       * by character so it cannot
+       * overflow the page.
+       */
+      let segment = ''
+
+      for (const character of token) {
+        const segmentCandidate =
+          segment +
+          character
+
+        if (
+          segment &&
+          context.measureText(
+            segmentCandidate,
+          ).width > maxWidth
+        ) {
+          lines.push({
+            text: segment,
+          })
+
+          segment =
+            character
+        } else {
+          segment =
+            segmentCandidate
+        }
+      }
+
+      currentLine =
+        segment
     }
 
-    if (currentLine) {
+    if (
+      currentLine !== ''
+    ) {
       lines.push({
-        text: currentLine,
+        text:
+          currentLine,
       })
     }
   }
