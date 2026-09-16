@@ -19,11 +19,18 @@ interface JournalPageProps {
   showEditNode: (
     source: 'master' | 'user',
   ) => boolean
-  onEditItem: (
-    entryId: string,
-    fieldDefinitionId: string,
-    itemId: string,
-  ) => void
+ onEditItem: (
+  entryId: string,
+  fieldDefinitionId: string,
+  itemId: string,
+) => void
+
+onMoveItem: (
+  entryId: string,
+  fieldDefinitionId: string,
+  itemId: string,
+  direction: 'up' | 'down',
+) => void
 }
 
 export function JournalPage({
@@ -36,6 +43,7 @@ export function JournalPage({
   titleLineHeight,
   showEditNode,
   onEditItem,
+  onMoveItem,
 }: JournalPageProps) {
   return (
     <div className="journal-page">
@@ -72,19 +80,53 @@ export function JournalPage({
       }}
     >
       {nodeVisible && (
-        <button
-          type="button"
-          className="journal-page-item-node journal-page-title-node"
-          aria-label="Edit entry title"
-          onClick={() =>
-            onEditItem(
-              fragment.entryId,
-              fragment.fieldDefinitionId,
-              fragment.itemId,
-            )
-          }
-        />
-      )}
+  <div className="journal-page-item-controls">
+    <button
+      type="button"
+      className="journal-page-item-move journal-page-item-move-up"
+      aria-label="Move field item up"
+      onClick={() =>
+        onMoveItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+          fragment.itemId,
+          'up',
+        )
+      }
+    >
+      ▲
+    </button>
+
+    <button
+      type="button"
+      className="journal-page-item-node"
+      aria-label="Edit field item"
+      onClick={() =>
+        onEditItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+          fragment.itemId,
+        )
+      }
+    />
+
+    <button
+      type="button"
+      className="journal-page-item-move journal-page-item-move-down"
+      aria-label="Move field item down"
+      onClick={() =>
+        onMoveItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+          fragment.itemId,
+          'down',
+        )
+      }
+    >
+      ▼
+    </button>
+  </div>
+)}
 
       {fragment.text}
     </div>

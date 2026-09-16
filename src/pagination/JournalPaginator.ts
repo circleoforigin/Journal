@@ -66,173 +66,6 @@ function measureBrowserLines(
     '-100000px'
   container.style.top =
     '0'
-
-  container.style.width =
-    `${width}px`
-
-  container.style.fontFamily =
-    fontFamily
-  container.style.fontSize =
-    `${fontSize}px`
-  container.style.lineHeight =
-    `${lineHeight}px`
-  container.style.fontWeight =
-    fontWeight
-
-  container.style.whiteSpace =
-    'pre-wrap'
-  container.style.overflowWrap =
-    'break-word'
-  container.style.tabSize =
-    '4'
-
-  if (justify) {
-    container.style.textAlign =
-      'justify'
-  }
-
-  const paragraphs =
-  text.split('\n')
-
-const measurementText =
-  paragraphs
-    .map((paragraph) =>
-      paragraph.startsWith('\t')
-        ? paragraph.slice(1)
-        : paragraph,
-    )
-    .join('\n')
-
-const hasLeadingIndent =
-  paragraphs.some(
-    (paragraph) =>
-      paragraph.startsWith('\t'),
-  )
-
-if (hasLeadingIndent) {
-  container.style.textIndent =
-    `${PARAGRAPH_INDENT_EM}em`
-}
-
-const textNode =
-  document.createTextNode(
-    measurementText,
-  )
-
-container.appendChild(textNode)
-document.body.appendChild(container)
-
-  const lines: MeasuredLine[] = []
-
-  let lineStart = 0
-  let previousTop:
-    number | null = null
-
-  for (
-    let index = 0;
-    index < measurementText.length;
-    index += 1
-  ) {
-    const range =
-      document.createRange()
-
-    range.setStart(
-      textNode,
-      index,
-    )
-
-    range.setEnd(
-      textNode,
-      index + 1,
-    )
-
-    const rect =
-      range.getBoundingClientRect()
-
-    const currentTop =
-      Math.round(rect.top)
-
-    if (
-      previousTop !== null &&
-      currentTop !== previousTop
-    ) {
-      const lineText =
-        measurementText.slice(
-          lineStart,
-          index,
-        )
-
-      lines.push({
-        text:
-          lineText.replace(
-            /\n$/,
-            '',
-          ),
-        endsParagraph:
-          lineText.endsWith(
-            '\n',
-          ),
-      })
-
-      lineStart =
-        index
-    }
-
-    previousTop =
-      currentTop
-  }
-
-  if (
-    lineStart < measurementText.length
-  ) {
-    const lineText =
-      measurementText.slice(lineStart)
-
-    lines.push({
-      text:
-        lineText.replace(
-          /\n$/,
-          '',
-        ),
-      endsParagraph:
-        lineText.endsWith(
-          '\n',
-        ),
-    })
-  }
-
-  if (lines.length === 0) {
-    lines.push({
-      text: '',
-      endsParagraph: true,
-    })
-  }
-
-  container.remove()
-
-  return lines
-}function measureBrowserLines(
-  text: string,
-  width: number,
-  fontFamily: string,
-  fontSize: number,
-  lineHeight: number,
-  fontWeight = '400',
-  justify = false,
-): MeasuredLine[] {
-  const container =
-    document.createElement('div')
-
-  container.style.position =
-    'absolute'
-  container.style.visibility =
-    'hidden'
-  container.style.pointerEvents =
-    'none'
-  container.style.left =
-    '-100000px'
-  container.style.top =
-    '0'
   container.style.width =
     `${width}px`
 
@@ -457,8 +290,11 @@ export function paginateJournalDocument(
   }
 
   const addSingleBlock = (
-    block:
+  block:
+    Exclude<
       JournalDocumentBlock,
+      { type: 'item' }
+    >,
     fontSize: number,
     lineHeight: number,
     fontWeight: string,
@@ -639,5 +475,57 @@ export function paginateJournalDocument(
 
   usedHeight +=
     metrics.itemBottomGap
-}
+
+      usedHeight +=
+    metrics.itemBottomGap
+  }
+
+  for (
+    const block
+    of journalDocument.blocks
+  ) {
+    switch (block.type) {
+      case 'title':
+        addSingleBlock(
+          block,
+          metrics.titleFontSize,
+          metrics.titleLineHeight,
+          '600',
+          0,
+          metrics.titleBottomGap,
+        )
+        break
+
+      case 'field':
+        addSingleBlock(
+          block,
+          metrics.fieldFontSize,
+          metrics.fieldLineHeight,
+          '700',
+          metrics.fieldTopGap,
+          metrics.fieldBottomGap,
+        )
+        break
+
+      case 'item':
+        addItemBlock(
+          block,
+        )
+        break
+    }
+  }
+
+  if (
+    pages.length % 2 !== 0
+  ) {
+    pages.push(
+      createPage(
+        pages.length,
+      ),
+    )
+  }
+
+  return {
+    pages,
+  }
 }

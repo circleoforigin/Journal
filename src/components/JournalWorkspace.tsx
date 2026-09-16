@@ -651,6 +651,131 @@ function showEditNode(
   return source === 'user'
 }
 
+async function moveFieldItem(
+  entryId: string,
+  fieldDefinitionId: string,
+  itemId: string,
+  direction: 'up' | 'down',
+) {
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id === entryId,
+    )
+
+  const field =
+    entry?.fields[
+      fieldDefinitionId
+    ]
+
+  if (!entry || !field) {
+    return
+  }
+
+  const item =
+    field.items.find(
+      (candidate) =>
+        candidate.id === itemId,
+    )
+
+  if (!item) {
+    return
+  }
+
+  /*
+   * Master Items and User Items
+   * are separate authority groups.
+   * Reordering never crosses
+   * that boundary.
+   */
+  const authorityItems =
+    field.items
+      .filter(
+        (candidate) =>
+          candidate.source ===
+          item.source,
+      )
+      .sort(
+        (left, right) =>
+          left.order -
+          right.order,
+      )
+
+  const currentIndex =
+    authorityItems.findIndex(
+      (candidate) =>
+        candidate.id === itemId,
+    )
+
+  const targetIndex =
+    direction === 'up'
+      ? currentIndex - 1
+      : currentIndex + 1
+
+  if (
+    currentIndex < 0 ||
+    targetIndex < 0 ||
+    targetIndex >=
+      authorityItems.length
+  ) {
+    return
+  }
+
+  const reorderedAuthorityItems =
+    [...authorityItems]
+
+  const [movedItem] =
+    reorderedAuthorityItems.splice(
+      currentIndex,
+      1,
+    )
+
+  reorderedAuthorityItems.splice(
+    targetIndex,
+    0,
+    movedItem,
+  )
+
+  const now =
+    new Date().toISOString()
+
+  const orderById =
+    new Map(
+      reorderedAuthorityItems.map(
+        (candidate, index) => [
+          candidate.id,
+          index,
+        ],
+      ),
+    )
+
+  const updatedItems =
+    field.items.map(
+      (candidate) => {
+        if (
+          candidate.source !==
+          item.source
+        ) {
+          return candidate
+        }
+
+        return {
+          ...candidate,
+          order:
+            orderById.get(
+              candidate.id,
+            ) ?? candidate.order,
+          updatedAt: now,
+        }
+      },
+    )
+
+  await updateFieldItems(
+    fieldDefinitionId,
+    updatedItems,
+  )
+}
+
 function handleEditItem(
   entryId: string,
   fieldDefinitionId: string,
@@ -1031,6 +1156,7 @@ const updatedItems =
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
+                onMoveItem={moveFieldItem}
               />
 
               <JournalPage
@@ -1043,6 +1169,7 @@ const updatedItems =
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
+                onMoveItem={moveFieldItem}
               />
 
               <button
