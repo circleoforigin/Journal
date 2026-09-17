@@ -1341,3 +1341,31 @@
   font: inherit;
   overflow: auto;
 }
+
+.journal-document-tabs {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.journal-document-tab {
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-right: 1px solid #45474e;
+  background: transparent;
+  color: #aaaaaa;
+  font: inherit;
+  cursor: pointer;
+}
+
+.journal-document-tab.active {
+  background: #292a2e;
+  color: #eeeeee;
+}
+
+.journal-document-tab.permanent {
+  font-weight: 600;
+}

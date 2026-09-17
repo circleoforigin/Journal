@@ -10,17 +10,15 @@ interface MenuBarProps {
   onSaveProject: () => void
   onCloseProject: () => void
   onDeleteProject: () => void
-  onNewJournal: () => void
-  onOpenJournal: () => void
-  onCloseJournal: () => void
-  onDeleteJournal: () => void
+  onNewBook: () => void
+  onOpenBook: () => void
+  onCloseBook: () => void
+  onDeleteBook: () => void
   onFieldDefinitions: () => void
   onTocStructure: () => void
 
   projectName?: string
   hasProject: boolean
-  hasJournals: boolean
-  hasActiveJournal: boolean
 }
 
 export function MenuBar({
@@ -32,15 +30,13 @@ export function MenuBar({
   onFieldDefinitions,
   onTocStructure,
 
-  onNewJournal,
-  onOpenJournal,
-  onCloseJournal,
-  onDeleteJournal,
+  onNewBook,
+  onOpenBook,
+  onCloseBook,
+  onDeleteBook,
 
   projectName,
   hasProject,
-  hasJournals,
-  hasActiveJournal,
 }: MenuBarProps) {
   const menuBarRef =
     useRef<HTMLDivElement>(null)
@@ -56,8 +52,8 @@ export function MenuBar({
   ] = useState(false)
 
   const [
-    journalsMenuOpen,
-    setJournalsMenuOpen,
+    booksMenuOpen,
+    setBooksMenuOpen,
     ] = useState(false)
 
   const [
@@ -68,7 +64,7 @@ export function MenuBar({
   const anyMenuOpen =
     projectMenuOpen ||
     editMenuOpen ||
-    journalsMenuOpen ||
+    booksMenuOpen ||
     structureMenuOpen
 
   useEffect(() => {
@@ -108,13 +104,13 @@ export function MenuBar({
   function closeMenus() {
     setProjectMenuOpen(false)
     setEditMenuOpen(false)
-    setJournalsMenuOpen(false)
+    setBooksMenuOpen(false)
     setStructureMenuOpen(false)
   }
 
   function openProjectMenu() {
     setEditMenuOpen(false)
-    setJournalsMenuOpen(false)
+    setBooksMenuOpen(false)
     setStructureMenuOpen(false)
     setProjectMenuOpen(
         (open) => !open)
@@ -122,24 +118,24 @@ export function MenuBar({
 
   function openEditMenu() {
     setProjectMenuOpen(false)
-    setJournalsMenuOpen(false)
+    setBooksMenuOpen(false)
     setStructureMenuOpen(false)
     setEditMenuOpen(
     (open) => !open)
   }  
 
-  function openJournalsMenu() {
+  function openBooksMenu() {
     setProjectMenuOpen(false)
     setEditMenuOpen(false)
     setStructureMenuOpen(false)
-    setJournalsMenuOpen(
+    setBooksMenuOpen(
         (open) => !open)
   }
 
   function openStructureMenu() {
     setProjectMenuOpen(false)
     setEditMenuOpen(false)
-    setJournalsMenuOpen(false)
+    setBooksMenuOpen(false)
     setStructureMenuOpen(
         (open) => !open)
   }
@@ -332,49 +328,44 @@ export function MenuBar({
   <button
     type="button"
     className="menu-item"
-    onClick={openJournalsMenu}
+    onClick={openBooksMenu}
   >
-    Journals
+    Books
   </button>
 
-  {journalsMenuOpen && (
+  {booksMenuOpen && (
     <div className="dropdown-menu">
       <button
         type="button"
         className="dropdown-item"
         disabled={!hasProject}
         onClick={() => {
-          runAction(onNewJournal)
+          runAction(onNewBook)
         }}
       >
-        New Journal...
+        New Book...
       </button>
 
       <button
         type="button"
         className="dropdown-item"
-        disabled={
-          !hasProject ||
-          !hasJournals
-        }
+        disabled={!hasProject}
         onClick={() => {
-          runAction(onOpenJournal)
+          runAction(onOpenBook)
         }}
       >
-        Open Journal...
+        Open Book...
       </button>
 
       <button
         type="button"
         className="dropdown-item"
-        disabled={
-          !hasActiveJournal
-        }
+        disabled
         onClick={() => {
-          runAction(onCloseJournal)
+          runAction(onCloseBook)
         }}
       >
-        Close Journal
+        Close Book
       </button>
 
       <div className="dropdown-separator" />
@@ -382,15 +373,12 @@ export function MenuBar({
       <button
         type="button"
         className="dropdown-item"
-        disabled={
-          !hasProject ||
-          !hasJournals
-        }
+        disabled={!hasProject}
         onClick={() => {
-          runAction(onDeleteJournal)
+          runAction(onDeleteBook)
         }}
       >
-        Delete Journal...
+        Delete Book...
       </button>
     </div>
   )}

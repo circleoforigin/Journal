@@ -1190,10 +1190,15 @@ const updatedItems =
 
       <section className="journal-editor-main">
         <header className="journal-editor-header">
-          <div className="journal-editor-title">
-            {journal
-              ? `Journal - ${journal.ownerName}`
-              : 'No Journal Open'}
+          <div className="journal-document-tabs">
+            {journal && (
+              <button
+                type="button"
+                className="journal-document-tab active permanent"
+              >
+                Master
+              </button>
+            )}
           </div>
 
           <div className="journal-format-controls">

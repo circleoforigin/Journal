@@ -30,12 +30,8 @@ import { DeleteProjectDialog } from './projects/DeleteProjectDialog'
 import { UnsavedChangesDialog } from './projects/UnsavedChangesDialog'
 
 import type { Journal } from './models/Journal'
-
 import { journalRepository } from './journals/JournalRepository'
 
-import { NewJournalDialog } from './journals/NewJournalDialog'
-import { OpenJournalDialog } from './journals/OpenJournalDialog'
-import { DeleteJournalDialog } from './journals/DeleteJournalDialog'
 import { FieldDefinitionsDialog } from './structure/FieldDefinitionsDialog'
 import { TocStructureDialog } from './structure/TocStructureDialog'
 
@@ -53,26 +49,6 @@ function App() {
 ] = useState<Journal | null>(
   null,
 )
-
-const [
-  isNewJournalOpen,
-  setIsNewJournalOpen,
-] = useState(false)
-
-const [
-  isOpenJournalOpen,
-  setIsOpenJournalOpen,
-] = useState(false)
-
-const [
-  isDeleteJournalOpen,
-  setIsDeleteJournalOpen,
-] = useState(false)
-
-const [
-  availableJournals,
-  setAvailableJournals,
-] = useState<Journal[]>([])
 
 const [
   isFieldDefinitionsOpen,
@@ -724,229 +700,36 @@ function saveTocStructure(
   setIsTocStructureOpen(false)
 }
 
-function handleNewJournal() {
-  if (!activeProject) {
-    return
-  }
 
-  setIsNewJournalOpen(true)
+function handleNewBook() {
+  /*
+   * Book creation will be
+   * implemented next.
+   */
 }
 
-async function createJournal(
-  name: string,
-) {
-  if (!activeProject) {
-    return
-  }
-
-  const now =
-    new Date().toISOString()
-
-  const journal: Journal = {
-    id: crypto.randomUUID(),
-    name,
-    ownerName: 'Master',
-    entryIds: [],
-    createdAt: now,
-    updatedAt: now,
-  }
-
-  await journalRepository
-    .saveJournal(journal)
-
-  const updatedProject: Project = {
-    ...activeProject,
-
-    journalIds: [
-      ...activeProject.journalIds,
-      journal.id,
-    ],
-
-    updatedAt: now,
-  }
-
-  await projectRepository
-    .saveProject(
-      updatedProject,
-    )
-
-  setActiveProject(
-    updatedProject,
-  )
-
-  setActiveJournal(
-    journal,
-  )
-
-  setProjectDirty(false)
-
-  setIsNewJournalOpen(false)
+function handleOpenBook() {
+  /*
+   * Book loading will be
+   * implemented with Book
+   * persistence.
+   */
 }
 
-async function loadProjectJournals():
-  Promise<Journal[]> {
-  if (!activeProject) {
-    return []
-  }
-
-  const journals =
-    await Promise.all(
-      activeProject.journalIds.map(
-        (journalId) =>
-          journalRepository
-            .loadJournal(
-              journalId,
-            ),
-      ),
-    )
-
-  return journals
-    .filter(
-      (
-        journal,
-      ): journal is Journal =>
-        journal !== null,
-    )
-    .sort(
-      (left, right) =>
-        left.name.localeCompare(
-          right.name,
-        ),
-    )
+function handleCloseBook() {
+  /*
+   * Master cannot be closed.
+   * Other document tabs will
+   * use this later.
+   */
 }
 
-async function handleOpenJournal() {
-  const journals =
-    await loadProjectJournals()
-
-  setAvailableJournals(
-    journals,
-  )
-
-  setIsOpenJournalOpen(true)
-}
-
-async function openSelectedJournal(
-  journalId: string,
-) {
-  const journal =
-    await journalRepository
-      .loadJournal(
-        journalId,
-      )
-
-  if (!journal) {
-    return
-  }
-
-  if (
-    !activeProject?.journalIds
-      .includes(journal.id)
-  ) {
-    return
-  }
-
-  setActiveJournal(
-    journal,
-  )
-
-  setIsOpenJournalOpen(false)
-}
-
-async function handleDeleteJournal() {
-  const journals =
-    await loadProjectJournals()
-
-  setAvailableJournals(
-    journals,
-  )
-
-  setIsDeleteJournalOpen(true)
-}
-
-async function deleteSelectedJournal(
-  journal: Journal,
-) {
-  if (!activeProject) {
-    return
-  }
-
-  if (
-    !activeProject.journalIds
-      .includes(journal.id)
-  ) {
-    return
-  }
-
-  await journalRepository
-    .deleteJournal(
-      journal.id,
-    )
-
-  const updatedProject: Project = {
-    ...activeProject,
-
-    journalIds:
-      activeProject.journalIds
-        .filter(
-          (journalId) =>
-            journalId !==
-            journal.id,
-        ),
-
-    updatedAt:
-      new Date().toISOString(),
-  }
-
-  await projectRepository
-    .saveProject(
-      updatedProject,
-    )
-
-  setActiveProject(
-    updatedProject,
-  )
-
-  if (
-    activeJournal?.id ===
-    journal.id
-  ) {
-    setActiveJournal(null)
-  }
-
-  const journals =
-    await Promise.all(
-      updatedProject.journalIds.map(
-        (journalId) =>
-          journalRepository
-            .loadJournal(
-              journalId,
-            ),
-      ),
-    )
-
-  setAvailableJournals(
-  journals
-    .filter(
-      (
-        candidate,
-      ): candidate is Journal =>
-        candidate !== null,
-    )
-    .sort(
-      (left, right) =>
-        left.name.localeCompare(
-          right.name,
-        ),
-    ),
-)
-
-  if (
-    updatedProject.journalIds
-      .length === 0
-  ) {
-    setIsDeleteJournalOpen(false)
-  }
+function handleDeleteBook() {
+  /*
+   * Book deletion will be
+   * implemented with Book
+   * persistence.
+   */
 }
 
   return (
@@ -958,17 +741,6 @@ async function deleteSelectedJournal(
 
   hasProject={
     Boolean(activeProject)
-  }
-
-  hasJournals={
-    Boolean(
-      activeProject?.journalIds
-        .length,
-    )
-  }
-
-  hasActiveJournal={
-    Boolean(activeJournal)
   }
 
   onNewProject={
@@ -991,21 +763,21 @@ async function deleteSelectedJournal(
     void handleDeleteProject()
   }}
 
-  onNewJournal={
-    handleNewJournal
-  }
+  onNewBook={
+  handleNewBook
+}
 
-  onOpenJournal={() => {
-    void handleOpenJournal()
-  }}
+onOpenBook={
+  handleOpenBook
+}
 
-  onCloseJournal={() => {
-    setActiveJournal(null)
-  }}
+onCloseBook={
+  handleCloseBook
+}
 
-  onDeleteJournal={() => {
-    void handleDeleteJournal()
-  }}
+onDeleteBook={
+  handleDeleteBook
+}
 
   onFieldDefinitions={
     handleFieldDefinitions
@@ -1143,56 +915,6 @@ async function deleteSelectedJournal(
     onCancel={
       cancelPendingProjectAction
     }
-  />
-)}
-
-{isNewJournalOpen && (
-  <NewJournalDialog
-    onCreate={
-      createJournal
-    }
-
-    onCancel={() => {
-      setIsNewJournalOpen(
-        false,
-      )
-    }}
-  />
-)}
-
-{isOpenJournalOpen && (
-  <OpenJournalDialog
-    journals={
-      availableJournals
-    }
-
-    onOpen={
-      openSelectedJournal
-    }
-
-    onCancel={() => {
-      setIsOpenJournalOpen(
-        false,
-      )
-    }}
-  />
-)}
-
-{isDeleteJournalOpen && (
-  <DeleteJournalDialog
-    journals={
-      availableJournals
-    }
-
-    onDelete={
-      deleteSelectedJournal
-    }
-
-    onCancel={() => {
-      setIsDeleteJournalOpen(
-        false,
-      )
-    }}
   />
 )}
     </div>
