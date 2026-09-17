@@ -525,6 +525,23 @@ useEffect(() => {
 ])
 
 useEffect(() => {
+  /*
+   * When an Entry has requested
+   * navigation, that navigation is
+   * authoritative.
+   *
+   * Pagination may already have
+   * rearranged while pageIndex still
+   * points at the old physical page.
+   * Do not let that temporary page
+   * position select another Entry.
+   */
+  if (
+    pendingEntryNavigationId
+  ) {
+    return
+  }
+
   let visibleEntryId:
     string | null = null
 
@@ -568,6 +585,7 @@ useEffect(() => {
   pageIndex,
   journalPagination,
   activeEntryId,
+  pendingEntryNavigationId,
 ])
 
   const leftPageIndex =
