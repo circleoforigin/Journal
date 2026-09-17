@@ -884,19 +884,23 @@ async function addFieldToEntry(
       new Date().toISOString(),
   }
 
-  setEntries(
-    (current) =>
-      current.map(
-        (entry) =>
-          entry.id ===
-          updatedEntry.id
-            ? updatedEntry
-            : entry,
-      ),
-  )
+ setPendingEntryNavigationId(
+  updatedEntry.id,
+)
 
-  await entryRepository
-    .saveEntry(updatedEntry)
+setEntries(
+  (current) =>
+    current.map(
+      (entry) =>
+        entry.id ===
+        updatedEntry.id
+          ? updatedEntry
+          : entry,
+    ),
+)
+
+await entryRepository
+  .saveEntry(updatedEntry)
 }
 
 async function updateFieldItems(
