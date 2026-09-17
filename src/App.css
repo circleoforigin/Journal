@@ -1093,6 +1093,76 @@
 .journal-page-turn:disabled {
   pointer-events: none;
   cursor: default;
+}.journal-page-turn {
+  position: absolute;
+
+  top: 50%;
+
+  z-index: 20;
+
+  width: 34px;
+  height: 120px;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  transform: translateY(-50%);
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.journal-page-turn-previous {
+  left: 0;
+}
+
+.journal-page-turn-next {
+  right: 0;
+}
+
+.journal-page-turn span {
+  opacity: 0;
+
+  color: #777066;
+
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1;
+
+  transition:
+    opacity 100ms ease,
+    transform 100ms ease;
+}
+
+.journal-page-turn:hover span,
+.journal-page-turn:focus-visible span {
+  opacity: 1;
+}
+
+.journal-page-turn-previous:hover span,
+.journal-page-turn-previous:focus-visible span {
+  transform: translateX(-2px);
+}
+
+.journal-page-turn-next:hover span,
+.journal-page-turn-next:focus-visible span {
+  transform: translateX(2px);
+}
+
+.journal-page-turn:disabled {
+  pointer-events: none;
+  cursor: default;
+}
+
+.journal-page-turn:disabled span {
+  opacity: 0;
 }
 
 .journal-page-entry-title {

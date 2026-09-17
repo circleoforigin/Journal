@@ -26,13 +26,19 @@ interface JournalWorkspaceProps {
   onJournalChange: (
     journal: Journal,
   ) => void
+
+  onReadabilityChange: (
+    fontFamily: string,
+    fontSize: number,
+  ) => void
 }
 
 export function JournalWorkspace({
   project,
   journal,
   onJournalChange,
-}: JournalWorkspaceProps) 
+  onReadabilityChange,
+}: JournalWorkspaceProps)
 {
 const [
   entries,
@@ -162,15 +168,11 @@ useEffect(() => {
   }
 }, [])
 
-const [
-  fontFamily,
-  setFontFamily,
-] = useState('Arial')
+const fontFamily =
+  project.readability.fontFamily
 
-const [
-  fontSize,
-  setFontSize,
-] = useState(14)
+const fontSize =
+  project.readability.fontSize
 
 const titleFontSize =
   fontSize * 1.75
@@ -572,13 +574,86 @@ const pageStep =
     ? 1
     : 2
 
+function isBlankPage(
+  index: number,
+): boolean {
+  const page =
+    journalPagination.pages[
+      index
+    ]
+
+  return Boolean(
+    page &&
+    page.fragments.length === 0,
+  )
+}
+
+function getPreviousPageIndex(
+  currentIndex: number,
+): number | null {
+  if (!singlePageMode) {
+    const previousIndex =
+      currentIndex - 2
+
+    return previousIndex >= 0
+      ? previousIndex
+      : null
+  }
+
+  let previousIndex =
+    currentIndex - 1
+
+  while (
+    previousIndex >= 0 &&
+    isBlankPage(previousIndex)
+  ) {
+    previousIndex -= 1
+  }
+
+  return previousIndex >= 0
+    ? previousIndex
+    : null
+}
+
+function getNextPageIndex(
+  currentIndex: number,
+): number | null {
+  if (!singlePageMode) {
+    const nextIndex =
+      currentIndex + 2
+
+    return nextIndex <
+      journalPagination.pages.length
+      ? nextIndex
+      : null
+  }
+
+  let nextIndex =
+    currentIndex + 1
+
+  while (
+    nextIndex <
+      journalPagination.pages.length &&
+    isBlankPage(nextIndex)
+  ) {
+    nextIndex += 1
+  }
+
+  return nextIndex <
+    journalPagination.pages.length
+    ? nextIndex
+    : null
+}
+
 const hasPreviousPage =
-  pageIndex > 0
+  getPreviousPageIndex(
+    pageIndex,
+  ) !== null
 
 const hasNextPage =
-  pageIndex +
-    pageStep <
-  journalPagination.pages.length
+  getNextPageIndex(
+    pageIndex,
+  ) !== null
 
   const availableFieldDefinitions =
   project.fieldDefinitions
@@ -1555,8 +1630,9 @@ const updatedItems =
       disabled={!journal}
       value={fontFamily}
       onChange={(event) => {
-        setFontFamily(
+        onReadabilityChange(
           event.target.value,
+          fontSize,
         )
       }}
     >
@@ -1585,7 +1661,8 @@ const updatedItems =
       disabled={!journal}
       value={fontSize}
       onChange={(event) => {
-        setFontSize(
+        onReadabilityChange(
+          fontFamily,
           Number(
             event.target.value,
           ),
@@ -1641,20 +1718,29 @@ const updatedItems =
   }
 >
                 <button
-                    type="button"
-                    className="journal-page-turn journal-page-turn-previous"
-                    disabled={!hasPreviousPage}
-                    aria-label="Previous pages"
-                    onClick={() => {
-  setPageIndex(
-    (current) =>
-      Math.max(
-        0,
-        current - pageStep,
-      ),
-  )
+  type="button"
+  className="journal-page-turn journal-page-turn-previous"
+  disabled={!hasPreviousPage}
+  aria-label="Previous pages"
+  onClick={() => {
+  const previousIndex =
+    getPreviousPageIndex(
+      pageIndex,
+    )
+
+  if (
+    previousIndex !== null
+  ) {
+    setPageIndex(
+      previousIndex,
+    )
+  }
 }}
-                    />
+>
+  <span aria-hidden="true">
+    ‹
+  </span>
+</button>
               <JournalPage
                 page={leftPage ?? undefined}
                 pageNumber={leftPageIndex + 1}
@@ -1683,18 +1769,30 @@ const updatedItems =
               />
             )}
 
-              <button
+             <button
   type="button"
   className="journal-page-turn journal-page-turn-next"
   disabled={!hasNextPage}
   aria-label="Next pages"
- onClick={() => {
-  setPageIndex(
-    (current) =>
-      current + pageStep,
-  )
+  onClick={() => {
+  const nextIndex =
+    getNextPageIndex(
+      pageIndex,
+    )
+
+  if (
+    nextIndex !== null
+  ) {
+    setPageIndex(
+      nextIndex,
+    )
+  }
 }}
-/>
+>
+  <span aria-hidden="true">
+    ›
+  </span>
+</button>
             </div>
           ) : (
             <div className="journal-no-journal">

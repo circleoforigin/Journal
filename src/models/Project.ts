@@ -18,6 +18,11 @@ export interface Project {
 
   journalIds: string[]
 
+  readability: {
+    fontFamily: string
+    fontSize: number
+  }
+
   createdAt: string
   updatedAt: string
 }

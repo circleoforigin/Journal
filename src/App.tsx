@@ -549,6 +549,11 @@ async function createProject(
       masterJournal.id,
     ],
 
+    readability: {
+      fontFamily: 'Arial',
+      fontSize: 14,
+    },
+
     createdAt: now,
     updatedAt: now,
   }
@@ -742,6 +747,28 @@ function saveTocStructure(
   setIsTocStructureOpen(false)
 }
 
+function handleReadabilityChange(
+  fontFamily: string,
+  fontSize: number,
+) {
+  if (!activeProject) {
+    return
+  }
+
+  setActiveProject({
+    ...activeProject,
+
+    readability: {
+      fontFamily,
+      fontSize,
+    },
+
+    updatedAt:
+      new Date().toISOString(),
+  })
+
+  setProjectDirty(true)
+}
 
 function handleNewBook() {
   /*
@@ -895,6 +922,10 @@ onDeleteBook={
 
       onJournalChange={
         setActiveJournal
+      }
+      
+      onReadabilityChange={
+        handleReadabilityChange
       }
     />
   )}
