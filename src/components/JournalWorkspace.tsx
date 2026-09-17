@@ -189,12 +189,21 @@ const titleDefinition =
   )
 
   const sections =
-    [...project.sectionDefinitions]
-      .sort(
+  useMemo(
+    () =>
+      [
+        ...project
+          .sectionDefinitions,
+      ].sort(
         (left, right) =>
           left.order -
           right.order,
-      )
+      ),
+    [
+      project
+        .sectionDefinitions,
+    ],
+  )
 
 function getEntryTitle(
   entry: JournalEntry,
@@ -278,19 +287,40 @@ const journalPagination =
     const entryStartPages =
       new Map<string, number>()
 
-    for (
-  const entryId
-  of journal?.entryIds ?? []
-) {
-  const entry =
-    entries.find(
-      (candidate) =>
-        candidate.id === entryId,
-    )
+    /*
+     * Physical Journal reading order:
+     *
+     * 1. Sections follow their
+     *    configured order.
+     *
+     * 2. Entries within each Section
+     *    are alphabetical by Title.
+     */
+    const orderedEntries =
+      sections.flatMap(
+        (section) =>
+          entries
+            .filter(
+              (entry) =>
+                entry
+                  .sectionDefinitionId ===
+                section.id,
+            )
+            .sort(
+              (left, right) =>
+                getEntryTitle(left)
+                  .localeCompare(
+                    getEntryTitle(
+                      right,
+                    ),
+                  ),
+            ),
+      )
 
-  if (!entry) {
-    continue
-  }
+    for (
+      const entry
+      of orderedEntries
+    ) {
       const journalDocument =
         buildJournalDocument(
           entry,
@@ -314,6 +344,7 @@ const journalPagination =
       ) {
         pages.push({
           ...page,
+
           pageIndex:
             pages.length,
         })
@@ -324,12 +355,13 @@ const journalPagination =
       pages,
       entryStartPages,
     }
- }, [
-  entries,
-  journal?.entryIds,
-  project.fieldDefinitions,
-  paginationMetrics,
-])
+  }, [
+    entries,
+    sections,
+    project.fieldDefinitions,
+    paginationMetrics,
+    titleDefinition,
+  ])
 
 function navigateToEntry(
   entryId: string,
