@@ -111,6 +111,48 @@ const pendingProjectActionRef =
   }, [])
 
   /*
+ * ----------------------------------------
+ * Journal Field Definition advertisement
+ * ----------------------------------------
+ */
+
+useEffect(() => {
+  if (!activeProject) {
+    return
+  }
+
+  moduleEventBus.emit(
+    'journal.fieldDefinitions',
+    {
+      projectId:
+        activeProject.id,
+
+      fields:
+        activeProject
+          .fieldDefinitions
+          .map((field) => ({
+            id:
+              field.id,
+
+            name:
+              field.name,
+
+            valueType:
+              field.valueType,
+
+            isSystem:
+              Boolean(
+                field.isSystem,
+              ),
+          })),
+    },
+  )
+}, [
+  activeProject?.id,
+  activeProject?.fieldDefinitions,
+])
+
+  /*
    * ----------------------------------------
    * SettingForge Project contract
    * ----------------------------------------
