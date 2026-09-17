@@ -1056,6 +1056,10 @@ const titleItem:
     updatedAt: now,
   }
 
+  setPendingEntryNavigationId(
+    updatedEntry.id,
+  )
+
   setEntries(
     (current) =>
       current.map(
