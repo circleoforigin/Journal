@@ -278,7 +278,19 @@ const journalPagination =
     const entryStartPages =
       new Map<string, number>()
 
-    for (const entry of entries) {
+    for (
+  const entryId
+  of journal?.entryIds ?? []
+) {
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id === entryId,
+    )
+
+  if (!entry) {
+    continue
+  }
       const journalDocument =
         buildJournalDocument(
           entry,
@@ -312,11 +324,12 @@ const journalPagination =
       pages,
       entryStartPages,
     }
-  }, [
-    entries,
-    project.fieldDefinitions,
-    paginationMetrics,
-  ])
+ }, [
+  entries,
+  journal?.entryIds,
+  project.fieldDefinitions,
+  paginationMetrics,
+])
 
 function navigateToEntry(
   entryId: string,
