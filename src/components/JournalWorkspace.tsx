@@ -50,6 +50,13 @@ const [
 ] = useState(0)
 
 const [
+  pendingEntryNavigationId,
+  setPendingEntryNavigationId,
+] = useState<string | null>(
+  null,
+)
+
+const [
   singlePageMode,
   setSinglePageMode,
 ] = useState(false)
@@ -363,6 +370,88 @@ const journalPagination =
     titleDefinition,
   ])
 
+  useEffect(() => {
+  const element =
+    bookAreaRef.current
+
+  if (!element) {
+    return
+  }
+
+  const updatePageMode = () => {
+    const twoPageMinimumWidth =
+      475 +
+      8 +
+      475 +
+      40
+
+    setSinglePageMode(
+      element.clientWidth <
+        twoPageMinimumWidth,
+    )
+  }
+
+  updatePageMode()
+
+  const observer =
+    new ResizeObserver(
+      updatePageMode,
+    )
+
+  observer.observe(element)
+
+  return () => {
+    observer.disconnect()
+  }
+}, [])
+
+useEffect(() => {
+  if (
+    !singlePageMode &&
+    pageIndex % 2 !== 0
+  ) {
+    setPageIndex(
+      pageIndex - 1,
+    )
+  }
+}, [
+  singlePageMode,
+  pageIndex,
+])
+
+useEffect(() => {
+  if (
+    journalPagination
+      .pages.length === 0
+  ) {
+    if (pageIndex !== 0) {
+      setPageIndex(0)
+    }
+
+    return
+  }
+
+  if (
+    pageIndex >=
+    journalPagination.pages.length
+  ) {
+    const lastPageIndex =
+      journalPagination
+        .pages.length - 1
+
+    setPageIndex(
+      singlePageMode
+        ? lastPageIndex
+        : lastPageIndex -
+            (lastPageIndex % 2),
+    )
+  }
+}, [
+  journalPagination.pages.length,
+  pageIndex,
+  singlePageMode,
+])
+
 function navigateToEntry(
   entryId: string,
 ) {
@@ -384,6 +473,35 @@ function navigateToEntry(
           (startPage % 2),
   )
 }
+
+useEffect(() => {
+  if (
+    !pendingEntryNavigationId
+  ) {
+    return
+  }
+
+  if (
+    !journalPagination
+      .entryStartPages
+      .has(
+        pendingEntryNavigationId,
+      )
+  ) {
+    return
+  }
+
+  navigateToEntry(
+    pendingEntryNavigationId,
+  )
+
+  setPendingEntryNavigationId(
+    null,
+  )
+}, [
+  pendingEntryNavigationId,
+  journalPagination,
+])
 
 useEffect(() => {
   let visibleEntryId:
@@ -525,6 +643,7 @@ const hasNextPage =
       )
 
     setEntries(validEntries)
+    setPageIndex(0)
 
     setActiveEntryId(
       (current) => {
@@ -612,7 +731,7 @@ async function createEntry(
     ],
   )
 
-  setActiveEntryId(
+  setPendingEntryNavigationId(
     entry.id,
   )
 
