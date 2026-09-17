@@ -223,21 +223,6 @@ const activeEntry =
       entry.id === activeEntryId,
   ) ?? null
 
- const journalDocument =
-  useMemo(
-    () =>
-      activeEntry
-        ? buildJournalDocument(
-            activeEntry,
-            project.fieldDefinitions,
-          )
-        : null,
-    [
-      activeEntry,
-      project.fieldDefinitions,
-    ],
-  )
-
 const JOURNAL_TEXT_WIDTH = 400
 const JOURNAL_TEXT_HEIGHT = 490
 
@@ -245,87 +230,93 @@ const paginationMetrics:
   JournalPaginationMetrics =
   useMemo(
     () => ({
-      pageWidth: JOURNAL_TEXT_WIDTH,
-      pageHeight: JOURNAL_TEXT_HEIGHT,
+      pageWidth:
+        JOURNAL_TEXT_WIDTH,
+
+      pageHeight:
+        JOURNAL_TEXT_HEIGHT,
+
       fontFamily,
       fontSize,
+
       lineHeight:
-        Math.round(fontSize * 1.5),
+        Math.round(
+          fontSize * 1.5,
+        ),
+
       titleFontSize,
       titleLineHeight,
+
       fieldFontSize:
         fontSize,
+
       fieldLineHeight:
-        Math.round(fontSize * 1.5),
+        Math.round(
+          fontSize * 1.5,
+        ),
+
       titleBottomGap: 20,
       fieldTopGap: 0,
       fieldBottomGap: 0,
       itemBottomGap: 6,
     }),
     [
-        fontFamily,
-        fontSize,
-        titleFontSize,
-        titleLineHeight,
+      fontFamily,
+      fontSize,
+      titleFontSize,
+      titleLineHeight,
     ],
   )
 
-
-const pagination =
+const journalPagination =
   useMemo(() => {
-    if (!journalDocument) {
-      return null
+    const pages:
+      ReturnType<
+        typeof paginateJournalDocument
+      >['pages'] = []
+
+    const entryStartPages =
+      new Map<string, number>()
+
+    for (const entry of entries) {
+      const journalDocument =
+        buildJournalDocument(
+          entry,
+          project.fieldDefinitions,
+        )
+
+      const entryPagination =
+        paginateJournalDocument(
+          journalDocument,
+          paginationMetrics,
+        )
+
+      entryStartPages.set(
+        entry.id,
+        pages.length,
+      )
+
+      for (
+        const page
+        of entryPagination.pages
+      ) {
+        pages.push({
+          ...page,
+          pageIndex:
+            pages.length,
+        })
+      }
     }
 
-    return paginateJournalDocument(
-      journalDocument,
-      paginationMetrics,
-    )
+    return {
+      pages,
+      entryStartPages,
+    }
   }, [
-    journalDocument,
+    entries,
+    project.fieldDefinitions,
     paginationMetrics,
   ])
-
-  useEffect(() => {
-  const element =
-    bookAreaRef.current
-
-  if (!element) {
-    return
-  }
-
-  const updatePageMode = () => {
-    /*
-     * Two 475px pages
-     * + 8px gutter
-     * + 20px breathing room
-     * on both sides.
-     */
-    const twoPageMinimumWidth =
-      475 +
-      8 +
-      475 +
-      40
-
-    setSinglePageMode(
-      element.clientWidth <
-        twoPageMinimumWidth,
-    )
-  }
-
-  updatePageMode()
-
-  const observer =
-    new ResizeObserver(
-      updatePageMode,
-    )
-
-  observer.observe(element)
-
-  return () => {
-    observer.disconnect()
-  }
-}, [])
 
 function navigateToEntry(
   entryId: string,
