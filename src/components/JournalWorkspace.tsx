@@ -327,9 +327,73 @@ const pagination =
   }
 }, [])
 
- useEffect(() => {
-  setPageIndex(0)
-}, [activeEntryId])
+function navigateToEntry(
+  entryId: string,
+) {
+  const startPage =
+    journalPagination
+      .entryStartPages
+      .get(entryId)
+
+  if (startPage === undefined) {
+    return
+  }
+
+  setActiveEntryId(entryId)
+
+  setPageIndex(
+    singlePageMode
+      ? startPage
+      : startPage -
+          (startPage % 2),
+  )
+}
+
+useEffect(() => {
+  let visibleEntryId:
+    string | null = null
+
+  for (
+    const [
+      entryId,
+      startPage,
+    ]
+    of journalPagination
+      .entryStartPages
+  ) {
+    if (
+      startPage <= pageIndex &&
+      (
+        visibleEntryId === null ||
+        startPage >
+          (
+            journalPagination
+              .entryStartPages
+              .get(
+                visibleEntryId,
+              ) ?? -1
+          )
+      )
+    ) {
+      visibleEntryId =
+        entryId
+    }
+  }
+
+  if (
+    visibleEntryId &&
+    visibleEntryId !==
+      activeEntryId
+  ) {
+    setActiveEntryId(
+      visibleEntryId,
+    )
+  }
+}, [
+  pageIndex,
+  journalPagination,
+  activeEntryId,
+])
 
   const leftPageIndex =
   pageIndex
@@ -338,13 +402,13 @@ const rightPageIndex =
   pageIndex + 1
 
 const leftPage =
-  pagination?.pages[
+  journalPagination.pages[
     leftPageIndex
   ] ?? null
 
 const rightPage =
   !singlePageMode
-    ? pagination?.pages[
+    ? journalPagination.pages[
         rightPageIndex
       ] ?? null
     : null
@@ -358,11 +422,9 @@ const hasPreviousPage =
   pageIndex > 0
 
 const hasNextPage =
-  pagination
-    ? pageIndex +
-        pageStep <
-      pagination.pages.length
-    : false
+  pageIndex +
+    pageStep <
+  journalPagination.pages.length
 
   const availableFieldDefinitions =
   project.fieldDefinitions
@@ -1225,7 +1287,7 @@ const updatedItems =
               : 'journal-toc-entry'
           }
           onClick={() => {
-            setActiveEntryId(
+            navigateToEntry(
               entry.id,
             )
           }}
