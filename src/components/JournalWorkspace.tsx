@@ -54,10 +54,106 @@ const [
   setSinglePageMode,
 ] = useState(false)
 
+const documentTabsRef =
+  useRef<HTMLDivElement | null>(
+    null,
+  )
+
+const [
+  canScrollTabsLeft,
+  setCanScrollTabsLeft,
+] = useState(false)
+
+const [
+  canScrollTabsRight,
+  setCanScrollTabsRight,
+] = useState(false)
+
 const bookAreaRef =
   useRef<HTMLDivElement | null>(
     null,
   )
+
+  function updateDocumentTabScrollState() {
+  const tabStrip =
+    documentTabsRef.current
+
+  if (!tabStrip) {
+    setCanScrollTabsLeft(false)
+    setCanScrollTabsRight(false)
+    return
+  }
+
+  const maxScrollLeft =
+    tabStrip.scrollWidth -
+    tabStrip.clientWidth
+
+  setCanScrollTabsLeft(
+    tabStrip.scrollLeft > 1,
+  )
+
+  setCanScrollTabsRight(
+    tabStrip.scrollLeft <
+      maxScrollLeft - 1,
+  )
+}
+
+function scrollDocumentTabs(
+  direction: 'left' | 'right',
+) {
+  const tabStrip =
+    documentTabsRef.current
+
+  if (!tabStrip) {
+    return
+  }
+
+  tabStrip.scrollBy({
+    left:
+      direction === 'left'
+        ? -200
+        : 200,
+    behavior: 'smooth',
+  })
+}
+
+useEffect(() => {
+  const tabStrip =
+    documentTabsRef.current
+
+  if (!tabStrip) {
+    return
+  }
+
+  const handleScroll = () => {
+    updateDocumentTabScrollState()
+  }
+
+  const resizeObserver =
+    new ResizeObserver(() => {
+      updateDocumentTabScrollState()
+    })
+
+  resizeObserver.observe(
+    tabStrip,
+  )
+
+  tabStrip.addEventListener(
+    'scroll',
+    handleScroll,
+  )
+
+  updateDocumentTabScrollState()
+
+  return () => {
+    resizeObserver.disconnect()
+
+    tabStrip.removeEventListener(
+      'scroll',
+      handleScroll,
+    )
+  }
+}, [])
 
 const [
   fontFamily,
@@ -1190,16 +1286,49 @@ const updatedItems =
 
       <section className="journal-editor-main">
         <header className="journal-editor-header">
-          <div className="journal-document-tabs">
-            {journal && (
-              <button
-                type="button"
-                className="journal-document-tab active permanent"
-              >
-                Master
-              </button>
-            )}
-          </div>
+          <div className="journal-document-tabs-container">
+  <button
+    type="button"
+    className="journal-document-tabs-scroll"
+    aria-label="Scroll document tabs left"
+    disabled={!canScrollTabsLeft}
+    onClick={() => {
+      scrollDocumentTabs(
+        'left',
+      )
+    }}
+  >
+    ‹
+  </button>
+
+  <div
+    ref={documentTabsRef}
+    className="journal-document-tabs"
+  >
+    {journal && (
+      <button
+        type="button"
+        className="journal-document-tab active permanent"
+      >
+        Master
+      </button>
+    )}
+  </div>
+
+  <button
+    type="button"
+    className="journal-document-tabs-scroll"
+    aria-label="Scroll document tabs right"
+    disabled={!canScrollTabsRight}
+    onClick={() => {
+      scrollDocumentTabs(
+        'right',
+      )
+    }}
+  >
+    ›
+  </button>
+</div>
 
           <div className="journal-format-controls">
   <label>

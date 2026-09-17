@@ -189,7 +189,7 @@ export function JournalPage({
           right:
             `calc(100% + ${
               (fragment.left ?? 0) +
-              8
+              12
             }px)`,
         }
       : undefined
