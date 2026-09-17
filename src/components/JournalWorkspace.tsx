@@ -169,16 +169,33 @@ useEffect(() => {
 }, [])
 
 const fontFamily =
-  project.readability.fontFamily
+  project.readability
+    ?.fontFamily ?? 'Arial'
 
 const fontSize =
-  project.readability.fontSize
+  project.readability
+    ?.fontSize ?? 14
 
 const titleFontSize =
   fontSize * 1.75
 
 const titleLineHeight =
   titleFontSize * 1.25
+
+  const [
+  searchText,
+  setSearchText,
+] = useState('')
+
+const [
+  searchHighlight,
+  setSearchHighlight,
+] = useState<{
+  pageIndex: number
+  fragmentIndex: number
+  start: number
+  end: number
+} | null>(null)
 
 const [
   editingItem,
@@ -457,6 +474,8 @@ useEffect(() => {
 function navigateToEntry(
   entryId: string,
 ) {
+  clearSearchPosition()
+
   const startPage =
     journalPagination
       .entryStartPages
@@ -1438,24 +1457,249 @@ const updatedItems =
   setEditingItem(null)
 }
 
+type SearchMatch = {
+  pageIndex: number
+  fragmentIndex: number
+  start: number
+  end: number
+}
+
+function getSearchMatches(
+  query: string,
+): SearchMatch[] {
+  const normalizedQuery =
+    query.trim().toLocaleLowerCase()
+
+  if (!normalizedQuery) {
+    return []
+  }
+
+  const matches:
+    SearchMatch[] = []
+
+  journalPagination.pages.forEach(
+    (page, physicalPageIndex) => {
+      page.fragments.forEach(
+        (
+          fragment,
+          fragmentIndex,
+        ) => {
+          if (
+            fragment.type ===
+            'addItem'
+          ) {
+            return
+          }
+
+          const searchableText =
+            fragment.text
+              .toLocaleLowerCase()
+
+          let searchFrom = 0
+
+          while (
+            searchFrom <=
+            searchableText.length -
+              normalizedQuery.length
+          ) {
+            const start =
+              searchableText.indexOf(
+                normalizedQuery,
+                searchFrom,
+              )
+
+            if (start < 0) {
+              break
+            }
+
+            matches.push({
+              pageIndex:
+                physicalPageIndex,
+
+              fragmentIndex,
+
+              start,
+
+              end:
+                start +
+                normalizedQuery.length,
+            })
+
+            searchFrom =
+              start +
+              normalizedQuery.length
+          }
+        },
+      )
+    },
+  )
+
+  return matches
+}
+
+function compareSearchPosition(
+  left: SearchMatch,
+  right: SearchMatch,
+): number {
+  if (
+    left.pageIndex !==
+    right.pageIndex
+  ) {
+    return (
+      left.pageIndex -
+      right.pageIndex
+    )
+  }
+
+  if (
+    left.fragmentIndex !==
+    right.fragmentIndex
+  ) {
+    return (
+      left.fragmentIndex -
+      right.fragmentIndex
+    )
+  }
+
+  return left.start - right.start
+}
+
+function navigateToSearchMatch(
+  match: SearchMatch,
+) {
+  setSearchHighlight(
+    match,
+  )
+
+  setPageIndex(
+    singlePageMode
+      ? match.pageIndex
+      : match.pageIndex -
+          (match.pageIndex % 2),
+  )
+}
+
+function findNextSearchMatch() {
+  const matches =
+    getSearchMatches(
+      searchText,
+    )
+
+  if (matches.length === 0) {
+    setSearchHighlight(null)
+    return
+  }
+
+  /*
+   * A highlighted result becomes
+   * the current search position.
+   *
+   * Without a highlight, the
+   * current position is the top
+   * of the displayed left page.
+   */
+  if (searchHighlight) {
+    const nextMatch =
+      matches.find(
+        (match) =>
+          compareSearchPosition(
+            match,
+            searchHighlight,
+          ) > 0,
+      )
+
+    navigateToSearchMatch(
+      nextMatch ??
+        matches[0],
+    )
+
+    return
+  }
+
+  const nextMatch =
+    matches.find(
+      (match) =>
+        match.pageIndex >=
+        pageIndex,
+    )
+
+  navigateToSearchMatch(
+    nextMatch ??
+      matches[0],
+  )
+}
+
+function findPreviousSearchMatch() {
+  const matches =
+    getSearchMatches(
+      searchText,
+    )
+
+  if (matches.length === 0) {
+    setSearchHighlight(null)
+    return
+  }
+
+  if (searchHighlight) {
+    const previousMatch =
+      [...matches]
+        .reverse()
+        .find(
+          (match) =>
+            compareSearchPosition(
+              match,
+              searchHighlight,
+            ) < 0,
+        )
+
+    navigateToSearchMatch(
+      previousMatch ??
+        matches[
+          matches.length - 1
+        ],
+    )
+
+    return
+  }
+
+  /*
+   * With no active result,
+   * Previous searches strictly
+   * before the top of the
+   * displayed left page.
+   */
+  const previousMatch =
+    [...matches]
+      .reverse()
+      .find(
+        (match) =>
+          match.pageIndex <
+          pageIndex,
+      )
+
+  navigateToSearchMatch(
+    previousMatch ??
+      matches[
+        matches.length - 1
+      ],
+  )
+}
+
+function clearSearchPosition() {
+  setSearchHighlight(null)
+}
+
   return (
     <div className="journal-editor">
       <aside className="journal-inspector">
         <div className="journal-inspector-header">
-          <button
-            type="button"
-            className="journal-inspector-tab active"
-          >
-            ToC
-          </button>
-
-          <button
-            type="button"
-            className="journal-inspector-tab"
-          >
-            Search
-          </button>
-        </div>
+  <button
+    type="button"
+    className="journal-inspector-tab active"
+  >
+    ToC
+  </button>
+</div>
 
         <div className="journal-toc">
           {sections.length === 0 ? (
@@ -1532,6 +1776,63 @@ const updatedItems =
             )
           )}
         </div>
+
+        <div className="journal-search">
+  <span className="journal-search-label">
+    Search
+  </span>
+
+  <input
+    type="search"
+    value={searchText}
+    placeholder="Find in Journal..."
+    disabled={!journal}
+    onChange={(event) => {
+      setSearchText(
+        event.target.value,
+      )
+
+      clearSearchPosition()
+    }}
+    onKeyDown={(event) => {
+      if (
+        event.key === 'Enter'
+      ) {
+        event.preventDefault()
+
+        findNextSearchMatch()
+      }
+    }}
+  />
+
+  <div className="journal-search-controls">
+    <button
+      type="button"
+      disabled={
+        !journal ||
+        !searchText.trim()
+      }
+      onClick={
+        findPreviousSearchMatch
+      }
+    >
+      ‹ Previous
+    </button>
+
+    <button
+      type="button"
+      disabled={
+        !journal ||
+        !searchText.trim()
+      }
+      onClick={
+        findNextSearchMatch
+      }
+    >
+      Next ›
+    </button>
+  </div>
+</div>
 
         <div className="journal-add-field">
           <span>
@@ -1723,7 +2024,8 @@ const updatedItems =
   disabled={!hasPreviousPage}
   aria-label="Previous pages"
   onClick={() => {
-  const previousIndex =
+    clearSearchPosition()
+    const previousIndex =
     getPreviousPageIndex(
       pageIndex,
     )
@@ -1744,6 +2046,12 @@ const updatedItems =
               <JournalPage
                 page={leftPage ?? undefined}
                 pageNumber={leftPageIndex + 1}
+                searchHighlight={
+                  searchHighlight?.pageIndex ===
+                  leftPageIndex
+                    ? searchHighlight
+                    : null
+                }
                 fontFamily={fontFamily}
                 fontSize={fontSize}
                 titleFontSize={titleFontSize}
@@ -1758,6 +2066,12 @@ const updatedItems =
               <JournalPage
                 page={rightPage ?? undefined}
                 pageNumber={rightPageIndex + 1}
+                searchHighlight={
+                  searchHighlight?.pageIndex ===
+                  rightPageIndex
+                    ? searchHighlight
+                    : null
+                }
                 fontFamily={fontFamily}
                 fontSize={fontSize}
                 titleFontSize={titleFontSize}
@@ -1775,7 +2089,8 @@ const updatedItems =
   disabled={!hasNextPage}
   aria-label="Next pages"
   onClick={() => {
-  const nextIndex =
+    clearSearchPosition()
+    const nextIndex =
     getNextPageIndex(
       pageIndex,
     )
