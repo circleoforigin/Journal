@@ -1693,12 +1693,9 @@ function clearSearchPosition() {
     <div className="journal-editor">
       <aside className="journal-inspector">
         <div className="journal-inspector-header">
-  <button
-    type="button"
-    className="journal-inspector-tab active"
-  >
-    ToC
-  </button>
+  <div className="journal-inspector-title">
+    Table of Contents
+  </div>
 </div>
 
         <div className="journal-toc">

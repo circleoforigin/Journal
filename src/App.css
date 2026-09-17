@@ -246,6 +246,20 @@
     1px solid #45474e;
 }
 
+.journal-inspector-title {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 12px;
+
+  color: #dddddd;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .journal-inspector-tab {
   flex: 1;
 
