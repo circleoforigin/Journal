@@ -17,6 +17,129 @@ interface JournalItemEditorProps {
   onClose: () => void
 }
 
+function markupToHtml(
+  value: string,
+): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(
+      /&lt;b&gt;/gi,
+      '<strong>',
+    )
+    .replace(
+      /&lt;\/b&gt;/gi,
+      '</strong>',
+    )
+    .replace(
+      /&lt;i&gt;/gi,
+      '<em>',
+    )
+    .replace(
+      /&lt;\/i&gt;/gi,
+      '</em>',
+    )
+    .replace(
+      /&lt;u&gt;/gi,
+      '<u>',
+    )
+    .replace(
+      /&lt;\/u&gt;/gi,
+      '</u>',
+    )
+    .replace(/\n/g, '<br>')
+    .replace(/\t/g, '&#9;')
+}
+
+function nodeToMarkup(
+  node: Node,
+): string {
+  if (
+    node.nodeType ===
+    Node.TEXT_NODE
+  ) {
+    return (
+      node.textContent ?? ''
+    )
+  }
+
+  if (
+    node.nodeType !==
+    Node.ELEMENT_NODE
+  ) {
+    return ''
+  }
+
+  const element =
+    node as HTMLElement
+
+  const tagName =
+    element.tagName
+      .toLowerCase()
+
+  if (tagName === 'br') {
+    return '\n'
+  }
+
+  const content =
+    Array.from(
+      element.childNodes,
+    )
+      .map(nodeToMarkup)
+      .join('')
+
+  if (
+    tagName === 'b' ||
+    tagName === 'strong'
+  ) {
+    return (
+      '<b>' +
+      content +
+      '</b>'
+    )
+  }
+
+  if (
+    tagName === 'i' ||
+    tagName === 'em'
+  ) {
+    return (
+      '<i>' +
+      content +
+      '</i>'
+    )
+  }
+
+  if (tagName === 'u') {
+    return (
+      '<u>' +
+      content +
+      '</u>'
+    )
+  }
+
+  if (tagName === 'div') {
+    return (
+      '\n' +
+      content
+    )
+  }
+
+  return content
+}
+
+function editorToMarkup(
+  editor: HTMLDivElement,
+): string {
+  return Array.from(
+    editor.childNodes,
+  )
+    .map(nodeToMarkup)
+    .join('')
+    .replace(/^\n/, '')
+}
+
 export function JournalItemEditor({
   value,
   fontFamily,
@@ -26,64 +149,103 @@ export function JournalItemEditor({
   onClose,
 }: JournalItemEditorProps)
 {
-  const textareaRef =
-    useRef<HTMLTextAreaElement | null>(
+  const editorRef =
+    useRef<HTMLDivElement | null>(
       null,
     )
 
-  function applyMarkup(
-    tag: 'b' | 'i' | 'u',
-  ) {
-    const textarea =
-      textareaRef.current
+  const internalValueRef =
+    useRef(value)
 
-    if (!textarea) {
+  function syncValue() {
+    const editor =
+      editorRef.current
+
+    if (!editor) {
       return
     }
-
-    const start =
-      textarea.selectionStart
-
-    const end =
-      textarea.selectionEnd
-
-    if (start === end) {
-      return
-    }
-
-    const selectedText =
-      value.slice(start, end)
-
-    const openTag =
-      `<${tag}>`
-
-    const closeTag =
-      `</${tag}>`
-
-    const replacement =
-      openTag +
-      selectedText +
-      closeTag
 
     const nextValue =
-      value.slice(0, start) +
-      replacement +
-      value.slice(end)
+      editorToMarkup(
+        editor,
+      )
+
+    internalValueRef.current =
+      nextValue
 
     onChange(nextValue)
+  }
 
-    requestAnimationFrame(() => {
-      textarea.focus()
+  function applyFormatting(
+    command:
+      | 'bold'
+      | 'italic'
+      | 'underline',
+  ) {
+    const editor =
+      editorRef.current
 
-      textarea.setSelectionRange(
-        start + openTag.length,
-        end + openTag.length,
+    if (!editor) {
+      return
+    }
+
+    editor.focus()
+
+    document.execCommand(
+      command,
+      false,
+    )
+
+    syncValue()
+  }
+
+  function insertTab() {
+    const selection =
+      window.getSelection()
+
+    if (
+      !selection ||
+      selection.rangeCount === 0
+    ) {
+      return
+    }
+
+    const range =
+      selection.getRangeAt(0)
+
+    range.deleteContents()
+
+    const tab =
+      document.createTextNode(
+        '\t',
       )
-    })
+
+    range.insertNode(tab)
+
+    range.setStartAfter(tab)
+    range.collapse(true)
+
+    selection.removeAllRanges()
+    selection.addRange(range)
+
+    syncValue()
   }
 
   useEffect(() => {
-    textareaRef.current?.focus()
+    const editor =
+      editorRef.current
+
+    if (!editor) {
+      return
+    }
+
+    editor.innerHTML =
+      markupToHtml(value)
+
+    internalValueRef.current =
+      value
+
+    editor.focus()
   }, [])
 
   return (
@@ -96,7 +258,9 @@ export function JournalItemEditor({
             event.preventDefault()
           }}
           onClick={() => {
-            applyMarkup('b')
+            applyFormatting(
+              'bold',
+            )
           }}
         >
           <strong>B</strong>
@@ -109,7 +273,9 @@ export function JournalItemEditor({
             event.preventDefault()
           }}
           onClick={() => {
-            applyMarkup('i')
+            applyFormatting(
+              'italic',
+            )
           }}
         >
           <em>I</em>
@@ -122,55 +288,39 @@ export function JournalItemEditor({
             event.preventDefault()
           }}
           onClick={() => {
-            applyMarkup('u')
+            applyFormatting(
+              'underline',
+            )
           }}
         >
           <u>U</u>
         </button>
       </div>
 
-      <textarea
-        ref={textareaRef}
+      <div
+        ref={editorRef}
         className="journal-item-editor-input"
-        style={{fontFamily, fontSize: `${fontSize}px`}}
-        value={value}
-        onChange={(event) => {
-          onChange(
-            event.target.value,
-          )
+        contentEditable
+        suppressContentEditableWarning
+        spellCheck
+        style={{
+          fontFamily,
+          fontSize:
+            `${fontSize}px`,
+        }}
+        onInput={() => {
+          syncValue()
         }}
         onKeyDown={(event) => {
-          if (event.key !== 'Tab') {
+          if (
+            event.key !== 'Tab'
+          ) {
             return
           }
 
           event.preventDefault()
 
-          const textarea =
-            event.currentTarget
-
-          const start =
-            textarea.selectionStart
-
-          const end =
-            textarea.selectionEnd
-
-          const nextValue =
-            value.slice(0, start) +
-            '\t' +
-            value.slice(end)
-
-          onChange(nextValue)
-
-          requestAnimationFrame(() => {
-            const position =
-              start + 1
-
-            textarea.setSelectionRange(
-              position,
-              position,
-            )
-          })
+          insertTab()
         }}
       />
 

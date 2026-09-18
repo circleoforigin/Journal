@@ -1530,27 +1530,21 @@
 
 .journal-item-editor-input {
   flex: 1;
-
   min-height: 0;
-
   box-sizing: border-box;
-
   margin: 10px 12px 8px;
-
   padding: 10px;
-
   resize: none;
-
   border: 1px solid #aaa;
-
   outline: 0;
-
   background: #eee9dc;
   color: #202020;
-
   font: inherit;
-
   overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  overflow-y: auto;
+  tab-size: 4;
 }
 
 .journal-item-editor-input:focus {
