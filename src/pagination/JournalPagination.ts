@@ -22,9 +22,17 @@ export interface JournalPageFieldFragment {
   height: number
 }
 
+export interface JournalPageTextRun {
+  text: string
+  bold: boolean
+  italic: boolean
+  underline: boolean
+}
+
 export interface JournalPageItemParagraph {
   text: string
   indented: boolean
+  runs: JournalPageTextRun[]
 }
 
 export interface JournalPageItemFragment {
