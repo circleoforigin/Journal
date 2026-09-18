@@ -950,6 +950,56 @@
   border-radius: 4px;
 }
 
+.new-page-dialog {
+  width: 360px;
+  padding: 14px;
+}
+
+.new-page-dialog h2 {
+  margin-bottom: 8px;
+}
+
+.new-page-dialog
+.dialog-field {
+  gap: 3px;
+}
+
+.new-page-dialog
+.dialog-field + .dialog-field {
+  margin-top: 7px;
+}
+
+.new-page-dialog textarea {
+  min-height: 58px;
+
+  box-sizing: border-box;
+
+  padding: 8px;
+
+  resize: vertical;
+
+  background: #1f2023;
+  color: #eeeeee;
+
+  border:
+    1px solid #45474e;
+  border-radius: 4px;
+
+  font: inherit;
+}
+
+.new-page-dialog
+.dialog-actions {
+  margin-top: 12px;
+}
+
+.new-page-dialog small {
+  color: #999999;
+
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .dialog-actions {
   display: flex;
   justify-content: flex-end;

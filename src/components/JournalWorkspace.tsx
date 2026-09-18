@@ -13,6 +13,7 @@ import type { Project } from '../models/Project'
 import type { Journal } from '../models/Journal'
 import { JournalPage } from './JournalPage'
 import { JournalItemEditor } from './JournalItemEditor'
+import { NewPageDialog } from '../entries/NewPageDialog'
 import { buildJournalDocument } from '../pagination/JournalDocumentBuilder'
 import {
   paginateJournalDocument,
@@ -207,11 +208,37 @@ const [
   value: string
 } | null>(null)
 
+const [
+  newPageSectionId,
+  setNewPageSectionId,
+] = useState<string | null>(null)
+
 const titleDefinition =
   project.fieldDefinitions.find(
     (field) =>
       field.isSystem &&
       field.name === 'Title',
+  )
+
+  const subtitleDefinition =
+  project.fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Subtitle',
+  )
+
+const briefDefinition =
+  project.fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Brief',
+  )
+
+const notesDefinition =
+  project.fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Notes',
   )
 
   const sections =
@@ -784,10 +811,43 @@ const hasNextPage =
 
 async function createEntry(
   sectionDefinitionId: string,
+  title: string,
+  subtitle: string,
+  brief: string,
 ) {
   if (
     !journal ||
-    !titleDefinition
+    !titleDefinition ||
+    !subtitleDefinition ||
+    !briefDefinition ||
+    !notesDefinition
+  ) {
+    return
+  }
+
+  const section =
+    sections.find(
+      (candidate) =>
+        candidate.id ===
+        sectionDefinitionId,
+    )
+
+  if (
+    !section ||
+    section.isSystem
+  ) {
+    return
+  }
+
+  const trimmedTitle =
+    title.trim()
+
+  const trimmedBrief =
+    brief.trim()
+
+  if (
+    !trimmedTitle ||
+    !trimmedBrief
   ) {
     return
   }
@@ -795,25 +855,55 @@ async function createEntry(
   const now =
     new Date().toISOString()
 
+  function createSystemItem(
+    value: string,
+  ): JournalFieldItem {
+    return {
+      id: crypto.randomUUID(),
+      order: 0,
+      value,
+      source: 'master',
+      createdAt: now,
+      updatedAt: now,
+    }
+  }
+
   const entry: JournalEntry = {
     id: crypto.randomUUID(),
 
     sectionDefinitionId,
 
     fields: {
-  [titleDefinition.id]: {
-    items: [
-      {
-        id: crypto.randomUUID(),
-        order: 0,
-        value: 'New Entry',
-        source: 'master',
-        createdAt: now,
-        updatedAt: now,
+      [titleDefinition.id]: {
+        items: [
+          createSystemItem(
+            trimmedTitle,
+          ),
+        ],
       },
-    ],
-  },
-},
+
+      [subtitleDefinition.id]: {
+        items: [
+          createSystemItem(
+            subtitle.trim(),
+          ),
+        ],
+      },
+
+      [briefDefinition.id]: {
+        items: [
+          createSystemItem(
+            trimmedBrief,
+          ),
+        ],
+      },
+
+      [notesDefinition.id]: {
+        items: [
+          createSystemItem(''),
+        ],
+      },
+    },
 
     createdAt: now,
     updatedAt: now,
@@ -846,6 +936,8 @@ async function createEntry(
   setPendingEntryNavigationId(
     entry.id,
   )
+
+  setNewPageSectionId(null)
 
   onJournalChange(
     updatedJournal,
@@ -1717,6 +1809,39 @@ function clearSearchPosition() {
 
   return (
     <div className="journal-editor">
+      {newPageSectionId && (() => {
+  const section =
+    sections.find(
+      (candidate) =>
+        candidate.id ===
+        newPageSectionId,
+    )
+
+  if (!section) {
+    return null
+  }
+
+  return (
+    <NewPageDialog
+      sectionName={section.name}
+      onCancel={() => {
+        setNewPageSectionId(null)
+      }}
+      onCreate={async (
+        title,
+        subtitle,
+        brief,
+      ) => {
+        await createEntry(
+          section.id,
+          title,
+          subtitle,
+          brief,
+        )
+      }}
+    />
+  )
+})()}
       <aside className="journal-inspector">
         <div className="journal-inspector-header">
   <div className="journal-inspector-title">
@@ -1751,7 +1876,7 @@ function clearSearchPosition() {
       !titleDefinition
     }
     onClick={() => {
-      void createEntry(
+      setNewPageSectionId(
         section.id,
       )
     }}
