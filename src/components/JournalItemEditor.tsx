@@ -27,6 +27,57 @@ export function JournalItemEditor({
       null,
     )
 
+    function applyMarkup(
+  tag: 'b' | 'i' | 'u',
+) {
+  const textarea =
+    textareaRef.current
+
+  if (!textarea) {
+    return
+  }
+
+  const start =
+    textarea.selectionStart
+
+  const end =
+    textarea.selectionEnd
+
+  if (start === end) {
+    return
+  }
+
+  const selectedText =
+    value.slice(start, end)
+
+  const openTag =
+    `<${tag}>`
+
+  const closeTag =
+    `</${tag}>`
+
+  const replacement =
+    openTag +
+    selectedText +
+    closeTag
+
+  const nextValue =
+    value.slice(0, start) +
+    replacement +
+    value.slice(end)
+
+  onChange(nextValue)
+
+  requestAnimationFrame(() => {
+    textarea.focus()
+
+    textarea.setSelectionRange(
+      start + openTag.length,
+      end + openTag.length,
+    )
+  })
+}
+
   useEffect(() => {
     textareaRef.current?.focus()
   }, [])
@@ -37,6 +88,12 @@ export function JournalItemEditor({
         <button
           type="button"
           title="Bold"
+          onMouseDown={(event) => {
+            event.preventDefault()
+          }}
+          onClick={() => {
+            applyMarkup('b')
+          }}
         >
           <strong>B</strong>
         </button>
@@ -44,6 +101,12 @@ export function JournalItemEditor({
         <button
           type="button"
           title="Italic"
+          onMouseDown={(event) => {
+            event.preventDefault()
+          }}
+          onClick={() => {
+            applyMarkup('i')
+          }}
         >
           <em>I</em>
         </button>
@@ -51,19 +114,61 @@ export function JournalItemEditor({
         <button
           type="button"
           title="Underline"
+          onMouseDown={(event) => {
+            event.preventDefault()
+          }}
+          onClick={() => {
+            applyMarkup('u')
+          }}
         >
           <u>U</u>
         </button>
 
-<button
-  type="button"
-  className="journal-item-editor-confirm"
-  title="Confirm changes"
-  onClick={onConfirm}
->
-  Confirm
-</button>
+      <textarea
+        ref={textareaRef}
+        className="journal-item-editor-input"
+        value={value}
+        onChange={(event) => {
+          onChange(
+            event.target.value,
+          )
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Tab') {
+            return
+          }
 
+          event.preventDefault()
+          const textarea = event.currentTarget
+          const start = textarea.selectionStart
+          const end = textarea.selectionEnd
+          const nextValue =
+            value.slice(0, start) +
+            '\t' +
+            value.slice(end)
+
+          onChange(nextValue)
+
+          requestAnimationFrame(() => {
+            const position = start + 1
+
+            textarea.setSelectionRange(
+              position,
+              position,
+            )
+          })
+        }}
+      />
+
+      <button
+        type="button"
+        className="journal-item-editor-confirm"
+        title="Confirm changes"
+        onClick={onConfirm}
+      >
+        Confirm
+      </button>
+        
         <button
           type="button"
           className="journal-item-editor-close"
@@ -73,50 +178,6 @@ export function JournalItemEditor({
           Cancel
         </button>
       </div>
-
-      <textarea
-  ref={textareaRef}
-  className="journal-item-editor-input"
-  value={value}
-  onChange={(event) => {
-    onChange(
-      event.target.value,
-    )
-  }}
-  onKeyDown={(event) => {
-    if (event.key !== 'Tab') {
-      return
-    }
-
-    event.preventDefault()
-
-    const textarea =
-      event.currentTarget
-
-    const start =
-      textarea.selectionStart
-
-    const end =
-      textarea.selectionEnd
-
-    const nextValue =
-      value.slice(0, start) +
-      '\t' +
-      value.slice(end)
-
-    onChange(nextValue)
-
-    requestAnimationFrame(() => {
-      const position =
-        start + 1
-
-      textarea.setSelectionRange(
-        position,
-        position,
-      )
-    })
-  }}
-/>
     </div>
   )
 }
