@@ -4,6 +4,7 @@ import type {
 
 import type {
   JournalPageLayout,
+  JournalPageTextRun,
 } from '../pagination/JournalPagination'
 
 interface JournalSearchHighlight {
@@ -123,6 +124,118 @@ export function JournalPage({
       </>
     )
   }
+
+  function renderFormattedText(
+  runs: JournalPageTextRun[],
+  fragmentIndex: number,
+  textOffset = 0,
+) {
+  if (runs.length === 0) {
+    return '\u00a0'
+  }
+
+  let runOffset = 0
+
+  return runs.map(
+    (run, runIndex) => {
+      const runStart =
+        runOffset
+
+      const runEnd =
+        runStart +
+        run.text.length
+
+      runOffset =
+        runEnd
+
+      const style = {
+        fontWeight:
+          run.bold
+            ? 700
+            : undefined,
+
+        fontStyle:
+          run.italic
+            ? 'italic'
+            : undefined,
+
+        textDecoration:
+          run.underline
+            ? 'underline'
+            : undefined,
+      }
+
+      const highlightStart =
+        searchHighlight &&
+        searchHighlight
+          .fragmentIndex ===
+          fragmentIndex
+          ? Math.max(
+              runStart,
+              searchHighlight.start -
+                textOffset,
+            )
+          : runEnd
+
+      const highlightEnd =
+        searchHighlight &&
+        searchHighlight
+          .fragmentIndex ===
+          fragmentIndex
+          ? Math.min(
+              runEnd,
+              searchHighlight.end -
+                textOffset,
+            )
+          : runStart
+
+      if (
+        highlightStart >=
+        highlightEnd
+      ) {
+        return (
+          <span
+            key={runIndex}
+            style={style}
+          >
+            {run.text}
+          </span>
+        )
+      }
+
+      const localStart =
+        highlightStart -
+        runStart
+
+      const localEnd =
+        highlightEnd -
+        runStart
+
+      return (
+        <span
+          key={runIndex}
+          style={style}
+        >
+          {run.text.slice(
+            0,
+            localStart,
+          )}
+
+          <mark className="journal-search-highlight">
+            {run.text.slice(
+              localStart,
+              localEnd,
+            )}
+          </mark>
+
+          {run.text.slice(
+            localEnd,
+          )}
+        </span>
+      )
+    },
+  )
+}
 
   return (
     <div className="journal-page">
@@ -379,8 +492,8 @@ export function JournalPage({
                                 : 0,
                           }}
                         >
-                          {renderText(
-                            paragraph.text,
+                          {renderFormattedText(
+                            paragraph.runs,
                             index,
                             currentOffset,
                           )}
