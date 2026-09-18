@@ -3,10 +3,15 @@ import type {
   JournalDocumentBlock,
 } from './JournalDocument'
 
+import {
+  parseJournalFormatting,
+} from './JournalMarkupParser'
+
 import type {
   JournalPageFragment,
   JournalPageLayout,
   JournalPaginationResult,
+  JournalPageTextRun,
 } from './JournalPagination'
 
 export interface JournalPaginationMetrics {
@@ -36,6 +41,7 @@ function createPage(
 
 interface MeasuredLine {
   text: string
+  runs: JournalPageTextRun[]
   paragraphIndex: number
   firstLineOfParagraph: boolean
   indented: boolean
@@ -45,7 +51,7 @@ interface MeasuredLine {
 const PARAGRAPH_INDENT_EM = 2
 
 function measureBrowserLines(
-  text: string,
+  storedText: string,
   width: number,
   fontFamily: string,
   fontSize: number,
@@ -73,12 +79,13 @@ function measureBrowserLines(
     container,
   )
 
-  const lines: MeasuredLine[] = []
+  const lines:
+    MeasuredLine[] = []
 
-  const paragraphs =
-    text.split('\n')
+  const storedParagraphs =
+    storedText.split('\n')
 
-  paragraphs.forEach(
+  storedParagraphs.forEach(
     (
       storedParagraph,
       paragraphIndex,
@@ -88,10 +95,22 @@ function measureBrowserLines(
           '\t',
         )
 
-      const paragraphText =
+      const paragraphMarkup =
         indented
           ? storedParagraph.slice(1)
           : storedParagraph
+
+      const formattedRuns =
+        parseJournalFormatting(
+          paragraphMarkup,
+        )
+
+      const paragraphText =
+        formattedRuns
+          .map(
+            (run) => run.text,
+          )
+          .join('')
 
       const paragraph =
         document.createElement('div')
@@ -132,7 +151,9 @@ function measureBrowserLines(
        * An empty paragraph still
        * occupies one physical line.
        */
-      if (paragraphText.length === 0) {
+      if (
+        paragraphText.length === 0
+      ) {
         paragraph.textContent =
           '\u00a0'
 
@@ -142,8 +163,10 @@ function measureBrowserLines(
 
         lines.push({
           text: '',
+          runs: [],
           paragraphIndex,
-          firstLineOfParagraph: true,
+          firstLineOfParagraph:
+            true,
           indented,
           endsParagraph: true,
         })
@@ -151,44 +174,178 @@ function measureBrowserLines(
         return
       }
 
-      const textNode =
-        document.createTextNode(
-          paragraphText,
+      /*
+       * Build the actual styled DOM
+       * that the browser will use
+       * for line wrapping.
+       *
+       * Every visible character is
+       * associated with its source
+       * formatting so markup itself
+       * consumes no page space.
+       */
+      const characters: {
+        character: string
+        bold: boolean
+        italic: boolean
+        underline: boolean
+        node: Text
+        nodeOffset: number
+      }[] = []
+
+      for (
+        const run
+        of formattedRuns
+      ) {
+        if (!run.text) {
+          continue
+        }
+
+        const span =
+          document.createElement(
+            'span',
+          )
+
+        if (run.bold) {
+          span.style.fontWeight =
+            '700'
+        }
+
+        if (run.italic) {
+          span.style.fontStyle =
+            'italic'
+        }
+
+        if (run.underline) {
+          span.style.textDecoration =
+            'underline'
+        }
+
+        const textNode =
+          document.createTextNode(
+            run.text,
+          )
+
+        span.appendChild(
+          textNode,
         )
 
-      paragraph.appendChild(
-        textNode,
-      )
+        paragraph.appendChild(
+          span,
+        )
+
+        for (
+          let index = 0;
+          index < run.text.length;
+          index += 1
+        ) {
+          characters.push({
+            character:
+              run.text[index],
+
+            bold:
+              run.bold,
+
+            italic:
+              run.italic,
+
+            underline:
+              run.underline,
+
+            node:
+              textNode,
+
+            nodeOffset:
+              index,
+          })
+        }
+      }
 
       container.appendChild(
         paragraph,
       )
 
+      function buildLineRuns(
+        start: number,
+        end: number,
+      ): JournalPageTextRun[] {
+        const result:
+          JournalPageTextRun[] = []
+
+        for (
+          let index = start;
+          index < end;
+          index += 1
+        ) {
+          const character =
+            characters[index]
+
+          const previous =
+            result[
+              result.length - 1
+            ]
+
+          if (
+            previous &&
+            previous.bold ===
+              character.bold &&
+            previous.italic ===
+              character.italic &&
+            previous.underline ===
+              character.underline
+          ) {
+            previous.text +=
+              character.character
+          } else {
+            result.push({
+              text:
+                character.character,
+
+              bold:
+                character.bold,
+
+              italic:
+                character.italic,
+
+              underline:
+                character.underline,
+            })
+          }
+        }
+
+        return result
+      }
+
       let lineStart = 0
+
       let previousTop:
         number | null = null
 
       for (
         let index = 0;
         index <
-        paragraphText.length;
+        characters.length;
         index += 1
       ) {
+        const character =
+          characters[index]
+
         const range =
           document.createRange()
 
         range.setStart(
-          textNode,
-          index,
+          character.node,
+          character.nodeOffset,
         )
 
         range.setEnd(
-          textNode,
-          index + 1,
+          character.node,
+          character.nodeOffset + 1,
         )
 
         const rect =
-          range.getBoundingClientRect()
+          range
+            .getBoundingClientRect()
 
         const currentTop =
           Math.round(rect.top)
@@ -197,36 +354,69 @@ function measureBrowserLines(
           previousTop !== null &&
           currentTop !== previousTop
         ) {
+          const lineRuns =
+            buildLineRuns(
+              lineStart,
+              index,
+            )
+
           lines.push({
             text:
-              paragraphText.slice(
-                lineStart,
-                index,
-              ),
+              lineRuns
+                .map(
+                  (run) =>
+                    run.text,
+                )
+                .join(''),
+
+            runs:
+              lineRuns,
+
             paragraphIndex,
+
             firstLineOfParagraph:
               lineStart === 0,
+
             indented,
-            endsParagraph: false,
+
+            endsParagraph:
+              false,
           })
 
-          lineStart = index
+          lineStart =
+            index
         }
 
         previousTop =
           currentTop
       }
 
+      const finalRuns =
+        buildLineRuns(
+          lineStart,
+          characters.length,
+        )
+
       lines.push({
         text:
-          paragraphText.slice(
-            lineStart,
-          ),
+          finalRuns
+            .map(
+              (run) => run.text,
+            )
+            .join(''),
+
+        runs:
+          finalRuns,
+
         paragraphIndex,
+
         firstLineOfParagraph:
           lineStart === 0,
+
         indented,
-        endsParagraph: true,
+
+        endsParagraph:
+          true,
       })
     },
   )
@@ -238,8 +428,10 @@ function measureBrowserLines(
     : [
         {
           text: '',
+          runs: [],
           paragraphIndex: 0,
-          firstLineOfParagraph: true,
+          firstLineOfParagraph:
+            true,
           indented: false,
           endsParagraph: true,
         },
@@ -247,7 +439,7 @@ function measureBrowserLines(
 }
 
 function measureSingleLineWidth(
-  text: string,
+  storedText: string,
   fontFamily: string,
   fontSize: number,
   fontWeight = '400',
@@ -276,15 +468,47 @@ function measureSingleLineWidth(
   element.style.fontWeight =
     fontWeight
 
-  element.textContent =
-    text
+  const runs =
+    parseJournalFormatting(
+      storedText,
+    )
+
+  for (const run of runs) {
+    const span =
+      document.createElement(
+        'span',
+      )
+
+    if (run.bold) {
+      span.style.fontWeight =
+        '700'
+    }
+
+    if (run.italic) {
+      span.style.fontStyle =
+        'italic'
+    }
+
+    if (run.underline) {
+      span.style.textDecoration =
+        'underline'
+    }
+
+    span.textContent =
+      run.text
+
+    element.appendChild(
+      span,
+    )
+  }
 
   document.body.appendChild(
     element,
   )
 
   const width =
-    element.getBoundingClientRect()
+    element
+      .getBoundingClientRect()
       .width
 
   element.remove()
@@ -456,10 +680,11 @@ export function paginateJournalDocument(
         metrics.lineHeight
 
       const paragraphs:
-        {
-          text: string
-          indented: boolean
-        }[] = []
+      {
+        text: string
+        indented: boolean
+        runs: JournalPageTextRun[]
+      }[] = []
 
       for (
         const line
@@ -470,20 +695,53 @@ export function paginateJournalDocument(
             paragraphs.length - 1
           ]
 
+      if (
+        previous &&
+        !line.firstLineOfParagraph
+      ) {
+        previous.text += line.text
+
+      for ( const run of line.runs )
+      {
+        const previousRun =
+          previous.runs[
+            previous.runs.length - 1
+          ]
+
         if (
-          previous &&
-          !line.firstLineOfParagraph
+          previousRun &&
+          previousRun.bold ===
+            run.bold &&
+          previousRun.italic ===
+            run.italic &&
+          previousRun.underline ===
+            run.underline
         ) {
-          previous.text +=
-            line.text
+          previousRun.text +=
+            run.text
         } else {
-          paragraphs.push({
-            text: line.text,
-            indented:
-              line.indented &&
-              line.firstLineOfParagraph,
+          previous.runs.push({
+            ...run,
           })
         }
+      }
+    } else {
+      paragraphs.push({
+        text:
+          line.text,
+
+        indented:
+          line.indented &&
+          line.firstLineOfParagraph,
+
+        runs:
+          line.runs.map(
+            (run) => ({
+              ...run,
+            }),
+          ),
+      })
+    }
       }
 
       const fragmentText =
@@ -606,14 +864,33 @@ export function paginateJournalDocument(
 
     currentPage.fragments.push({
       ...itemBlock,
-      text: itemBlock.text,
+      text:
+  parseJournalFormatting(
+    itemBlock.text,
+  )
+    .map(
+      (run) => run.text,
+    )
+    .join(''),
       paragraphs: [
-        {
-          text:
-            itemBlock.text,
-          indented: false,
-        },
-      ],
+  {
+    text:
+      parseJournalFormatting(
+        itemBlock.text,
+      )
+        .map(
+          (run) => run.text,
+        )
+        .join(''),
+
+    indented: false,
+
+    runs:
+      parseJournalFormatting(
+        itemBlock.text,
+      ),
+  },
+],
       top: rowTop,
       height: rowHeight,
       left: fieldWidth,
