@@ -37,11 +37,7 @@ export const fieldPresets:
     {
       name: 'Secrets',
       valueType: 'richText',
-    },
-    {
-      name: 'Notes',
-      valueType: 'richText',
-    },
+    },    
     {
       name: 'Tags',
       valueType: 'tags',

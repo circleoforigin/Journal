@@ -4,4 +4,6 @@ export interface JournalSectionDefinition {
   name: string
 
   order: number
+
+  isSystem?: boolean
 }

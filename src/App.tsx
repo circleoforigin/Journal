@@ -516,6 +516,21 @@ async function createProject(
   const now =
     new Date().toISOString()
 
+  const titleDefinitionId =
+    crypto.randomUUID()
+
+  const subtitleDefinitionId =
+    crypto.randomUUID()
+
+  const briefDefinitionId =
+    crypto.randomUUID()
+
+  const notesDefinitionId =
+    crypto.randomUUID()
+
+  const archiveSectionId =
+    crypto.randomUUID()
+
   const masterJournal:
     Journal = {
     id: crypto.randomUUID(),
@@ -535,15 +550,50 @@ async function createProject(
     fieldDefinitions: [
       {
         id:
-          crypto.randomUUID(),
+          titleDefinitionId,
         name: 'Title',
         valueType: 'text',
         order: 0,
         isSystem: true,
       },
+
+      {
+        id:
+          subtitleDefinitionId,
+        name: 'Subtitle',
+        valueType: 'text',
+        order: 1,
+        isSystem: true,
+      },
+
+      {
+        id:
+          briefDefinitionId,
+        name: 'Brief',
+        valueType: 'richText',
+        order: 2,
+        isSystem: true,
+      },
+
+      {
+        id:
+          notesDefinitionId,
+        name: 'Notes',
+        valueType: 'richText',
+        order: 3,
+        isSystem: true,
+      },
     ],
 
-    sectionDefinitions: [],
+    sectionDefinitions: [
+      {
+        id:
+          archiveSectionId,
+        name: 'Archive',
+        order: 0,
+        isSystem: true,
+      },
+    ],
 
     journalIds: [
       masterJournal.id,

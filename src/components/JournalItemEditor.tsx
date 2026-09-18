@@ -231,6 +231,63 @@ export function JournalItemEditor({
     syncValue()
   }
 
+  function trimSelectedWhitespace() {
+  requestAnimationFrame(() => {
+    const selection =
+      window.getSelection()
+
+    if (
+      !selection ||
+      selection.rangeCount === 0 ||
+      selection.isCollapsed
+    ) {
+      return
+    }
+
+    const range =
+      selection.getRangeAt(0)
+
+    const selectedText =
+      range.toString()
+
+    const trailingWhitespace =
+      selectedText.match(/\s+$/)?.[0]
+        .length ?? 0
+
+    if (
+      trailingWhitespace === 0
+    ) {
+      return
+    }
+
+    const endContainer =
+      range.endContainer
+
+    if (
+      endContainer.nodeType !==
+      Node.TEXT_NODE
+    ) {
+      return
+    }
+
+    const nextEnd =
+      range.endOffset -
+      trailingWhitespace
+
+    if (nextEnd < 0) {
+      return
+    }
+
+    range.setEnd(
+      endContainer,
+      nextEnd,
+    )
+
+    selection.removeAllRanges()
+    selection.addRange(range)
+  })
+}
+
   useEffect(() => {
     const editor =
       editorRef.current
@@ -303,6 +360,9 @@ export function JournalItemEditor({
         contentEditable
         suppressContentEditableWarning
         spellCheck
+        onDoubleClick={() => {
+          trimSelectedWhitespace()
+        }}
         style={{
           fontFamily,
           fontSize:
