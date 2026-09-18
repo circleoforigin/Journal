@@ -5,6 +5,8 @@ import {
 
 interface JournalItemEditorProps {
   value: string
+  fontFamily: string
+  fontSize: number
 
   onChange: (
     value: string,
@@ -17,6 +19,8 @@ interface JournalItemEditorProps {
 
 export function JournalItemEditor({
   value,
+  fontFamily,
+  fontSize,
   onChange,
   onConfirm,
   onClose,
@@ -27,56 +31,56 @@ export function JournalItemEditor({
       null,
     )
 
-    function applyMarkup(
-  tag: 'b' | 'i' | 'u',
-) {
-  const textarea =
-    textareaRef.current
+  function applyMarkup(
+    tag: 'b' | 'i' | 'u',
+  ) {
+    const textarea =
+      textareaRef.current
 
-  if (!textarea) {
-    return
+    if (!textarea) {
+      return
+    }
+
+    const start =
+      textarea.selectionStart
+
+    const end =
+      textarea.selectionEnd
+
+    if (start === end) {
+      return
+    }
+
+    const selectedText =
+      value.slice(start, end)
+
+    const openTag =
+      `<${tag}>`
+
+    const closeTag =
+      `</${tag}>`
+
+    const replacement =
+      openTag +
+      selectedText +
+      closeTag
+
+    const nextValue =
+      value.slice(0, start) +
+      replacement +
+      value.slice(end)
+
+    onChange(nextValue)
+
+    requestAnimationFrame(() => {
+      textarea.focus()
+
+      textarea.setSelectionRange(
+        start + openTag.length,
+        end + openTag.length,
+      )
+    })
   }
-
-  const start =
-    textarea.selectionStart
-
-  const end =
-    textarea.selectionEnd
-
-  if (start === end) {
-    return
-  }
-
-  const selectedText =
-    value.slice(start, end)
-
-  const openTag =
-    `<${tag}>`
-
-  const closeTag =
-    `</${tag}>`
-
-  const replacement =
-    openTag +
-    selectedText +
-    closeTag
-
-  const nextValue =
-    value.slice(0, start) +
-    replacement +
-    value.slice(end)
-
-  onChange(nextValue)
-
-  requestAnimationFrame(() => {
-    textarea.focus()
-
-    textarea.setSelectionRange(
-      start + openTag.length,
-      end + openTag.length,
-    )
-  })
-}
 
   useEffect(() => {
     textareaRef.current?.focus()
@@ -123,10 +127,12 @@ export function JournalItemEditor({
         >
           <u>U</u>
         </button>
+      </div>
 
       <textarea
         ref={textareaRef}
         className="journal-item-editor-input"
+        style={{fontFamily, fontSize: `${fontSize}px`}}
         value={value}
         onChange={(event) => {
           onChange(
@@ -139,9 +145,16 @@ export function JournalItemEditor({
           }
 
           event.preventDefault()
-          const textarea = event.currentTarget
-          const start = textarea.selectionStart
-          const end = textarea.selectionEnd
+
+          const textarea =
+            event.currentTarget
+
+          const start =
+            textarea.selectionStart
+
+          const end =
+            textarea.selectionEnd
+
           const nextValue =
             value.slice(0, start) +
             '\t' +
@@ -150,7 +163,8 @@ export function JournalItemEditor({
           onChange(nextValue)
 
           requestAnimationFrame(() => {
-            const position = start + 1
+            const position =
+              start + 1
 
             textarea.setSelectionRange(
               position,
@@ -160,15 +174,16 @@ export function JournalItemEditor({
         }}
       />
 
-      <button
-        type="button"
-        className="journal-item-editor-confirm"
-        title="Confirm changes"
-        onClick={onConfirm}
-      >
-        Confirm
-      </button>
-        
+      <div className="journal-item-editor-actions">
+        <button
+          type="button"
+          className="journal-item-editor-confirm"
+          title="Confirm changes"
+          onClick={onConfirm}
+        >
+          Confirm
+        </button>
+
         <button
           type="button"
           className="journal-item-editor-close"

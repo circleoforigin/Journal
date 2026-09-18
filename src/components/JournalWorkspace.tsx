@@ -2014,6 +2014,8 @@ function clearSearchPosition() {
             {editingItem && (
   <JournalItemEditor
     value={editingItem.value}
+    fontFamily={fontFamily}
+    fontSize={fontSize}
     onChange={(value) => {
       setEditingItem(
         (current) =>
