@@ -40,43 +40,69 @@ export function FieldDefinitionsDialog({
   onCancel,
 }: FieldDefinitionsDialogProps) {
   const [fields, setFields] =
-    useState<JournalFieldDefinition[]>(
-      () => {
-        const existingTitle =
-          fieldDefinitions.find(
+  useState<JournalFieldDefinition[]>(
+    () => {
+      const systemFieldNames = [
+        'Title',
+        'Subtitle',
+        'Brief',
+        'Notes',
+      ]
+
+      const systemFields =
+        systemFieldNames.map(
+          (name, index) => {
+            const existing =
+              fieldDefinitions.find(
+                (field) =>
+                  field.isSystem &&
+                  field.name === name,
+              )
+
+            if (existing) {
+              return {
+                ...existing,
+                order: index,
+              }
+            }
+
+            return {
+              id: crypto.randomUUID(),
+              name,
+
+              valueType:
+                name === 'Title' ||
+                name === 'Subtitle'
+                  ? 'text' as const
+                  : 'richText' as const,
+
+              order: index,
+              isSystem: true,
+            }
+          },
+        )
+
+      const remaining =
+        fieldDefinitions
+          .filter(
             (field) =>
-              field.isSystem &&
-              field.name === 'Title',
+              !systemFieldNames
+                .includes(
+                  field.name,
+                ),
+          )
+          .sort(
+            (left, right) =>
+              left.order -
+              right.order,
           )
 
-        const title:
-          JournalFieldDefinition =
-          existingTitle ?? {
-            id: crypto.randomUUID(),
-            name: 'Title',
-            valueType: 'text',
-            order: 0,
-            isSystem: true,
-          }
-
-        const remaining =
-          fieldDefinitions
-            .filter(
-              (field) =>
-                field.id !== title.id,
-            )
-            .sort(
-              (left, right) =>
-                left.order -
-                right.order,
-            )
-
-        return normalizeOrder([
-          title,
-          ...remaining,
-        ])
-      },
-    )
+      return normalizeOrder([
+        ...systemFields,
+        ...remaining,
+      ])
+    },
+  )
 
   const [
     selectedPresetIndex,
@@ -213,51 +239,60 @@ export function FieldDefinitionsDialog({
   }
 
   function moveField(
-    fieldId: string,
-    direction: -1 | 1,
-  ) {
-    const index =
-      fields.findIndex(
-        (field) =>
-          field.id === fieldId,
-      )
-
-    if (index < 0) {
-      return
-    }
-
-    const targetIndex =
-      index + direction
-
-    if (
-      targetIndex < 1 ||
-      targetIndex >=
-        fields.length
-    ) {
-      return
-    }
-
-    const reordered =
-      [...fields]
-
-    const [field] =
-      reordered.splice(
-        index,
-        1,
-      )
-
-    reordered.splice(
-      targetIndex,
-      0,
-      field,
+  fieldId: string,
+  direction: -1 | 1,
+) {
+  const index =
+    fields.findIndex(
+      (field) =>
+        field.id === fieldId,
     )
 
-    setFields(
-      normalizeOrder(
-        reordered,
-      ),
-    )
+  if (index < 0) {
+    return
   }
+
+  const field =
+    fields[index]
+
+  if (
+    !field ||
+    field.isSystem
+  ) {
+    return
+  }
+
+  const targetIndex =
+    index + direction
+
+  if (
+    targetIndex < 4 ||
+    targetIndex >=
+      fields.length
+  ) {
+    return
+  }
+
+  const reordered =
+    [...fields]
+
+  reordered.splice(
+    index,
+    1,
+  )
+
+  reordered.splice(
+    targetIndex,
+    0,
+    field,
+  )
+
+  setFields(
+    normalizeOrder(
+      reordered,
+    ),
+  )
+}
 
   function addCustomField() {
     const name =
@@ -427,7 +462,7 @@ export function FieldDefinitionsDialog({
                         <button
                           type="button"
                           disabled={
-                            index <= 1
+                            index <= 4
                           }
                           onClick={(event) => {
                             event.stopPropagation()

@@ -26,12 +26,41 @@ function normalizeOrder(
   sections:
     JournalSectionDefinition[],
 ): JournalSectionDefinition[] {
-  return sections.map(
-    (section, index) => ({
-      ...section,
-      order: index,
-    }),
-  )
+  const archive =
+    sections.find(
+      (section) =>
+        section.isSystem &&
+        section.name === 'Archive',
+    ) ?? {
+      id: crypto.randomUUID(),
+      name: 'Archive',
+      order: 0,
+      isSystem: true,
+    }
+
+  const ordinarySections =
+    sections
+      .filter(
+        (section) =>
+          section.id !==
+          archive.id,
+      )
+      .map(
+        (section, index) => ({
+          ...section,
+          order: index,
+        }),
+      )
+
+  return [
+    ...ordinarySections,
+
+    {
+      ...archive,
+      order:
+        ordinarySections.length,
+    },
+  ]
 }
 
 export function TocStructureDialog({
@@ -141,22 +170,25 @@ export function TocStructureDialog({
   }
 
   function removeSelectedSection() {
-    if (!selectedSection) {
-      return
-    }
-
-    setSections(
-      normalizeOrder(
-        sections.filter(
-          (section) =>
-            section.id !==
-            selectedSection.id,
-        ),
-      ),
-    )
-
-    setSelectedSectionId(null)
+  if (
+    !selectedSection ||
+    selectedSection.isSystem
+  ) {
+    return
   }
+
+  setSections(
+    normalizeOrder(
+      sections.filter(
+        (section) =>
+          section.id !==
+          selectedSection.id,
+      ),
+    ),
+  )
+
+  setSelectedSectionId(null)
+}
 
   function moveSection(
     sectionId: string,
@@ -263,11 +295,15 @@ export function TocStructureDialog({
     transferAction =
       addSelectedPreset
   } else if (selectedSection) {
+  if (selectedSection.isSystem) {
+    transferLabel = 'LOCKED'
+  } else {
     transferLabel = 'REMOVE'
     transferDisabled = false
     transferAction =
       removeSelectedSection
   }
+}
 
   return (
     <div className="dialog-backdrop">
@@ -357,7 +393,8 @@ export function TocStructureDialog({
                   </button>
 
                   {selectedSectionId ===
-                    section.id && (
+                    section.id &&
+                    !section.isSystem && (
                     <div className="structure-order-controls">
                       <button
                         type="button"
