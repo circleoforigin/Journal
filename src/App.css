@@ -1199,6 +1199,7 @@
 .journal-page-turn:disabled {
   pointer-events: none;
   cursor: default;
+  
 }.journal-page-turn {
   position: absolute;
 
@@ -1343,6 +1344,12 @@
   z-index: 5;
 }
 
+.journal-page.left-page
+.journal-page-item-controls {
+  left: calc(100% + 12px);
+  right: auto;
+}
+
 .journal-page-item-fragment.inline
 .journal-page-item-controls {
   right: auto;
@@ -1418,6 +1425,12 @@
   transform: translateY(-50%);
 
   cursor: pointer;
+}
+
+.journal-page.left-page
+.journal-page-title-node {
+  left: calc(100% + 14px);
+  right: auto;
 }
 
 .journal-page-add-item {

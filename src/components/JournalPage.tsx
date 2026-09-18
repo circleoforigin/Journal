@@ -17,6 +17,7 @@ interface JournalPageProps {
   page:
     JournalPageLayout | undefined
   pageNumber: number
+  pageSide: 'left' | 'right'
   contentRef?:
     RefObject<HTMLDivElement | null>
   fontFamily: string
@@ -54,6 +55,7 @@ interface JournalPageProps {
 export function JournalPage({
   page,
   pageNumber,
+  pageSide,
   contentRef,
   fontFamily,
   fontSize,
@@ -238,7 +240,9 @@ export function JournalPage({
 }
 
   return (
-    <div className="journal-page">
+  <div
+    className={`journal-page ${pageSide}-page`}
+  >
       <div
         ref={contentRef}
         className="journal-page-content"
@@ -388,22 +392,32 @@ export function JournalPage({
                   <div
                     className="journal-page-item-controls"
                     style={
-                      fragment.inline
-                        ? {
-                            left:
-                              'auto',
+  fragment.inline
+    ? pageSide === 'left'
+      ? {
+          left:
+            `calc(100% + ${
+              12
+            }px)`,
 
-                            right:
-                              `calc(100% + ${
-                                (
-                                  fragment.left ??
-                                  0
-                                ) +
-                                12
-                              }px)`,
-                          }
-                        : undefined
-                    }
+          right:
+            'auto',
+        }
+      : {
+          left:
+            'auto',
+
+          right:
+            `calc(100% + ${
+              (
+                fragment.left ??
+                0
+              ) +
+              12
+            }px)`,
+        }
+    : undefined
+}
                   >
                     <button
                       type="button"

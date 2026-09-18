@@ -1741,22 +1741,24 @@ function clearSearchPosition() {
                       {section.name}
                     </span>
 
-                    <button
-  type="button"
-  className="journal-toc-add"
-  title={`Add entry to ${section.name}`}
-  disabled={
-    !journal ||
-    !titleDefinition
-  }
-  onClick={() => {
-    void createEntry(
-      section.id,
-    )
-  }}
->
-  +
-                    </button>
+                    {!section.isSystem && (
+  <button
+    type="button"
+    className="journal-toc-add"
+    title={`Add entry to ${section.name}`}
+    disabled={
+      !journal ||
+      !titleDefinition
+    }
+    onClick={() => {
+      void createEntry(
+        section.id,
+      )
+    }}
+  >
+    +
+  </button>
+)}
                   </div>
 
                   <div className="journal-toc-entries">
@@ -2071,6 +2073,7 @@ function clearSearchPosition() {
               <JournalPage
                 page={leftPage ?? undefined}
                 pageNumber={leftPageIndex + 1}
+                pageSide="left"
                 searchHighlight={
                   searchHighlight?.pageIndex ===
                   leftPageIndex
@@ -2091,6 +2094,7 @@ function clearSearchPosition() {
               <JournalPage
                 page={rightPage ?? undefined}
                 pageNumber={rightPageIndex + 1}
+                pageSide="right"
                 searchHighlight={
                   searchHighlight?.pageIndex ===
                   rightPageIndex
