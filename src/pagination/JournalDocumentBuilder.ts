@@ -34,6 +34,27 @@ export function buildJournalDocument(
         definition.name === 'Title',
     )
 
+  const subtitleDefinition =
+    fieldDefinitions.find(
+      (definition) =>
+        definition.isSystem &&
+        definition.name === 'Subtitle',
+    )
+
+  const briefDefinition =
+    fieldDefinitions.find(
+      (definition) =>
+        definition.isSystem &&
+        definition.name === 'Brief',
+    )
+
+  const notesDefinition =
+    fieldDefinitions.find(
+      (definition) =>
+        definition.isSystem &&
+        definition.name === 'Notes',
+    )
+
   const titleItem =
     titleDefinition
       ? entry.fields[
@@ -41,26 +62,83 @@ export function buildJournalDocument(
         ]?.items[0]
       : undefined
 
-  const titleText =
-    getStringValue(
-      titleItem?.value,
-    ).trim() || 'New Entry'
+  const subtitleItem =
+    subtitleDefinition
+      ? entry.fields[
+          subtitleDefinition.id
+        ]?.items[0]
+      : undefined
+
+  const briefItem =
+    briefDefinition
+      ? entry.fields[
+          briefDefinition.id
+        ]?.items[0]
+      : undefined
 
   if (
     titleDefinition &&
     titleItem
   ) {
     blocks.push({
-        type: 'title',
-        entryId: entry.id,
-        fieldDefinitionId: titleDefinition.id,
-        itemId: titleItem.id,
-        source: titleItem.source,
-        text: titleText,
+      type: 'title',
+      entryId: entry.id,
+      fieldDefinitionId:
+        titleDefinition.id,
+      itemId: titleItem.id,
+      source: titleItem.source,
+      text:
+        getStringValue(
+          titleItem.value,
+        ).trim(),
     })
   }
 
-  const orderedFields =
+  if (
+    subtitleDefinition &&
+    subtitleItem
+  ) {
+    const subtitle =
+      getStringValue(
+        subtitleItem.value,
+      ).trim()
+
+    if (subtitle) {
+      blocks.push({
+        type: 'subtitle',
+        entryId: entry.id,
+        fieldDefinitionId:
+          subtitleDefinition.id,
+        itemId: subtitleItem.id,
+        source: subtitleItem.source,
+        text: subtitle,
+      })
+    }
+  }
+
+  if (
+    briefDefinition &&
+    briefItem
+  ) {
+    const brief =
+      getStringValue(
+        briefItem.value,
+      )
+
+    if (brief.trim()) {
+      blocks.push({
+        type: 'brief',
+        entryId: entry.id,
+        fieldDefinitionId:
+          briefDefinition.id,
+        itemId: briefItem.id,
+        source: briefItem.source,
+        text: brief,
+      })
+    }
+  }
+
+  const ordinaryFields =
     fieldDefinitions
       .filter(
         (definition) =>
@@ -74,6 +152,17 @@ export function buildJournalDocument(
           left.order -
           right.order,
       )
+
+  const orderedFields =
+    notesDefinition &&
+    entry.fields[
+      notesDefinition.id
+    ]
+      ? [
+          ...ordinaryFields,
+          notesDefinition,
+        ]
+      : ordinaryFields
 
   for (
     const fieldDefinition
@@ -127,7 +216,17 @@ export function buildJournalDocument(
           item.value,
         )
 
-      if (!text.trim()) {
+      /*
+       * Notes is a permanent Field.
+       * Its first empty Item must
+       * remain physically available
+       * for editing.
+       */
+      if (
+        !text.trim() &&
+        fieldDefinition.id !==
+          notesDefinition?.id
+      ) {
         continue
       }
 
@@ -145,16 +244,15 @@ export function buildJournalDocument(
       })
 
       blocks.push({
-  type: 'addItem',
-  entryId: entry.id,
-  fieldDefinitionId:
-    fieldDefinition.id,
-  afterItemId:
-    item.id,
-})
+        type: 'addItem',
+        entryId:
+          entry.id,
+        fieldDefinitionId:
+          fieldDefinition.id,
+        afterItemId:
+          item.id,
+      })
     }
-
-    
   }
 
   return {

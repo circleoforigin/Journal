@@ -5,6 +5,12 @@ import {
 interface NewPageDialogProps {
   sectionName: string
 
+  initialTitle?: string
+  initialSubtitle?: string
+  initialBrief?: string
+
+  mode?: 'create' | 'edit'
+
   onCreate: (
     title: string,
     subtitle: string,
@@ -16,23 +22,27 @@ interface NewPageDialogProps {
 
 export function NewPageDialog({
   sectionName,
+  initialTitle = '',
+  initialSubtitle = '',
+  initialBrief = '',
+  mode = 'create',
   onCreate,
   onCancel,
 }: NewPageDialogProps) {
   const [
     title,
     setTitle,
-  ] = useState('')
+  ] = useState(initialTitle)
 
   const [
     subtitle,
     setSubtitle,
-  ] = useState('')
+  ] = useState(initialSubtitle)
 
   const [
     brief,
     setBrief,
-  ] = useState('')
+  ] = useState(initialBrief)
 
   const [
     creating,
@@ -65,7 +75,12 @@ export function NewPageDialog({
   return (
     <div className="dialog-backdrop">
       <div className="dialog new-page-dialog">
-        <h2>New {sectionName} Page</h2>
+        <h2>
+          {mode === 'edit'
+            ? `Edit ${sectionName} Page`
+            : `New ${sectionName} Page`}
+        </h2>
+
         <label className="dialog-field">
           <span>Title - required</span>
 
@@ -129,7 +144,9 @@ export function NewPageDialog({
               void handleCreate()
             }}
           >
-            Create
+            {mode === 'edit'
+              ? 'Save'
+              : 'Create'}
           </button>
         </div>
       </div>

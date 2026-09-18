@@ -944,17 +944,43 @@ export function paginateJournalDocument(
 
     switch (block.type) {
       case 'title':
-        addSingleBlock(
-          block,
-          metrics.titleFontSize,
-          metrics.titleLineHeight,
-          '600',
-          0,
-          metrics.titleBottomGap,
-        )
+  addSingleBlock(
+    block,
+    metrics.titleFontSize,
+    metrics.titleLineHeight,
+    '600',
+    0,
+    6,
+  )
 
-        blockIndex += 1
-        break
+  blockIndex += 1
+  break
+
+        case 'subtitle':
+  addSingleBlock(
+    block,
+    metrics.fontSize,
+    metrics.lineHeight,
+    '400',
+    -metrics.titleBottomGap,
+    10,
+  )
+
+  blockIndex += 1
+  break
+
+case 'brief':
+  addSingleBlock(
+    block,
+    metrics.fontSize,
+    metrics.lineHeight,
+    '400',
+    4,
+    20,
+  )
+
+  blockIndex += 1
+  break
 
       case 'field': {
         const nextBlock =

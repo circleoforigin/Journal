@@ -1297,6 +1297,28 @@
   text-align: center;
 }
 
+.journal-page-entry-subtitle,
+.journal-page-entry-brief {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  color: #202020;
+}
+
+.journal-page-entry-subtitle {
+  text-align: center;
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.journal-page-entry-brief {
+  line-height: 1.5;
+  text-align: justify;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
 .journal-page-content {
   position: absolute;
   inset: 34px 38px 46px;

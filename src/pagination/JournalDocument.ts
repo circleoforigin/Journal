@@ -11,12 +11,31 @@ export interface JournalDocumentTitleBlock {
   text: string
 }
 
-export interface JournalDocumentFieldBlock {
-  type: 'field'
+export interface JournalDocumentSubtitleBlock {
+  type: 'subtitle'
   entryId: string
   fieldDefinitionId: string
+  itemId: string
+  source: JournalFieldItemSource
   text: string
 }
+
+export interface JournalDocumentBriefBlock {
+  type: 'brief'
+  entryId: string
+  fieldDefinitionId: string
+  itemId: string
+  source: JournalFieldItemSource
+  text: string
+}
+
+export type JournalDocumentBlock =
+  | JournalDocumentTitleBlock
+  | JournalDocumentSubtitleBlock
+  | JournalDocumentBriefBlock
+  | JournalDocumentFieldBlock
+  | JournalDocumentItemBlock
+  | JournalDocumentAddItemBlock
 
 export interface JournalDocumentItemBlock {
   type: 'item'

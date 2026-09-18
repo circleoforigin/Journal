@@ -304,6 +304,57 @@ export function JournalPage({
             }
 
             if (
+  fragment.type ===
+  'subtitle'
+) {
+  return (
+    <div
+      key={`subtitle-${fragment.itemId}-${index}`}
+      className="journal-page-entry-subtitle"
+      style={{
+        top:
+          fragment.top,
+
+        height:
+          fragment.height,
+
+        lineHeight:
+          `${fragment.height}px`,
+      }}
+    >
+      {renderText(
+        fragment.text,
+        index,
+      )}
+    </div>
+  )
+}
+
+if (
+  fragment.type ===
+  'brief'
+) {
+  return (
+    <div
+      key={`brief-${fragment.itemId}-${index}`}
+      className="journal-page-entry-brief"
+      style={{
+        top:
+          fragment.top,
+
+        height:
+          fragment.height,
+      }}
+    >
+      {renderText(
+        fragment.text,
+        index,
+      )}
+    </div>
+  )
+}
+
+            if (
               fragment.type ===
               'field'
             ) {

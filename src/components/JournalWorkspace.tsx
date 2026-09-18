@@ -213,6 +213,11 @@ const [
   setNewPageSectionId,
 ] = useState<string | null>(null)
 
+const [
+  editingPageEntryId,
+  setEditingPageEntryId,
+] = useState<string | null>(null)
+
 const titleDefinition =
   project.fieldDefinitions.find(
     (field) =>
@@ -944,6 +949,133 @@ async function createEntry(
   )
 }
 
+async function updatePageHeader(
+  entryId: string,
+  title: string,
+  subtitle: string,
+  brief: string,
+) {
+  if (
+    !titleDefinition ||
+    !subtitleDefinition ||
+    !briefDefinition
+  ) {
+    return
+  }
+
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id === entryId,
+    )
+
+  if (!entry) {
+    return
+  }
+
+  const trimmedTitle =
+    title.trim()
+
+  const trimmedBrief =
+    brief.trim()
+
+  if (
+    !trimmedTitle ||
+    !trimmedBrief
+  ) {
+    return
+  }
+
+  const now =
+    new Date().toISOString()
+
+  function updateSystemItem(
+    fieldDefinitionId: string,
+    value: string,
+  ): JournalFieldItem {
+    const existing =
+      entry.fields[
+        fieldDefinitionId
+      ]?.items[0]
+
+    return {
+      id:
+        existing?.id ??
+        crypto.randomUUID(),
+
+      order: 0,
+
+      value,
+
+      source: 'master',
+
+      createdAt:
+        existing?.createdAt ??
+        now,
+
+      updatedAt: now,
+    }
+  }
+
+  const updatedEntry:
+    JournalEntry = {
+    ...entry,
+
+    fields: {
+      ...entry.fields,
+
+      [titleDefinition.id]: {
+        items: [
+          updateSystemItem(
+            titleDefinition.id,
+            trimmedTitle,
+          ),
+        ],
+      },
+
+      [subtitleDefinition.id]: {
+        items: [
+          updateSystemItem(
+            subtitleDefinition.id,
+            subtitle.trim(),
+          ),
+        ],
+      },
+
+      [briefDefinition.id]: {
+        items: [
+          updateSystemItem(
+            briefDefinition.id,
+            trimmedBrief,
+          ),
+        ],
+      },
+    },
+
+    updatedAt: now,
+  }
+
+  setPendingEntryNavigationId(
+    updatedEntry.id,
+  )
+
+  setEntries(
+    (current) =>
+      current.map(
+        (candidate) =>
+          candidate.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : candidate,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+
+  setEditingPageEntryId(null)
+}
+
 async function addFieldToEntry(
   fieldDefinitionId: string,
 ) {
@@ -1453,7 +1585,19 @@ function handleEditItem(
   entryId: string,
   fieldDefinitionId: string,
   itemId: string,
-) {
+) {  
+  if (
+    titleDefinition &&
+    fieldDefinitionId ===
+      titleDefinition.id
+  ) {
+    setEditingPageEntryId(
+      entryId,
+    )
+
+    return
+  }
+
   const entry =
     entries.find(
       (candidate) =>
@@ -1842,6 +1986,88 @@ function clearSearchPosition() {
     />
   )
 })()}
+
+{editingPageEntryId && (() => {
+  const entry =
+    entries.find(
+      (candidate) =>
+        candidate.id ===
+        editingPageEntryId,
+    )
+
+  if (!entry) {
+    return null
+  }
+
+  const section =
+    sections.find(
+      (candidate) =>
+        candidate.id ===
+        entry.sectionDefinitionId,
+    )
+
+  if (
+    !section ||
+    !titleDefinition ||
+    !subtitleDefinition ||
+    !briefDefinition
+  ) {
+    return null
+  }
+
+  const title =
+    entry.fields[
+      titleDefinition.id
+    ]?.items[0]?.value
+
+  const subtitle =
+    entry.fields[
+      subtitleDefinition.id
+    ]?.items[0]?.value
+
+  const brief =
+    entry.fields[
+      briefDefinition.id
+    ]?.items[0]?.value
+
+  return (
+    <NewPageDialog
+      mode="edit"
+      sectionName={section.name}
+      initialTitle={
+        typeof title === 'string'
+          ? title
+          : ''
+      }
+      initialSubtitle={
+        typeof subtitle === 'string'
+          ? subtitle
+          : ''
+      }
+      initialBrief={
+        typeof brief === 'string'
+          ? brief
+          : ''
+      }
+      onCancel={() => {
+        setEditingPageEntryId(null)
+      }}
+      onCreate={async (
+        nextTitle,
+        nextSubtitle,
+        nextBrief,
+      ) => {
+        await updatePageHeader(
+          entry.id,
+          nextTitle,
+          nextSubtitle,
+          nextBrief,
+        )
+      }}
+    />
+  )
+})()}
+
       <aside className="journal-inspector">
         <div className="journal-inspector-header">
   <div className="journal-inspector-title">

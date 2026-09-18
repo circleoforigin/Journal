@@ -13,6 +13,28 @@ export interface JournalPageTitleFragment {
   height: number
 }
 
+export interface JournalPageSubtitleFragment {
+  type: 'subtitle'
+  entryId: string
+  fieldDefinitionId: string
+  itemId: string
+  source: JournalFieldItemSource
+  text: string
+  top: number
+  height: number
+}
+
+export interface JournalPageBriefFragment {
+  type: 'brief'
+  entryId: string
+  fieldDefinitionId: string
+  itemId: string
+  source: JournalFieldItemSource
+  text: string
+  top: number
+  height: number
+}
+
 export interface JournalPageFieldFragment {
   type: 'field'
   entryId: string
@@ -61,6 +83,8 @@ export interface JournalPageAddItemFragment {
 
 export type JournalPageFragment =
   | JournalPageTitleFragment
+  | JournalPageSubtitleFragment
+  | JournalPageBriefFragment
   | JournalPageFieldFragment
   | JournalPageItemFragment
   | JournalPageAddItemFragment

@@ -42,66 +42,84 @@ export function FieldDefinitionsDialog({
   const [fields, setFields] =
   useState<JournalFieldDefinition[]>(
     () => {
-      const systemFieldNames = [
-        'Title',
-        'Subtitle',
-        'Brief',
-        'Notes',
-      ]
+  const headerFieldNames = [
+    'Title',
+    'Subtitle',
+    'Brief',
+  ]
 
-      const systemFields =
-        systemFieldNames.map(
-          (name, index) => {
-            const existing =
-              fieldDefinitions.find(
-                (field) =>
-                  field.isSystem &&
-                  field.name === name,
-              )
-
-            if (existing) {
-              return {
-                ...existing,
-                order: index,
-              }
-            }
-
-            return {
-              id: crypto.randomUUID(),
-              name,
-
-              valueType:
-                name === 'Title' ||
-                name === 'Subtitle'
-                  ? 'text' as const
-                  : 'richText' as const,
-
-              order: index,
-              isSystem: true,
-            }
-          },
-        )
-
-      const remaining =
-        fieldDefinitions
-          .filter(
+  const headerFields =
+    headerFieldNames.map(
+      (name, index) => {
+        const existing =
+          fieldDefinitions.find(
             (field) =>
-              !systemFieldNames
-                .includes(
-                  field.name,
-                ),
-          )
-          .sort(
-            (left, right) =>
-              left.order -
-              right.order,
+              field.isSystem &&
+              field.name === name,
           )
 
-      return normalizeOrder([
-        ...systemFields,
-        ...remaining,
-      ])
-    },
+        if (existing) {
+          return {
+            ...existing,
+            order: index,
+          }
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          name,
+
+          valueType:
+            name === 'Title' ||
+            name === 'Subtitle'
+              ? 'text' as const
+              : 'richText' as const,
+
+          order: index,
+          isSystem: true,
+        }
+      },
+    )
+
+  const ordinaryFields =
+    fieldDefinitions
+      .filter(
+        (field) =>
+          !field.isSystem,
+      )
+      .sort(
+        (left, right) =>
+          left.order -
+          right.order,
+      )
+
+  const existingNotes =
+    fieldDefinitions.find(
+      (field) =>
+        field.isSystem &&
+        field.name === 'Notes',
+    )
+
+  const notesField:
+    JournalFieldDefinition =
+    existingNotes
+      ? {
+          ...existingNotes,
+        }
+      : {
+          id: crypto.randomUUID(),
+          name: 'Notes',
+          valueType: 'richText',
+          order: 0,
+          isSystem: true,
+        }
+
+  return normalizeOrder([
+    ...headerFields,
+    ...ordinaryFields,
+    notesField,
+  ])
+},
   )
 
   const [
@@ -203,16 +221,36 @@ export function FieldDefinitionsDialog({
       return
     }
 
-    setFields(
-      normalizeOrder([
-        ...fields,
-        {
-          id: crypto.randomUUID(),
-          ...preset,
-          order: fields.length,
-        },
-      ]),
-    )
+    const notesIndex =
+  fields.findIndex(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Notes',
+  )
+
+const insertionIndex =
+  notesIndex >= 0
+    ? notesIndex
+    : fields.length
+
+const nextFields =
+  [...fields]
+
+nextFields.splice(
+  insertionIndex,
+  0,
+  {
+    id: crypto.randomUUID(),
+    ...preset,
+    order: insertionIndex,
+  },
+)
+
+setFields(
+  normalizeOrder(
+    nextFields,
+  ),
+)
 
     setSelectedPresetIndex(null)
   }
@@ -265,10 +303,16 @@ export function FieldDefinitionsDialog({
   const targetIndex =
     index + direction
 
+  const notesIndex =
+    fields.findIndex(
+      (candidate) =>
+        candidate.isSystem &&
+        candidate.name === 'Notes',
+    )
+
   if (
-    targetIndex < 4 ||
-    targetIndex >=
-      fields.length
+    targetIndex < 3 ||
+    targetIndex >= notesIndex
   ) {
     return
   }
@@ -314,21 +358,41 @@ export function FieldDefinitionsDialog({
       return
     }
 
-    const field:
+    const notesIndex =
+  fields.findIndex(
+    (candidate) =>
+      candidate.isSystem &&
+      candidate.name === 'Notes',
+  )
+
+const insertionIndex =
+  notesIndex >= 0
+    ? notesIndex
+    : fields.length
+
+const field:
   JournalFieldDefinition = {
-    id: crypto.randomUUID(),
-    name,
-    valueType:
-      customValueType,
-    order: fields.length,
+  id: crypto.randomUUID(),
+  name,
+  valueType:
+    customValueType,
+  order: insertionIndex,
 }
 
-    setFields(
-      normalizeOrder([
-        ...fields,
-        field,
-      ]),
-    )
+const nextFields =
+  [...fields]
+
+nextFields.splice(
+  insertionIndex,
+  0,
+  field,
+)
+
+setFields(
+  normalizeOrder(
+    nextFields,
+  ),
+)
 
     setCustomName('')
 
@@ -462,7 +526,7 @@ export function FieldDefinitionsDialog({
                         <button
                           type="button"
                           disabled={
-                            index <= 4
+                            index <= 3
                           }
                           onClick={(event) => {
                             event.stopPropagation()
@@ -480,8 +544,7 @@ export function FieldDefinitionsDialog({
                           type="button"
                           disabled={
                             index ===
-                            fields.length -
-                              1
+                            fields.length - 2
                           }
                           onClick={(event) => {
                             event.stopPropagation()
