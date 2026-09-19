@@ -548,42 +548,46 @@ async function createProject(
     name,
 
     fieldDefinitions: [
-      {
-        id:
-          titleDefinitionId,
-        name: 'Title',
-        valueType: 'text',
-        order: 0,
-        isSystem: true,
-      },
+  {
+    id:
+      titleDefinitionId,
+    name: 'Title',
+    valueType: 'string',
+    presentation: 'single',
+    order: 0,
+    isSystem: true,
+  },
 
-      {
-        id:
-          subtitleDefinitionId,
-        name: 'Subtitle',
-        valueType: 'text',
-        order: 1,
-        isSystem: true,
-      },
+  {
+    id:
+      subtitleDefinitionId,
+    name: 'Subtitle',
+    valueType: 'string',
+    presentation: 'single',
+    order: 1,
+    isSystem: true,
+  },
 
-      {
-        id:
-          briefDefinitionId,
-        name: 'Brief',
-        valueType: 'richText',
-        order: 2,
-        isSystem: true,
-      },
+  {
+    id:
+      briefDefinitionId,
+    name: 'Brief',
+    valueType: 'string',
+    presentation: 'single',
+    order: 2,
+    isSystem: true,
+  },
 
-      {
-        id:
-          notesDefinitionId,
-        name: 'Notes',
-        valueType: 'richText',
-        order: 3,
-        isSystem: true,
-      },
-    ],
+  {
+    id:
+      notesDefinitionId,
+    name: 'Notes',
+    valueType: 'string',
+    presentation: 'multiple',
+    order: 3,
+    isSystem: true,
+  },
+],
 
     sectionDefinitions: [
       {

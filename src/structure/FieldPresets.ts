@@ -12,34 +12,42 @@ export const fieldPresets:
   JournalFieldPreset[] = [
     {
       name: 'Description',
-      valueType: 'richText',
+      valueType: 'string',
+      presentation: 'single',
     },
     {
       name: 'History',
-      valueType: 'richText',
+      valueType: 'string',
+      presentation: 'single',
     },
     {
       name: 'Population',
       valueType: 'number',
+      presentation: 'single',
     },
     {
       name: 'Government',
-      valueType: 'richText',
+      valueType: 'string',
+      presentation: 'single',
     },
     {
       name: 'Notable People',
-      valueType: 'text',
+      valueType: 'string',
+      presentation: 'multiple',
     },
     {
       name: 'Rumors',
-      valueType: 'text',
+      valueType: 'string',
+      presentation: 'multiple',
     },
     {
       name: 'Secrets',
-      valueType: 'richText',
-    },    
+      valueType: 'string',
+      presentation: 'multiple',
+    },
     {
       name: 'Tags',
-      valueType: 'tags',
+      valueType: 'string',
+      presentation: 'inline',
     },
   ]

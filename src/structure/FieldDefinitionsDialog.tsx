@@ -4,6 +4,7 @@ import {
 
 import type {
   JournalFieldDefinition,
+  JournalFieldPresentation,
   JournalFieldValueType,
 } from '../models/JournalFieldDefinition'
 
@@ -70,10 +71,10 @@ export function FieldDefinitionsDialog({
           name,
 
           valueType:
-            name === 'Title' ||
-            name === 'Subtitle'
-              ? 'text' as const
-              : 'richText' as const,
+            'string' as const,
+
+          presentation:
+            'single' as const,
 
           order: index,
           isSystem: true,
@@ -109,7 +110,8 @@ export function FieldDefinitionsDialog({
       : {
           id: crypto.randomUUID(),
           name: 'Notes',
-          valueType: 'richText',
+          valueType: 'string',
+          presentation: 'multiple',
           order: 0,
           isSystem: true,
         }
@@ -142,12 +144,20 @@ export function FieldDefinitionsDialog({
   ] = useState('')
 
   const [
-    customValueType,
-    setCustomValueType,
-  ] =
-    useState<JournalFieldValueType>(
-      'richText',
-    )
+  customValueType,
+  setCustomValueType,
+] =
+  useState<JournalFieldValueType>(
+    'string',
+  )
+
+const [
+  customPresentation,
+  setCustomPresentation,
+] =
+  useState<JournalFieldPresentation>(
+    'single',
+  )
  
   const availablePresets =
     fieldPresets
@@ -374,9 +384,15 @@ const field:
   JournalFieldDefinition = {
   id: crypto.randomUUID(),
   name,
+
   valueType:
     customValueType,
-  order: insertionIndex,
+
+  presentation:
+    customPresentation,
+
+  order:
+    insertionIndex,
 }
 
 const nextFields =
@@ -587,51 +603,62 @@ setFields(
 
           <div className="structure-custom-row">
             <label>
-              <span>
-                Value Type
-              </span>
+  <span>
+    Data
+  </span>
 
-              <select
-                value={
-                  customValueType
-                }
-                onChange={(event) => {
-                  setCustomValueType(
-                    event.target
-                      .value as
-                      JournalFieldValueType,
-                  )
-                }}
-              >
-                <option value="text">
-                  Text
-                </option>
+  <select
+    value={
+      customValueType
+    }
+    onChange={(event) => {
+      setCustomValueType(
+        event.target
+          .value as
+          JournalFieldValueType,
+      )
+    }}
+  >
+    <option value="string">
+      String
+    </option>
 
-                <option value="richText">
-                  Rich Text
-                </option>
+    <option value="number">
+      Number
+    </option>
+  </select>
+</label>
 
-                <option value="number">
-                  Number
-                </option>
+<label>
+  <span>
+    Presentation
+  </span>
 
-                <option value="boolean">
-                  Boolean
-                </option>
+  <select
+    value={
+      customPresentation
+    }
+    onChange={(event) => {
+      setCustomPresentation(
+        event.target
+          .value as
+          JournalFieldPresentation,
+      )
+    }}
+  >
+    <option value="single">
+      Single
+    </option>
 
-                <option value="date">
-                  Date
-                </option>
+    <option value="multiple">
+      Multiple
+    </option>
 
-                <option value="tags">
-                  Tags
-                </option>
-
-                <option value="reference">
-                  Reference
-                </option>
-              </select>
-            </label>            
+    <option value="inline">
+      Inline
+    </option>
+  </select>
+</label>
 
             <button
               type="button"

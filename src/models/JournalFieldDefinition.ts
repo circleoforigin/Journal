@@ -1,11 +1,11 @@
 export type JournalFieldValueType =
-  | 'text'
-  | 'richText'
+  | 'string'
   | 'number'
-  | 'boolean'
-  | 'date'
-  | 'tags'
-  | 'reference'
+
+export type JournalFieldPresentation =
+  | 'single'
+  | 'multiple'
+  | 'inline'
 
 export interface JournalFieldDefinition {
   id: string
@@ -13,7 +13,10 @@ export interface JournalFieldDefinition {
 
   valueType:
     JournalFieldValueType
- 
+
+  presentation:
+    JournalFieldPresentation
+
   order: number
 
   isSystem?: boolean
