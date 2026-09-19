@@ -14,6 +14,8 @@ import type { Journal } from '../models/Journal'
 import { JournalPage } from './JournalPage'
 import { JournalItemEditor } from './JournalItemEditor'
 import { NewPageDialog } from '../entries/NewPageDialog'
+import { MovePageDialog } from '../entries/MovePageDialog'
+import { ConfirmationDialog } from './ConfirmationDialog'
 import { buildJournalDocument } from '../pagination/JournalDocumentBuilder'
 import {
   paginateJournalDocument,
@@ -55,6 +57,11 @@ const [
   pageIndex,
   setPageIndex,
 ] = useState(0)
+
+const [
+  isMovePageOpen,
+  setIsMovePageOpen,
+] = useState(false)
 
 const [
   pendingEntryNavigationId,
@@ -218,6 +225,17 @@ const [
   setEditingPageEntryId,
 ] = useState<string | null>(null)
 
+const [
+  pendingPageAction,
+  setPendingPageAction,
+] = useState<
+  'move' |
+  'archive' |
+  'restore' |
+  'delete' |
+  null
+>(null)
+
 const titleDefinition =
   project.fieldDefinitions.find(
     (field) =>
@@ -263,6 +281,13 @@ const notesDefinition =
     ],
   )
 
+  const archiveSection =
+  sections.find(
+    (section) =>
+      section.isSystem &&
+      section.name === 'Archive',
+  ) ?? null
+
 function getEntryTitle(
   entry: JournalEntry,
 ): string {
@@ -289,6 +314,14 @@ const activeEntry =
     (entry) =>
       entry.id === activeEntryId,
   ) ?? null
+
+const activeEntryIsArchived =
+  Boolean(
+    activeEntry &&
+    archiveSection &&
+    activeEntry.sectionDefinitionId ===
+      archiveSection.id,
+  )
 
 const JOURNAL_TEXT_WIDTH = 400
 const JOURNAL_TEXT_HEIGHT = 490
@@ -813,6 +846,298 @@ const hasNextPage =
     cancelled = true
   }
 }, [journal?.id])
+
+async function moveActiveEntry(
+  sectionDefinitionId: string,
+) {
+  if (!activeEntry) {
+    return
+  }
+
+  const destinationSection =
+    sections.find(
+      (section) =>
+        section.id ===
+        sectionDefinitionId,
+    )
+
+  if (
+    !destinationSection ||
+    destinationSection.isSystem ||
+    destinationSection.id ===
+      activeEntry.sectionDefinitionId
+  ) {
+    return
+  }
+
+  const now =
+    new Date().toISOString()
+
+  const updatedEntry:
+    JournalEntry = {
+      ...activeEntry,
+
+      sectionDefinitionId:
+        destinationSection.id,
+
+      updatedAt: now,
+    }
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id === updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  setIsMovePageOpen(false)
+
+  setPendingEntryNavigationId(
+    updatedEntry.id,
+  )
+}
+
+async function archiveActiveEntry() {
+  if (
+    !activeEntry ||
+    !archiveSection ||
+    !titleDefinition ||
+    activeEntryIsArchived
+  ) {
+    return
+  }
+
+  const titleItem =
+    activeEntry.fields[
+      titleDefinition.id
+    ]?.items[0]
+
+  if (!titleItem) {
+    return
+  }
+
+  const currentTitle =
+    typeof titleItem.value === 'string'
+      ? titleItem.value
+      : ''
+
+  const archiveNumber =
+    (activeEntry.archiveNumber ?? 0) +
+    1
+
+  const now =
+    new Date().toISOString()
+
+  const updatedEntry:
+    JournalEntry = {
+      ...activeEntry,
+
+      sectionDefinitionId:
+        archiveSection.id,
+
+      archivedFromSectionDefinitionId:
+        activeEntry.sectionDefinitionId,
+
+      archiveNumber,
+
+      fields: {
+        ...activeEntry.fields,
+
+        [titleDefinition.id]: {
+          items: [
+            {
+              ...titleItem,
+
+              value:
+                `${currentTitle} -Arc-${archiveNumber}`,
+
+              updatedAt: now,
+            },
+          ],
+        },
+      },
+
+      updatedAt: now,
+    }
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id === updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  setPendingEntryNavigationId(
+    updatedEntry.id,
+  )
+
+  setPendingPageAction(null)
+}
+
+async function restoreActiveEntry() {
+  if (
+    !activeEntry ||
+    !archiveSection ||
+    !titleDefinition ||
+    !activeEntryIsArchived ||
+    !activeEntry
+      .archivedFromSectionDefinitionId
+  ) {
+    return
+  }
+
+  const destinationSection =
+    sections.find(
+      (section) =>
+        section.id ===
+        activeEntry
+          .archivedFromSectionDefinitionId,
+    )
+
+  if (!destinationSection) {
+    return
+  }
+
+  const titleItem =
+    activeEntry.fields[
+      titleDefinition.id
+    ]?.items[0]
+
+  if (!titleItem) {
+    return
+  }
+
+  const currentTitle =
+    typeof titleItem.value === 'string'
+      ? titleItem.value
+      : ''
+
+  const restoredTitle =
+    currentTitle.replace(
+      /\s-Arc-\d+$/,
+      '',
+    )
+
+  const now =
+    new Date().toISOString()
+
+  const updatedEntry:
+    JournalEntry = {
+      ...activeEntry,
+
+      sectionDefinitionId:
+        destinationSection.id,
+
+      archivedFromSectionDefinitionId:
+        undefined,
+
+      fields: {
+        ...activeEntry.fields,
+
+        [titleDefinition.id]: {
+          items: [
+            {
+              ...titleItem,
+
+              value: restoredTitle,
+
+              updatedAt: now,
+            },
+          ],
+        },
+      },
+
+      updatedAt: now,
+    }
+
+  await entryRepository
+    .saveEntry(updatedEntry)
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id === updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  setPendingEntryNavigationId(
+    updatedEntry.id,
+  )
+
+  setPendingPageAction(null)
+}
+
+async function deleteActiveEntry() {
+  if (
+    !activeEntry ||
+    !journal
+  ) {
+    return
+  }
+
+  const deletedEntryId =
+    activeEntry.id
+
+  await entryRepository
+    .deleteEntry(deletedEntryId)
+
+  const now =
+    new Date().toISOString()
+
+  const updatedJournal:
+    Journal = {
+      ...journal,
+
+      entryIds:
+        journal.entryIds.filter(
+          (entryId) =>
+            entryId !==
+            deletedEntryId,
+        ),
+
+      updatedAt: now,
+    }
+
+  await journalRepository
+    .saveJournal(updatedJournal)
+
+  const remainingEntries =
+    entries.filter(
+      (entry) =>
+        entry.id !==
+        deletedEntryId,
+    )
+
+  setEntries(remainingEntries)
+
+  setActiveEntryId(
+    remainingEntries[0]?.id ??
+      null,
+  )
+
+  setPageIndex(0)
+
+  setPendingPageAction(null)
+
+  onJournalChange(
+    updatedJournal,
+  )
+}
 
 async function createEntry(
   sectionDefinitionId: string,
@@ -2070,10 +2395,197 @@ function clearSearchPosition() {
   )
 })()}
 
+{pendingPageAction &&
+  activeEntry && (() => {
+    const pageTitle =
+      getEntryTitle(activeEntry)
+    if (
+  pendingPageAction ===
+  'move'
+) {
+  const availableSections =
+    sections.filter(
+      (section) =>
+        !section.isSystem &&
+        section.id !==
+          activeEntry
+            .sectionDefinitionId,
+    )
+
+  return (
+    <div className="dialog-backdrop">
+      <div className="dialog move-page-dialog">
+        <h2>
+          Move "{pageTitle}"
+        </h2>
+
+        <select
+          defaultValue=""
+          disabled={
+            availableSections.length === 0
+          }
+          onChange={(event) => {
+            const sectionId =
+              event.target.value
+
+            if (!sectionId) {
+              return
+            }
+
+            void moveActiveEntry(
+              sectionId,
+            )
+          }}
+        >
+          <option value="">
+            Select Section...
+          </option>
+
+          {availableSections.map(
+            (section) => (
+              <option
+                key={section.id}
+                value={section.id}
+              >
+                {section.name}
+              </option>
+            ),
+          )}
+        </select>
+
+        <div className="dialog-actions">
+          <button
+            type="button"
+            onClick={() => {
+              setPendingPageAction(
+                null,
+              )
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+    if (
+      pendingPageAction ===
+      'archive'
+    ) {
+      return (
+        <ConfirmationDialog
+          title={`Archive "${pageTitle}"?`}
+          message="This page will be moved to Archive and given an archive designation. You can restore it later."
+          confirmLabel="Archive Page"
+          onCancel={() => {
+            setPendingPageAction(null)
+          }}
+          onConfirm={
+            archiveActiveEntry
+          }
+        />
+      )
+    }
+
+    if (
+      pendingPageAction ===
+      'restore'
+    ) {
+      return (
+        <ConfirmationDialog
+          title={`Restore "${pageTitle}"?`}
+          message="This page will be removed from Archive, returned to its previous Section, and its normal title will be restored."
+          confirmLabel="Restore Page"
+          onCancel={() => {
+            setPendingPageAction(null)
+          }}
+          onConfirm={
+            restoreActiveEntry
+          }
+        />
+      )
+    }
+
+    return (
+      <ConfirmationDialog
+        title={`Delete "${pageTitle}"?`}
+        message="This page will be permanently deleted. This action cannot be undone and the page cannot be restored."
+        confirmLabel="Delete Page"
+        onCancel={() => {
+          setPendingPageAction(null)
+        }}
+        onConfirm={
+          deleteActiveEntry
+        }
+      />
+    )
+  })()}
+
       <aside className="journal-inspector">
         <div className="journal-inspector-header">
   <div className="journal-inspector-title">
     Table of Contents
+  </div>
+
+  <div className="journal-toc-page-actions">
+    <button
+      type="button"
+      title="Move Page"
+      disabled={!activeEntry || activeEntryIsArchived}
+      onClick={() => {
+        setPendingPageAction(
+          'move',
+        )
+      }}
+    >
+      M
+    </button>
+    
+    <button
+      type="button"
+      title="Archive Page"
+      disabled={
+        !activeEntry ||
+        activeEntryIsArchived
+      }
+      onClick={() => {
+        setPendingPageAction(
+          'archive',
+        )
+      }}
+    >
+      A
+    </button>
+
+    <button
+      type="button"
+      title="Restore Page"
+      disabled={
+        !activeEntry ||
+        !activeEntryIsArchived
+      }
+      onClick={() => {
+        setPendingPageAction(
+          'restore',
+        )
+      }}
+    >
+      R
+    </button>
+
+    <button
+      type="button"
+      title="Delete Page"
+      disabled={!activeEntry}
+      onClick={() => {
+        setPendingPageAction(
+          'delete',
+        )
+      }}
+    >
+      D
+    </button>
   </div>
 </div>
 

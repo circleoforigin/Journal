@@ -11,6 +11,10 @@ export interface JournalEntry {
 
   sectionDefinitionId: string
 
+  archivedFromSectionDefinitionId?: string
+
+  archiveNumber?: number
+
   fields:
     Record<string, JournalField>
 

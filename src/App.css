@@ -1314,7 +1314,7 @@
 
 .journal-page-entry-brief {
   line-height: 1.5;
-  text-align: justify;
+  text-align: center;
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
@@ -1698,4 +1698,77 @@
 
 .journal-document-tab.permanent {
   font-weight: 600;
+}
+
+.journal-inspector-header {
+  display: flex;
+  align-items: center;
+}
+
+.journal-inspector-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.journal-toc-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 14px;
+}
+
+.journal-toc-page-actions button {
+  width: 22px;
+  height: 22px;
+
+  padding: 0;
+
+  border:
+    1px solid #45474e;
+  border-radius: 3px;
+
+  background: #292a2e;
+  color: #cccccc;
+
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.journal-toc-page-actions
+button:hover:not(:disabled) {
+  background: #34353a;
+  color: #ffffff;
+}
+
+.journal-toc-page-actions
+button:disabled {
+  color: #555555;
+  cursor: default;
+}
+
+.confirmation-dialog {
+  width: 380px;
+}
+
+.confirmation-dialog p {
+  margin: 0;
+
+  color: #cccccc;
+
+  line-height: 1.5;
+}
+
+.move-page-dialog {
+  width: 260px;
+}
+
+.move-page-dialog h2 {
+  margin-bottom: 12px;
+}
+
+.move-page-dialog select {
+  width: 100%;
 }

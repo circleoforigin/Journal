@@ -950,7 +950,7 @@ export function paginateJournalDocument(
     metrics.titleLineHeight,
     '600',
     0,
-    6,
+    15,
   )
 
   blockIndex += 1
@@ -963,7 +963,7 @@ export function paginateJournalDocument(
     metrics.lineHeight,
     '400',
     -metrics.titleBottomGap,
-    10,
+    4,
   )
 
   blockIndex += 1
