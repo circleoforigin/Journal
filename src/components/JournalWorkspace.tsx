@@ -1447,64 +1447,69 @@ async function addFieldToEntry(
 
   const fieldDefinition =
     project.fieldDefinitions.find(
-      (field) =>
-        field.id ===
+      (definition) =>
+        definition.id ===
         fieldDefinitionId,
     )
 
-  if (
-    !fieldDefinition ||
-    fieldDefinition.isSystem ||
-    activeEntry.fields[
-      fieldDefinition.id
-    ]
-  ) {
+  if (!fieldDefinition) {
     return
   }
 
-  const updatedEntry: JournalEntry = {
-    ...activeEntry,
+  const now =
+    new Date().toISOString()
 
-    fields: {
-      ...activeEntry.fields,
+  const initialValue =
+    fieldDefinition.valueType ===
+      'number'
+      ? '0'
+      : 'Add your thoughts here...'
 
-      [fieldDefinition.id]: {
-  items: [
-    {
+  const item:
+    JournalFieldItem = {
       id: crypto.randomUUID(),
+
       order: 0,
-      value: 'Add your thoughts here...',
+
+      value:
+        initialValue,
+
       source: 'master',
-      createdAt:
-        new Date().toISOString(),
-      updatedAt:
-        new Date().toISOString(),
-    },
-  ],
-},
-    },
 
-    updatedAt:
-      new Date().toISOString(),
-  }
+      createdAt: now,
+      updatedAt: now,
+    }
 
- setPendingEntryNavigationId(
-  updatedEntry.id,
-)
+  const updatedEntry:
+    JournalEntry = {
+      ...activeEntry,
 
-setEntries(
-  (current) =>
-    current.map(
-      (entry) =>
-        entry.id ===
-        updatedEntry.id
-          ? updatedEntry
-          : entry,
-    ),
-)
+      fields: {
+        ...activeEntry.fields,
 
-await entryRepository
-  .saveEntry(updatedEntry)
+        [fieldDefinitionId]: {
+          items: [
+            item,
+          ],
+        },
+      },
+
+      updatedAt: now,
+    }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (entry) =>
+          entry.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : entry,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
 }
 
 async function updateFieldItems(
@@ -1515,20 +1520,60 @@ async function updateFieldItems(
     return
   }
 
-  const updatedEntry: JournalEntry = {
-    ...activeEntry,
+  const fieldDefinition =
+    project.fieldDefinitions.find(
+      (definition) =>
+        definition.id ===
+        fieldDefinitionId,
+    )
 
-    fields: {
-      ...activeEntry.fields,
+  let normalizedItems =
+    [...items]
 
-      [fieldDefinitionId]: {
-        items,
-      },
-    },
-
-    updatedAt:
-      new Date().toISOString(),
+  if (
+    fieldDefinition?.presentation ===
+      'inline'
+  ) {
+    normalizedItems.sort(
+      (left, right) =>
+        String(left.value)
+          .localeCompare(
+            String(right.value),
+            undefined,
+            {
+              sensitivity: 'base',
+            },
+          ),
+    )
   }
+
+  normalizedItems =
+    normalizedItems.map(
+      (
+        item,
+        index,
+      ) => ({
+        ...item,
+        order: index,
+      }),
+    )
+
+  const updatedEntry:
+    JournalEntry = {
+      ...activeEntry,
+
+      fields: {
+        ...activeEntry.fields,
+
+        [fieldDefinitionId]: {
+          items:
+            normalizedItems,
+        },
+      },
+
+      updatedAt:
+        new Date().toISOString(),
+    }
 
   setEntries(
     (current) =>
@@ -1686,136 +1731,127 @@ async function addItemToField(
   const entry =
     entries.find(
       (candidate) =>
-        candidate.id === entryId,
+        candidate.id ===
+        entryId,
     )
 
-  const field =
-    entry?.fields[
-      fieldDefinitionId
-    ]
-
-  if (!entry || !field) {
+  if (!entry) {
     return
   }
 
-  const source:
-    JournalFieldItem['source'] =
-    journal?.ownerName === 'Master'
-      ? 'master'
-      : 'user'
+  const field =
+    entry.fields[
+      fieldDefinitionId
+    ]
 
-  const anchorItem =
-    field.items.find(
-      (item) =>
-        item.id === afterItemId,
+  if (!field) {
+    return
+  }
+
+  const fieldDefinition =
+    project.fieldDefinitions.find(
+      (definition) =>
+        definition.id ===
+        fieldDefinitionId,
     )
 
-  if (!anchorItem) {
+  if (!fieldDefinition) {
     return
   }
 
   /*
-   * A Journal may only insert into
-   * its own authority group.
+   * Single Fields always contain
+   * exactly one Item.
    */
-  if (anchorItem.source !== source) {
+  if (
+    fieldDefinition.presentation ===
+      'single'
+  ) {
     return
   }
 
-  const authorityItems =
-    field.items
-      .filter(
-        (item) =>
-          item.source === source,
-      )
-      .sort(
-        (left, right) =>
-          left.order -
-          right.order,
-      )
-
-  const anchorIndex =
-    authorityItems.findIndex(
+  const afterIndex =
+    field.items.findIndex(
       (item) =>
-        item.id === afterItemId,
+        item.id ===
+        afterItemId,
     )
 
-  if (anchorIndex < 0) {
+  if (afterIndex < 0) {
     return
   }
 
   const now =
     new Date().toISOString()
 
-  const newItem:
+  const item:
     JournalFieldItem = {
-    id: crypto.randomUUID(),
-    order: anchorIndex + 1,
-    value:
-      'Add your thoughts here...',
-    source,
-    createdAt: now,
-    updatedAt: now,
-  }
+      id: crypto.randomUUID(),
 
-  const reorderedAuthorityItems = [
-    ...authorityItems.slice(
-      0,
-      anchorIndex + 1,
-    ),
-    newItem,
-    ...authorityItems.slice(
-      anchorIndex + 1,
-    ),
-  ].map(
-    (item, index) => ({
-      ...item,
-      order: index,
-      updatedAt:
-        item.id === newItem.id
-          ? item.updatedAt
-          : now,
-    }),
-  )
+      order:
+        afterIndex + 1,
 
-  const reorderedById =
-    new Map(
-      reorderedAuthorityItems.map(
-        (item) => [
-          item.id,
-          item,
-        ],
-      ),
-    )
+      value:
+        fieldDefinition.valueType ===
+          'number'
+          ? '0'
+          : 'Add your thoughts here...',
+
+      source: 'master',
+
+      createdAt: now,
+      updatedAt: now,
+    }
 
   const updatedItems =
-    field.items
-      .filter(
-        (item) =>
-          item.source !== source,
-      )
-      .concat(
-        reorderedAuthorityItems,
-      )
-      .map(
-        (item) =>
-          reorderedById.get(
-            item.id,
-          ) ?? item,
-      )
+    [...field.items]
 
-  await updateFieldItems(
-    fieldDefinitionId,
-    updatedItems,
+  updatedItems.splice(
+    afterIndex + 1,
+    0,
+    item,
   )
 
-  setEditingItem({
-    entryId,
-    fieldDefinitionId,
-    itemId: newItem.id,
-    value:
-      'Add your thoughts here...',
-  })
+  const normalizedItems =
+    updatedItems.map(
+      (
+        currentItem,
+        index,
+      ) => ({
+        ...currentItem,
+        order: index,
+      }),
+    )
+
+  const updatedEntry:
+    JournalEntry = {
+      ...entry,
+
+      fields: {
+        ...entry.fields,
+
+        [fieldDefinitionId]: {
+          items:
+            normalizedItems,
+        },
+      },
+
+      updatedAt: now,
+    }
+
+  setEntries(
+    (current) =>
+      current.map(
+        (candidate) =>
+          candidate.id ===
+          updatedEntry.id
+            ? updatedEntry
+            : candidate,
+      ),
+  )
+
+  await entryRepository
+    .saveEntry(updatedEntry)
 }
 
 async function moveFieldItem(
@@ -1824,6 +1860,19 @@ async function moveFieldItem(
   itemId: string,
   direction: 'up' | 'down',
 ) {
+  const fieldDefinition =
+  project.fieldDefinitions.find(
+    (definition) =>
+      definition.id ===
+      fieldDefinitionId,
+  )
+
+if (
+  fieldDefinition?.presentation ===
+    'inline'
+) {
+  return
+}
   const entry =
     entries.find(
       (candidate) =>
