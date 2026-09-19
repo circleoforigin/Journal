@@ -414,6 +414,7 @@ if (
             }
 
             const nodeVisible =
+              !readOnly &&
               showEditNode(
                 fragment.source,
               )

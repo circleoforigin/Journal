@@ -920,9 +920,31 @@ async function archiveActiveEntry() {
       ? titleItem.value
       : ''
 
-  const archiveNumber =
-    (activeEntry.archiveNumber ?? 0) +
-    1
+  const archivedTitles =
+    new Set(
+      entries
+        .filter(
+          (entry) =>
+            entry.id !==
+              activeEntry.id &&
+            entry.sectionDefinitionId ===
+              archiveSection.id,
+        )
+        .map(
+          (entry) =>
+            getEntryTitle(entry),
+        ),
+    )
+
+  let archiveNumber = 1
+
+  while (
+    archivedTitles.has(
+      `${currentTitle} -Arc-${archiveNumber}`,
+    )
+  ) {
+    archiveNumber += 1
+  }
 
   const now =
     new Date().toISOString()
@@ -966,7 +988,8 @@ async function archiveActiveEntry() {
     (current) =>
       current.map(
         (entry) =>
-          entry.id === updatedEntry.id
+          entry.id ===
+          updatedEntry.id
             ? updatedEntry
             : entry,
       ),
