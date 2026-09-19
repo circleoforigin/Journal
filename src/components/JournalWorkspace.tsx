@@ -14,7 +14,6 @@ import type { Journal } from '../models/Journal'
 import { JournalPage } from './JournalPage'
 import { JournalItemEditor } from './JournalItemEditor'
 import { NewPageDialog } from '../entries/NewPageDialog'
-import { MovePageDialog } from '../entries/MovePageDialog'
 import { ConfirmationDialog } from './ConfirmationDialog'
 import { buildJournalDocument } from '../pagination/JournalDocumentBuilder'
 import {
@@ -57,11 +56,6 @@ const [
   pageIndex,
   setPageIndex,
 ] = useState(0)
-
-const [
-  isMovePageOpen,
-  setIsMovePageOpen,
-] = useState(false)
 
 const [
   pendingEntryNavigationId,
@@ -895,12 +889,11 @@ async function moveActiveEntry(
             : entry,
       ),
   )
-
-  setIsMovePageOpen(false)
-
   setPendingEntryNavigationId(
     updatedEntry.id,
   )
+  
+  setPendingPageAction(null)
 }
 
 async function archiveActiveEntry() {
@@ -2939,6 +2932,19 @@ function clearSearchPosition() {
                 page={leftPage ?? undefined}
                 pageNumber={leftPageIndex + 1}
                 pageSide="left"
+                readOnly={
+                  Boolean(
+                    leftPage &&
+                    archiveSection &&
+                    leftPage.fragments.some(
+                      (fragment) =>
+                        entries.find(
+                          (entry) =>
+                            entry.id === fragment.entryId,
+                        )?.sectionDefinitionId === archiveSection.id,
+                    ),
+                  )
+                }
                 searchHighlight={
                   searchHighlight?.pageIndex ===
                   leftPageIndex
@@ -2960,6 +2966,19 @@ function clearSearchPosition() {
                 page={rightPage ?? undefined}
                 pageNumber={rightPageIndex + 1}
                 pageSide="right"
+                readOnly={
+                  Boolean(
+                    rightPage &&
+                    archiveSection &&
+                    rightPage.fragments.some(
+                      (fragment) =>
+                        entries.find(
+                          (entry) =>
+                            entry.id === fragment.entryId,
+                        )?.sectionDefinitionId === archiveSection.id,
+                    ),
+                  )
+                }
                 searchHighlight={
                   searchHighlight?.pageIndex ===
                   rightPageIndex

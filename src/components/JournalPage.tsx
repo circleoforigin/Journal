@@ -18,6 +18,7 @@ interface JournalPageProps {
     JournalPageLayout | undefined
   pageNumber: number
   pageSide: 'left' | 'right'
+  readOnly: boolean
   contentRef?:
     RefObject<HTMLDivElement | null>
   fontFamily: string
@@ -56,6 +57,7 @@ export function JournalPage({
   page,
   pageNumber,
   pageSide,
+  readOnly,
   contentRef,
   fontFamily,
   fontSize,
@@ -258,6 +260,7 @@ export function JournalPage({
               'title'
             ) {
               const nodeVisible =
+                !readOnly &&
                 showEditNode(
                   fragment.source,
                 )
@@ -379,9 +382,11 @@ if (
             }
 
             if (
-              fragment.type ===
-              'addItem'
+              fragment.type === 'addItem'
             ) {
+              if (readOnly) {
+                return null
+              }
               return (
                 <button
                   key={`add-item-${fragment.fieldDefinitionId}-${index}`}
