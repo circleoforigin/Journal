@@ -29,13 +29,12 @@ export interface JournalDocumentBriefBlock {
   text: string
 }
 
-export type JournalDocumentBlock =
-  | JournalDocumentTitleBlock
-  | JournalDocumentSubtitleBlock
-  | JournalDocumentBriefBlock
-  | JournalDocumentFieldBlock
-  | JournalDocumentItemBlock
-  | JournalDocumentAddItemBlock
+export interface JournalDocumentFieldBlock {
+  type: 'field'
+  entryId: string
+  fieldDefinitionId: string
+  text: string
+}
 
 export interface JournalDocumentItemBlock {
   type: 'item'
@@ -55,6 +54,8 @@ export interface JournalDocumentAddItemBlock {
 
 export type JournalDocumentBlock =
   | JournalDocumentTitleBlock
+  | JournalDocumentSubtitleBlock
+  | JournalDocumentBriefBlock
   | JournalDocumentFieldBlock
   | JournalDocumentItemBlock
   | JournalDocumentAddItemBlock

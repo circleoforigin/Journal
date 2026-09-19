@@ -973,6 +973,8 @@ async function updatePageHeader(
     return
   }
 
+  const existingEntry = entry
+
   const trimmedTitle =
     title.trim()
 
@@ -994,7 +996,7 @@ async function updatePageHeader(
     value: string,
   ): JournalFieldItem {
     const existing =
-      entry.fields[
+      existingEntry.fields[
         fieldDefinitionId
       ]?.items[0]
 
