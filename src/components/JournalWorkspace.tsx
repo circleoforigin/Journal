@@ -1162,14 +1162,31 @@ async function createEntry(
   brief: string,
 ) {
   if (
-    !journal ||
-    !titleDefinition ||
-    !subtitleDefinition ||
-    !briefDefinition ||
-    !notesDefinition
-  ) {
-    return
-  }
+  !journal ||
+  !titleDefinition ||
+  !subtitleDefinition ||
+  !briefDefinition ||
+  !notesDefinition
+) {
+  console.error(
+    'Cannot create Journal Entry: missing required system data.',
+    {
+      journal: Boolean(journal),
+      titleDefinition:
+        Boolean(titleDefinition),
+      subtitleDefinition:
+        Boolean(subtitleDefinition),
+      briefDefinition:
+        Boolean(briefDefinition),
+      notesDefinition:
+        Boolean(notesDefinition),
+      fieldDefinitions:
+        project.fieldDefinitions,
+    },
+  )
+
+  return
+}
 
   const section =
     sections.find(
@@ -2547,7 +2564,7 @@ function clearSearchPosition() {
   <div className="journal-toc-page-actions">
     <button
       type="button"
-      title="Move Page"
+      data-tooltip="Move Page"
       disabled={!activeEntry || activeEntryIsArchived}
       onClick={() => {
         setPendingPageAction(
@@ -2560,7 +2577,7 @@ function clearSearchPosition() {
     
     <button
       type="button"
-      title="Archive Page"
+      data-tooltip="Archive Page"
       disabled={
         !activeEntry ||
         activeEntryIsArchived
@@ -2576,7 +2593,7 @@ function clearSearchPosition() {
 
     <button
       type="button"
-      title="Restore Page"
+      data-tooltip="Restore Page"
       disabled={
         !activeEntry ||
         !activeEntryIsArchived
@@ -2592,7 +2609,7 @@ function clearSearchPosition() {
 
     <button
       type="button"
-      title="Delete Page"
+      data-tooltip="Delete Page"
       disabled={!activeEntry}
       onClick={() => {
         setPendingPageAction(

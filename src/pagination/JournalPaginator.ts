@@ -1000,6 +1000,7 @@ case 'brief':
 
         if (
           firstItem &&
+          block.text !== 'Notes' &&
           addInlineFieldAndItem(
             block,
             firstItem,
