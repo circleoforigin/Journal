@@ -352,7 +352,7 @@ const paginationMetrics:
       titleBottomGap: 20,
       fieldTopGap: 0,
       fieldBottomGap: 0,
-      itemBottomGap: 6,
+      itemBottomGap: 0,
     }),
     [
       fontFamily,
@@ -1263,7 +1263,9 @@ async function createEntry(
 
       [notesDefinition.id]: {
         items: [
-          createSystemItem(''),
+          createSystemItem(
+            'Add your thoughts here...',
+          ),
         ],
       },
     },
@@ -2024,52 +2026,93 @@ async function confirmEditingItem() {
     return
   }
 
-  const isEmpty =
-  editingItem.value.trim()
-    .length === 0
+  const isNotes =
+    notesDefinition &&
+    editingItem.fieldDefinitionId ===
+      notesDefinition.id
 
-if (isEmpty) {
-  if (field.items.length === 1) {
-    await removeFieldFromEntry(
+  const isEmpty =
+    editingItem.value.trim()
+      .length === 0
+
+  if (isEmpty) {
+    /*
+     * Notes is a required system
+     * Field. Its final Item remains
+     * as the permanent empty editing
+     * target instead of removing the
+     * Field.
+     */
+    if (
+      isNotes &&
+      field.items.length === 1
+    ) {
+      const now =
+        new Date().toISOString()
+
+      const updatedItems =
+        field.items.map(
+          (item) =>
+            item.id ===
+            editingItem.itemId
+              ? {
+                  ...item,
+                  value: 'Add your thoughts here...',
+                  updatedAt: now,
+                }
+              : item,
+        )
+
+      await updateFieldItems(
+        editingItem.fieldDefinitionId,
+        updatedItems,
+      )
+
+      setEditingItem(null)
+      return
+    }
+
+    if (field.items.length === 1) {
+      await removeFieldFromEntry(
+        editingItem.fieldDefinitionId,
+      )
+
+      setEditingItem(null)
+      return
+    }
+
+    const updatedItems =
+      field.items.filter(
+        (item) =>
+          item.id !==
+          editingItem.itemId,
+      )
+
+    await updateFieldItems(
       editingItem.fieldDefinitionId,
+      updatedItems,
     )
 
     setEditingItem(null)
     return
   }
 
+  const now =
+    new Date().toISOString()
+
   const updatedItems =
-    field.items.filter(
+    field.items.map(
       (item) =>
-        item.id !==
-        editingItem.itemId,
+        item.id ===
+        editingItem.itemId
+          ? {
+              ...item,
+              value:
+                editingItem.value,
+              updatedAt: now,
+            }
+          : item,
     )
-
-  await updateFieldItems(
-    editingItem.fieldDefinitionId,
-    updatedItems,
-  )
-
-  setEditingItem(null)
-  return
-}
-
-const now =
-  new Date().toISOString()
-
-const updatedItems =
-  field.items.map(
-    (item) =>
-      item.id ===
-      editingItem.itemId
-        ? {
-            ...item,
-            value:
-              editingItem.value,
-            updatedAt: now,
-          }
-        : item,
-  )
 
   await updateFieldItems(
     editingItem.fieldDefinitionId,
