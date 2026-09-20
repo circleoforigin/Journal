@@ -270,6 +270,13 @@ const briefDefinition =
       field.name === 'Brief',
   )
 
+const aliasesDefinition =
+  project.fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Aliases',
+  )
+
 const notesDefinition =
   project.fieldDefinitions.find(
     (field) =>
@@ -1165,6 +1172,7 @@ async function createEntry(
   !titleDefinition ||
   !subtitleDefinition ||
   !briefDefinition ||
+  !aliasesDefinition ||
   !notesDefinition
 ) {
   console.error(
@@ -1177,6 +1185,8 @@ async function createEntry(
         Boolean(subtitleDefinition),
       briefDefinition:
         Boolean(briefDefinition),
+      aliasesDefinition:
+        Boolean(aliasesDefinition),
       notesDefinition:
         Boolean(notesDefinition),
       fieldDefinitions:
@@ -1231,7 +1241,7 @@ async function createEntry(
   }
 
   const entry: JournalEntry = {
-    id: crypto.randomUUID(),
+    id: `master:${crypto.randomUUID()}`,
 
     sectionDefinitionId,
 
@@ -1256,6 +1266,15 @@ async function createEntry(
         items: [
           createSystemItem(
             trimmedBrief,
+          ),
+        ],
+      },
+
+      [aliasesDefinition.id]: {
+        items: [
+          createSystemItem(
+            subtitle.trim() ||
+              'No known aliases',
           ),
         ],
       },

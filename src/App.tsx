@@ -525,6 +525,9 @@ async function createProject(
   const briefDefinitionId =
     crypto.randomUUID()
 
+  const aliasesDefinitionId =
+    crypto.randomUUID()
+
   const notesDefinitionId =
     crypto.randomUUID()
 
@@ -579,14 +582,24 @@ async function createProject(
   },
 
   {
-    id:
-      notesDefinitionId,
-    name: 'Notes',
-    valueType: 'string',
-    presentation: 'multiple',
-    order: 3,
-    isSystem: true,
-  },
+  id:
+    aliasesDefinitionId,
+  name: 'Aliases',
+  valueType: 'string',
+  presentation: 'inline',
+  order: 3,
+  isSystem: true,
+},
+
+{
+  id:
+    notesDefinitionId,
+  name: 'Notes',
+  valueType: 'string',
+  presentation: 'multiple',
+  order: 4,
+  isSystem: true,
+},
 ],
 
     sectionDefinitions: [
