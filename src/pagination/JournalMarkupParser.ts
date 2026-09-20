@@ -99,8 +99,8 @@ export function parseJournalFormatting(
   return runs
 }
 
-const LANGUAGE_PATTERN =
-  /<lang:([^\s>]+)\s+trans:(true|false)>([\s\S]*?)<\/>/gi
+const SEMANTIC_PATTERN =
+  /<lang:([^\s>]+)\s+trans:(true|false)>([\s\S]*?)<\/>|<ref:([^>]+)>([\s\S]*?)<\/>/gi
 
 export function parseJournalMarkup(
   value: string,
@@ -114,7 +114,7 @@ export function parseJournalMarkup(
   for (
     const match
     of value.matchAll(
-      LANGUAGE_PATTERN,
+      SEMANTIC_PATTERN,
     )
   ) {
     const matchIndex =
@@ -140,27 +140,60 @@ export function parseJournalMarkup(
       runIndex += 1
     }
 
-    const languageId =
-      match[1]
+    /*
+     * Language markup:
+     *
+     * <lang:LANGUAGE-ID trans:true>
+     *   visible text
+     * </>
+     */
+    if (match[1] !== undefined) {
+      const languageId =
+        match[1]
 
-    const translated =
-      match[2].toLowerCase() ===
-      'true'
+      const translated =
+        match[2].toLowerCase() ===
+        'true'
 
-    const text =
-      match[3]
+      const text =
+        match[3]
 
-    runs.push({
-      type: 'language',
+      runs.push({
+        type: 'language',
 
-      id:
-        `language:${runIndex}`,
+        id:
+          `language:${runIndex}`,
 
-      text,
+        text,
 
-      languageId,
-      translated,
-    })
+        languageId,
+        translated,
+      })
+    } else {
+      /*
+       * Journal Reference:
+       *
+       * <ref:MASTER-ENTRY-ID>
+       *   authored display text
+       * </>
+       */
+      const targetEntryId =
+        match[4]
+
+      const text =
+        match[5]
+
+      runs.push({
+        type: 'reference',
+
+        id:
+          `reference:${runIndex}`,
+
+        text,
+
+        targetEntryId,
+      })
+    }
 
     runIndex += 1
 

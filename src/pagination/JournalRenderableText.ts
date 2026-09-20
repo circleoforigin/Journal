@@ -17,9 +17,17 @@ export interface JournalSemanticLanguageTextRun {
   translated: boolean
 }
 
+export interface JournalSemanticReferenceTextRun {
+  type: 'reference'
+  id: string
+  text: string
+  targetEntryId: string
+}
+
 export type JournalSemanticTextRun =
   | JournalSemanticPlainTextRun
   | JournalSemanticLanguageTextRun
+  | JournalSemanticReferenceTextRun
 
 export interface JournalRenderableTextRun {
   id: string
