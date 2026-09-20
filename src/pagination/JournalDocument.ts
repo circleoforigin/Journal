@@ -48,6 +48,7 @@ export interface JournalDocumentItemBlock {
   source: JournalFieldItemSource
   text: string
   presentation: JournalFieldPresentation
+  displayPrefix?: string
 }
 
 export interface JournalDocumentInlineItem {

@@ -438,84 +438,6 @@ function measureBrowserLines(
       ]
 }
 
-function measureSingleLineWidth(
-  storedText: string,
-  fontFamily: string,
-  fontSize: number,
-  fontWeight = '400',
-): number {
-  const element =
-    document.createElement('span')
-
-  element.style.position =
-    'absolute'
-  element.style.visibility =
-    'hidden'
-  element.style.pointerEvents =
-    'none'
-  element.style.left =
-    '-100000px'
-  element.style.top =
-    '0'
-
-  element.style.whiteSpace =
-    'pre'
-
-  element.style.fontFamily =
-    fontFamily
-  element.style.fontSize =
-    `${fontSize}px`
-  element.style.fontWeight =
-    fontWeight
-
-  const runs =
-    parseJournalFormatting(
-      storedText,
-    )
-
-  for (const run of runs) {
-    const span =
-      document.createElement(
-        'span',
-      )
-
-    if (run.bold) {
-      span.style.fontWeight =
-        '700'
-    }
-
-    if (run.italic) {
-      span.style.fontStyle =
-        'italic'
-    }
-
-    if (run.underline) {
-      span.style.textDecoration =
-        'underline'
-    }
-
-    span.textContent =
-      run.text
-
-    element.appendChild(
-      span,
-    )
-  }
-
-  document.body.appendChild(
-    element,
-  )
-
-  const width =
-    element
-      .getBoundingClientRect()
-      .width
-
-  element.remove()
-
-  return width
-}
-
 export function paginateJournalDocument(
   journalDocument:
     JournalDocument,
@@ -636,9 +558,12 @@ export function paginateJournalDocument(
         { type: 'item' }
       >,
   ) => {
-    const lines =
-      measureBrowserLines(
-        block.text,
+    const displayText =
+  `${block.displayPrefix ?? ''}${block.text}`
+
+const lines =
+  measureBrowserLines(
+    displayText,
         metrics.pageWidth,
         metrics.fontFamily,
         metrics.fontSize,
@@ -1040,38 +965,7 @@ case 'brief':
   blockIndex += 1
   break
 
-      case 'field': {
-  const nextBlock =
-    journalDocument.blocks[
-      blockIndex + 1
-    ]
-
-  const firstItem =
-    nextBlock?.type ===
-      'item' &&
-    nextBlock
-      .fieldDefinitionId ===
-      block
-        .fieldDefinitionId
-      ? nextBlock
-      : null
-
-  if (
-    firstItem &&
-    block.text !== 'Notes' &&
-    addFieldAndFirstItemInline(
-      block,
-      firstItem,
-    )
-  ) {
-    /*
-     * The Field label and first
-     * Item were consumed together.
-     */
-    blockIndex += 2
-    break
-  }
-
+      case 'field':
   addSingleBlock(
     block,
     metrics.fieldFontSize,
@@ -1083,7 +977,6 @@ case 'brief':
 
   blockIndex += 1
   break
-}
 
       case 'inlineField':
         addInlineFieldBlock(block)

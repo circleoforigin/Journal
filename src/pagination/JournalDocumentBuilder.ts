@@ -216,14 +216,7 @@ export function buildJournalDocument(
       continue
     }
 
-    blocks.push({
-      type: 'field',
-      entryId: entry.id,
-      fieldDefinitionId: fieldDefinition.id,
-      text: fieldDefinition.name,
-      presentation: fieldDefinition.presentation,
-    })
-
+    let firstDisplayedItem = true
     for (
       const item
       of orderedItems
@@ -248,18 +241,25 @@ export function buildJournalDocument(
       }
 
       blocks.push({
-        type: 'item',
-        entryId:
-          entry.id,
-        fieldDefinitionId:
-          fieldDefinition.id,
-        itemId:
-          item.id,
-        source:
-          item.source,
-        text,
-        presentation: fieldDefinition.presentation,
-      })
+  type: 'item',
+  entryId:
+    entry.id,
+  fieldDefinitionId:
+    fieldDefinition.id,
+  itemId:
+    item.id,
+  source:
+    item.source,
+  text,
+  displayPrefix:
+    firstDisplayedItem
+      ? `${fieldDefinition.name} - `
+      : undefined,
+  presentation:
+    fieldDefinition.presentation,
+})
+
+firstDisplayedItem = false
     }
 
     if (

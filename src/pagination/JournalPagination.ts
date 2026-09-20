@@ -92,6 +92,7 @@ export interface JournalPageItemFragment {
   left?: number
   width?: number
   inline?: boolean
+  displayPrefix?: string
 }
 
 export interface JournalPageAddItemFragment {
