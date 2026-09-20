@@ -767,8 +767,6 @@ function saveFieldDefinitions(
   })
 
   setProjectDirty(true)
-
-  setIsFieldDefinitionsOpen(false)
 }
 
 function handleTocStructure() {
@@ -920,7 +918,7 @@ onDeleteBook={
           .fieldDefinitions
       }
 
-      onSave={
+      onChange={
         saveFieldDefinitions
       }
 

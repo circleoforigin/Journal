@@ -16,10 +16,10 @@ interface FieldDefinitionsDialogProps {
   fieldDefinitions:
     JournalFieldDefinition[]
 
-  onSave: (
-    fieldDefinitions:
-      JournalFieldDefinition[],
-  ) => void
+  onChange: (
+  fieldDefinitions:
+    JournalFieldDefinition[],
+) => void
 
   onCancel: () => void
 }
@@ -37,7 +37,7 @@ function normalizeOrder(
 
 export function FieldDefinitionsDialog({
   fieldDefinitions,
-  onSave,
+  onChange,
   onCancel,
 }: FieldDefinitionsDialogProps) {
   const [fields, setFields] =
@@ -183,6 +183,24 @@ const [
         selectedFieldId,
     ) ?? null
 
+    function applyFields(
+  nextFields:
+    JournalFieldDefinition[],
+) {
+  const normalized =
+    normalizeOrder(
+      nextFields,
+    )
+
+  setFields(
+    normalized,
+  )
+
+  onChange(
+    normalized,
+  )
+}
+
   function resetEditor() {
     setCustomName('')
     setCustomValueType('string')
@@ -213,24 +231,72 @@ const [
   }
 
   function selectField(
-    fieldId: string,
-  ) {
-    setSelectedFieldId(
-      fieldId,
+  fieldId: string,
+) {
+  const field =
+    fields.find(
+      (candidate) =>
+        candidate.id ===
+        fieldId,
     )
 
-    setSelectedPresetIndex(null)
-
-    const field = fields.find((candidate) => candidate.id === fieldId)
-    if (!field) {
-      resetEditor()
-      return
-    }
-
-    setCustomName(field.name)
-    setCustomValueType(field.valueType)
-    setCustomPresentation(field.presentation)
+  if (!field) {
+    clearSelection()
+    return
   }
+
+  setSelectedFieldId(
+    field.id,
+  )
+
+  setSelectedPresetIndex(
+    null,
+  )
+
+  setCustomName(
+    field.name,
+  )
+
+  setCustomValueType(
+    field.valueType,
+  )
+
+  setCustomPresentation(
+    field.presentation,
+  )
+}
+
+  function updateSelectedField(
+  changes:
+    Partial<
+      Pick<
+        JournalFieldDefinition,
+        | 'name'
+        | 'valueType'
+        | 'presentation'
+      >
+    >,
+) {
+  if (
+    !selectedField ||
+    selectedField.isSystem
+  ) {
+    return
+  }
+
+  applyFields(
+    fields.map(
+      (field) =>
+        field.id ===
+          selectedField.id
+          ? {
+              ...field,
+              ...changes,
+            }
+          : field,
+    ),
+  )
+}
 
   function removeSelectedField() {
     if (
@@ -240,15 +306,13 @@ const [
       return
     }
 
-    setFields(
-      normalizeOrder(
-        fields.filter(
-          (field) =>
-            field.id !==
-            selectedField.id,
-        ),
-      ),
-    )
+    applyFields(
+  fields.filter(
+    (field) =>
+      field.id !==
+      selectedField.id,
+  ),
+)
 
     setSelectedFieldId(null)
     resetEditor()
@@ -309,10 +373,8 @@ const [
     field,
   )
 
-  setFields(
-    normalizeOrder(
-      reordered,
-    ),
+  applyFields(
+    reordered,
   )
 }
 
@@ -389,13 +451,11 @@ nextFields.splice(
   field,
 )
 
-setFields(
-  normalizeOrder(
-    nextFields,
-  ),
+applyFields(
+  nextFields,
 )
 
-    clearSelection()
+clearSelection()
   }
 
   let transferLabel =
@@ -580,10 +640,17 @@ setFields(
                 value={customName}
                 disabled={Boolean(selectedField?.isSystem)}
                 onChange={(event) => {
-                  setCustomName(
-                    event.target.value,
-                  )
-                }}
+  const name =
+    event.target.value
+
+  setCustomName(
+    name,
+  )
+
+  updateSelectedField({
+    name,
+  })
+}}
               />
             </label>
           </div>
@@ -600,12 +667,19 @@ setFields(
     }
     disabled={Boolean(selectedField?.isSystem)}
     onChange={(event) => {
-      setCustomValueType(
-        event.target
-          .value as
-          JournalFieldValueType,
-      )
-    }}
+  const valueType =
+    event.target
+      .value as
+      JournalFieldValueType
+
+  setCustomValueType(
+    valueType,
+  )
+
+  updateSelectedField({
+    valueType,
+  })
+}}
   >
     <option value="string">
       String
@@ -628,12 +702,19 @@ setFields(
     }
     disabled={Boolean(selectedField?.isSystem)}
     onChange={(event) => {
-      setCustomPresentation(
-        event.target
-          .value as
-          JournalFieldPresentation,
-      )
-    }}
+  const presentation =
+    event.target
+      .value as
+      JournalFieldPresentation
+
+  setCustomPresentation(
+    presentation,
+  )
+
+  updateSelectedField({
+    presentation,
+  })
+}}
   >
     <option value="single">
       Single
@@ -649,43 +730,30 @@ setFields(
   </select>
 </label>
 
-            <button
-              type="button"
-              disabled={
-                !customName.trim() || Boolean(selectedField?.isSystem)
-              }
-              onClick={
-                saveEditorField
-              }
-            >
-              {selectedField && !selectedField.isSystem
-                ? 'Save Field'
-                : 'Add Field'}
-            </button>
+            {!selectedField && (
+  <button
+    type="button"
+    disabled={
+      !customName.trim()
+    }
+    onClick={
+      saveEditorField
+    }
+  >
+    Add Field
+  </button>
+)}
           </div>
         </div>
 
         <div className="dialog-actions">
-          <button
-            type="button"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              onSave(
-                normalizeOrder(
-                  fields,
-                ),
-              )
-            }}
-          >
-            Save
-          </button>
-        </div>
+  <button
+    type="button"
+    onClick={onCancel}
+  >
+    Return
+  </button>
+</div>
       </div>
     </div>
   )
