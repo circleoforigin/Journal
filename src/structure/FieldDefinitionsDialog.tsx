@@ -390,19 +390,19 @@ const [
   const targetIndex =
     index + direction
 
-  const notesIndex =
-    fields.findIndex(
-      (candidate) =>
-        candidate.isSystem &&
-        candidate.name === 'Notes',
-    )
+  const aliasesIndex =
+  fields.findIndex(
+    (candidate) =>
+      candidate.isSystem &&
+      candidate.name === 'Aliases',
+  )
 
-  if (
-    targetIndex < 3 ||
-    targetIndex >= notesIndex
-  ) {
-    return
-  }
+if (
+  targetIndex < 3 ||
+  targetIndex >= aliasesIndex
+) {
+  return
+}
 
   const reordered =
     [...fields]
@@ -641,8 +641,12 @@ clearSelection()
                         <button
                           type="button"
                           disabled={
-                            index ===
-                            fields.length - 2
+                            index >=
+                            fields.findIndex(
+                              (candidate) =>
+                                candidate.isSystem &&
+                                candidate.name === 'Aliases',
+                            ) - 1
                           }
                           onClick={(event) => {
                             event.stopPropagation()

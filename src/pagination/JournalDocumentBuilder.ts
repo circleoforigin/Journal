@@ -51,6 +51,13 @@ export function buildJournalDocument(
         definition.name === 'Brief',
     )
 
+    const aliasesDefinition =
+  fieldDefinitions.find(
+    (definition) =>
+      definition.isSystem &&
+      definition.name === 'Aliases',
+  )
+
   const notesDefinition =
     fieldDefinitions.find(
       (definition) =>
@@ -156,16 +163,23 @@ export function buildJournalDocument(
           right.order,
       )
 
-  const orderedFields =
-    notesDefinition &&
-    entry.fields[
-      notesDefinition.id
-    ]
-      ? [
-          ...ordinaryFields,
-          notesDefinition,
-        ]
-      : ordinaryFields
+  const orderedFields = [
+  ...ordinaryFields,
+
+  ...(aliasesDefinition &&
+  entry.fields[
+    aliasesDefinition.id
+  ]
+    ? [aliasesDefinition]
+    : []),
+
+  ...(notesDefinition &&
+  entry.fields[
+    notesDefinition.id
+  ]
+    ? [notesDefinition]
+    : []),
+]
 
   for (
     const fieldDefinition
