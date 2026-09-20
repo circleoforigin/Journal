@@ -252,6 +252,7 @@ export function JournalPage({
   <div
     className={`journal-page ${pageSide}-page`}
   >
+    <div className="journal-page-inner-gutter" />
       <div
         ref={contentRef}
         className="journal-page-content"

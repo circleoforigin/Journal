@@ -252,27 +252,27 @@ export function buildJournalDocument(
     item.source,
   text,
   displayPrefix:
-    firstDisplayedItem
-      ? `${fieldDefinition.name} - `
-      : undefined,
+  firstDisplayedItem
+    ? `<b>${fieldDefinition.name} - </b>`
+    : undefined,
   presentation:
     fieldDefinition.presentation,
 })
 
 firstDisplayedItem = false
-    }
 
-    if (
-      fieldDefinition.presentation === 'multiple' &&
-      orderedItems.length > 0
-    ) {
-      blocks.push({
-        type: 'addItem',
-        entryId: entry.id,
-        fieldDefinitionId: fieldDefinition.id,
-        afterItemId: orderedItems[orderedItems.length - 1].id,
-      })
-    }
+if (
+  fieldDefinition.presentation === 'multiple'
+) {
+  blocks.push({
+    type: 'addItem',
+    entryId: entry.id,
+    fieldDefinitionId:
+      fieldDefinition.id,
+    afterItemId: item.id,
+  })
+}
+    }    
   }
 
   return {

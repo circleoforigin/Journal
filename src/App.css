@@ -1438,8 +1438,32 @@
   transition: opacity 80ms ease;
 }
 
-.journal-page-item-controls:hover,
-.journal-page-item-controls:focus-within {
+.journal-page-inner-gutter {
+  position: absolute;
+  top: 34px;
+  bottom: 46px;
+
+  width: 38px;
+
+  z-index: 4;
+}
+
+.journal-page.right-page
+.journal-page-inner-gutter {
+  left: 0;
+}
+
+.journal-page.left-page
+.journal-page-inner-gutter {
+  right: 0;
+}
+
+.journal-page:has(
+  .journal-page-inner-gutter:hover,
+  .journal-page-item-controls:hover,
+  .journal-page-item-controls:focus-within
+)
+.journal-page-item-controls {
   opacity: 1;
 }
 

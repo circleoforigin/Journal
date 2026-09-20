@@ -559,10 +559,10 @@ export function paginateJournalDocument(
       >,
   ) => {
     const displayText =
-  `${block.displayPrefix ?? ''}${block.text}`
+      `${block.displayPrefix ?? ''}${block.text}`
 
-const lines =
-  measureBrowserLines(
+    const lines =
+    measureBrowserLines(
     displayText,
         metrics.pageWidth,
         metrics.fontFamily,
@@ -703,152 +703,7 @@ const lines =
 
     usedHeight +=
       metrics.itemBottomGap
-  }
-
-  const addFieldAndFirstItemInline = (
-  fieldBlock:
-    Extract<
-      JournalDocumentBlock,
-      { type: 'field' }
-    >,
-  itemBlock:
-    Extract<
-      JournalDocumentBlock,
-      { type: 'item' }
-    >,
-): boolean => {
-  /*
-   * This is the compact physical
-   * layout for a normal Single or
-   * Multiple Field.
-   *
-   * It is NOT the Inline Field
-   * presentation mode.
-   */
-  if (
-    itemBlock.text.includes(
-      '\n',
-    ) ||
-    itemBlock.text.startsWith(
-      '\t',
-    )
-  ) {
-    return false
-  }
-
-  const separator = ' - '
-
-  const fieldWidth =
-    measureSingleLineWidth(
-      fieldBlock.text +
-        separator,
-      metrics.fontFamily,
-      metrics.fieldFontSize,
-      '700',
-    )
-
-  const itemWidth =
-    measureSingleLineWidth(
-      itemBlock.text,
-      metrics.fontFamily,
-      metrics.fontSize,
-      '400',
-    )
-
-  if (
-    fieldWidth +
-      itemWidth >
-    metrics.pageWidth
-  ) {
-    return false
-  }
-
-  const rowHeight =
-    Math.max(
-      metrics.fieldLineHeight,
-      metrics.lineHeight,
-    )
-
-  ensureHeight(
-    metrics.fieldTopGap +
-      rowHeight +
-      metrics.itemBottomGap,
-  )
-
-  usedHeight +=
-    metrics.fieldTopGap
-
-  const rowTop =
-    usedHeight
-
-  currentPage.fragments.push({
-    ...fieldBlock,
-
-    text:
-      fieldBlock.text +
-      separator,
-
-    top:
-      rowTop,
-
-    height:
-      rowHeight,
-  })
-
-  const visibleText =
-    parseJournalFormatting(
-      itemBlock.text,
-    )
-      .map(
-        (run) =>
-          run.text,
-      )
-      .join('')
-
-  currentPage.fragments.push({
-    ...itemBlock,
-
-    text:
-      visibleText,
-
-    paragraphs: [
-      {
-        text:
-          visibleText,
-
-        indented:
-          false,
-
-        runs:
-          parseJournalFormatting(
-            itemBlock.text,
-          ),
-      },
-    ],
-
-    top:
-      rowTop,
-
-    height:
-      rowHeight,
-
-    left:
-      fieldWidth,
-
-    width:
-      metrics.pageWidth -
-      fieldWidth,
-
-    inline:
-      true,
-  })
-
-  usedHeight +=
-    rowHeight +
-    metrics.itemBottomGap
-
-  return true
-}
+  }  
 
   const addInlineFieldBlock = (
     block: Extract<
