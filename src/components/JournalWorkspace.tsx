@@ -1785,7 +1785,10 @@ async function addItemToField(
         fieldDefinition.valueType ===
           'number'
           ? 0
-          : 'Add your thoughts here...',
+          : fieldDefinition.presentation ===
+              'inline'
+            ? ''
+            : 'Add your thoughts here...',
 
       source: 'master',
 

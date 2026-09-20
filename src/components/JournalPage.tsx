@@ -371,10 +371,8 @@ if (
   )
 }
 
-            if (
-              fragment.type ===
-              'field'
-            ) {
+            if (fragment.type === 'field')
+              {
               return (
                 <div
                   key={`field-${fragment.fieldDefinitionId}-${index}`}
@@ -396,51 +394,91 @@ if (
             }
 
             if (fragment.type === 'inlineField') {
-              let textOffset = fragment.label.length + 3
+  let textOffset = fragment.label.length + 3
 
-              return (
-                <div
-                  key={`inline-${fragment.fieldDefinitionId}-${index}`}
-                  className="journal-page-inline-field"
-                  style={{ top: fragment.top, height: fragment.height }}
-                >
-                  <strong>{fragment.label} - </strong>
-                  {fragment.items.map((item, itemIndex) => {
-                    const offset = textOffset
-                    textOffset += item.text.length + 2
-                    const editable = !readOnly && showEditNode(item.source)
+  return (
+    <div
+      key={`inline-${fragment.fieldDefinitionId}-${index}`}
+      className="journal-page-inline-field"
+      style={{
+        top: fragment.top,
+        height: fragment.height,
+      }}
+    >
+      <strong>{fragment.label} - </strong>
 
-                    return (
-                      <span key={item.itemId}>
-                        <button
-                          type="button"
-                          className="journal-page-inline-item"
-                          disabled={!editable}
-                          onClick={(event) => {
-                            if (event.shiftKey) {
-                              onDeleteItem(
-                                fragment.entryId,
-                                fragment.fieldDefinitionId,
-                                item.itemId,
-                              )
-                              return
-                            }
-                            onEditItem(
-                              fragment.entryId,
-                              fragment.fieldDefinitionId,
-                              item.itemId,
-                            )
-                          }}
-                        >
-                          {renderFormattedText(item.runs, index, offset)}
-                        </button>
-                        {itemIndex < fragment.items.length - 1 ? ', ' : ''}
-                      </span>
+      {fragment.items.map((item, itemIndex) => {
+        const offset = textOffset
+        textOffset += item.text.length + 2
+
+        const editable =
+          !readOnly &&
+          showEditNode(item.source)
+
+        return (
+          <span
+            key={item.itemId}
+            className="journal-page-inline-item-wrapper"
+          >
+            <span className="journal-page-inline-item-text">
+              {renderFormattedText(
+                item.runs,
+                index,
+                offset,
+              )}
+            </span>
+
+            {editable && (
+              <span
+                className="journal-page-inline-item-target"
+                role="button"
+                tabIndex={0}
+                aria-label="Edit field item"
+                onClick={(event) => {
+                  if (event.shiftKey) {
+                    onDeleteItem(
+                      fragment.entryId,
+                      fragment.fieldDefinitionId,
+                      item.itemId,
                     )
-                  })}
-                </div>
-              )
-            }
+                    return
+                  }
+
+                  onEditItem(
+                    fragment.entryId,
+                    fragment.fieldDefinitionId,
+                    item.itemId,
+                  )
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key !== 'Enter' &&
+                    event.key !== ' '
+                  ) {
+                    return
+                  }
+
+                  event.preventDefault()
+
+                  onEditItem(
+                    fragment.entryId,
+                    fragment.fieldDefinitionId,
+                    item.itemId,
+                  )
+                }}
+              />
+            )}
+
+            {itemIndex <
+            fragment.items.length - 1
+              ? ', '
+              : ''}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
 
             if (
               fragment.type === 'addItem'
