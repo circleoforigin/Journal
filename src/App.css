@@ -1491,10 +1491,19 @@
 
 .journal-page-inline-item-target {
   position: absolute;
-  inset: -1px -2px;
   z-index: 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
   border-radius: 3px;
+  background: transparent;
   cursor: pointer;
+}
+
+.journal-page-inline-item-target:hover,
+.journal-page-inline-item-target:focus-visible {
+  background: rgba(96, 85, 67, 0.08);
+  outline: none;
 }
 
 .journal-page-inline-item-target:hover,

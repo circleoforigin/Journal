@@ -1,4 +1,11 @@
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+
 import type {
+  ReactNode,
   RefObject,
 } from 'react'
 
@@ -57,6 +64,150 @@ interface JournalPageProps {
     itemId: string,
     direction: 'up' | 'down',
   ) => void
+}
+
+interface InlineItemTargetProps {
+  children: ReactNode
+  editable: boolean
+  onEdit: () => void
+  onDelete: () => void
+}
+
+function InlineItemTarget({
+  children,
+  editable,
+  onEdit,
+  onDelete,
+}: InlineItemTargetProps) {
+  const wrapperRef =
+    useRef<HTMLSpanElement>(null)
+
+  const textRef =
+    useRef<HTMLSpanElement>(null)
+
+  const [rects, setRects] =
+    useState<
+      Array<{
+        left: number
+        top: number
+        width: number
+        height: number
+      }>
+    >([])
+
+  useLayoutEffect(() => {
+    if (
+      !editable ||
+      !wrapperRef.current ||
+      !textRef.current
+    ) {
+      setRects([])
+      return
+    }
+
+    const measure = () => {
+      const wrapper =
+        wrapperRef.current
+
+      const text =
+        textRef.current
+
+      if (!wrapper || !text) {
+        return
+      }
+
+      const wrapperRect =
+        wrapper.getBoundingClientRect()
+
+      const range =
+        document.createRange()
+
+      range.selectNodeContents(text)
+
+      const nextRects =
+        Array.from(
+          range.getClientRects(),
+        )
+          .filter(
+            (rect) =>
+              rect.width > 0 &&
+              rect.height > 0,
+          )
+          .map((rect) => ({
+            left:
+              rect.left -
+              wrapperRect.left,
+            top:
+              rect.top -
+              wrapperRect.top,
+            width: rect.width,
+            height: rect.height,
+          }))
+
+      setRects(nextRects)
+    }
+
+    measure()
+
+    const resizeObserver =
+      new ResizeObserver(measure)
+
+    resizeObserver.observe(
+      wrapperRef.current,
+    )
+
+    window.addEventListener(
+      'resize',
+      measure,
+    )
+
+    return () => {
+      resizeObserver.disconnect()
+
+      window.removeEventListener(
+        'resize',
+        measure,
+      )
+    }
+  }, [children, editable])
+
+  return (
+    <span
+      ref={wrapperRef}
+      className="journal-page-inline-item-wrapper"
+    >
+      <span
+        ref={textRef}
+        className="journal-page-inline-item-text"
+      >
+        {children}
+      </span>
+
+      {editable &&
+        rects.map((rect, index) => (
+          <button
+            key={index}
+            type="button"
+            className="journal-page-inline-item-target"
+            aria-label="Edit field item"
+            style={{
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
+            }}
+            onClick={(event) => {
+              if (event.shiftKey) {
+                onDelete()
+                return
+              }
+
+              onEdit()
+            }}
+          />
+        ))}
+    </span>
+  )
 }
 
 export function JournalPage({
@@ -416,65 +567,37 @@ if (
           showEditNode(item.source)
 
         return (
-          <span
-            key={item.itemId}
-            className="journal-page-inline-item-wrapper"
-          >
-            <span className="journal-page-inline-item-text">
-              {renderFormattedText(
-                item.runs,
-                index,
-                offset,
-              )}
-            </span>
-
-            {editable && (
-              <span
-                className="journal-page-inline-item-target"
-                role="button"
-                tabIndex={0}
-                aria-label="Edit field item"
-                onClick={(event) => {
-                  if (event.shiftKey) {
-                    onDeleteItem(
-                      fragment.entryId,
-                      fragment.fieldDefinitionId,
-                      item.itemId,
-                    )
-                    return
-                  }
-
-                  onEditItem(
-                    fragment.entryId,
-                    fragment.fieldDefinitionId,
-                    item.itemId,
-                  )
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    event.key !== 'Enter' &&
-                    event.key !== ' '
-                  ) {
-                    return
-                  }
-
-                  event.preventDefault()
-
-                  onEditItem(
-                    fragment.entryId,
-                    fragment.fieldDefinitionId,
-                    item.itemId,
-                  )
-                }}
-              />
-            )}
-
-            {itemIndex <
-            fragment.items.length - 1
-              ? ', '
-              : ''}
-          </span>
+  <span key={item.itemId}>
+    <InlineItemTarget
+      editable={editable}
+      onEdit={() =>
+        onEditItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+          item.itemId,
         )
+      }
+      onDelete={() =>
+        onDeleteItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+          item.itemId,
+        )
+      }
+    >
+      {renderFormattedText(
+        item.runs,
+        index,
+        offset,
+      )}
+    </InlineItemTarget>
+
+    {itemIndex <
+    fragment.items.length - 1
+      ? ', '
+      : ''}
+  </span>
+)
       })}
     </div>
   )
