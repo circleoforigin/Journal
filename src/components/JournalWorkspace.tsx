@@ -1241,7 +1241,7 @@ async function createEntry(
   }
 
   const entry: JournalEntry = {
-    id: `master:${crypto.randomUUID()}`,
+    id: `master-${crypto.randomUUID()}`,
 
     sectionDefinitionId,
 
