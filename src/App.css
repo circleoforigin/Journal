@@ -1478,11 +1478,6 @@
   overflow-wrap: anywhere;
 }
 
-.journal-page-inline-item-wrapper {
-  position: relative;
-  display: inline;
-}
-
 .journal-page-inline-item-text {
   display: inline;
   white-space: normal;

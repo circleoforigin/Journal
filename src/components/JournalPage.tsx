@@ -69,6 +69,7 @@ interface JournalPageProps {
 interface InlineItemTargetProps {
   children: ReactNode
   editable: boolean
+  containerRef: RefObject<HTMLDivElement | null>
   onEdit: () => void
   onDelete: () => void
 }
@@ -76,12 +77,10 @@ interface InlineItemTargetProps {
 function InlineItemTarget({
   children,
   editable,
+  containerRef,
   onEdit,
   onDelete,
 }: InlineItemTargetProps) {
-  const wrapperRef =
-    useRef<HTMLSpanElement>(null)
-
   const textRef =
     useRef<HTMLSpanElement>(null)
 
@@ -98,7 +97,7 @@ function InlineItemTarget({
   useLayoutEffect(() => {
     if (
       !editable ||
-      !wrapperRef.current ||
+      !containerRef.current ||
       !textRef.current
     ) {
       setRects([])
@@ -106,18 +105,18 @@ function InlineItemTarget({
     }
 
     const measure = () => {
-      const wrapper =
-        wrapperRef.current
+      const container =
+        containerRef.current
 
       const text =
         textRef.current
 
-      if (!wrapper || !text) {
+      if (!container || !text) {
         return
       }
 
-      const wrapperRect =
-        wrapper.getBoundingClientRect()
+      const containerRect =
+        container.getBoundingClientRect()
 
       const range =
         document.createRange()
@@ -136,10 +135,10 @@ function InlineItemTarget({
           .map((rect) => ({
             left:
               rect.left -
-              wrapperRect.left,
+              containerRect.left,
             top:
               rect.top -
-              wrapperRect.top,
+              containerRect.top,
             width: rect.width,
             height: rect.height,
           }))
@@ -153,7 +152,7 @@ function InlineItemTarget({
       new ResizeObserver(measure)
 
     resizeObserver.observe(
-      wrapperRef.current,
+      containerRef.current,
     )
 
     window.addEventListener(
@@ -169,13 +168,14 @@ function InlineItemTarget({
         measure,
       )
     }
-  }, [children, editable])
+  }, [
+    children,
+    editable,
+    containerRef,
+  ])
 
   return (
-    <span
-      ref={wrapperRef}
-      className="journal-page-inline-item-wrapper"
-    >
+    <>
       <span
         ref={textRef}
         className="journal-page-inline-item-text"
@@ -206,7 +206,106 @@ function InlineItemTarget({
             }}
           />
         ))}
-    </span>
+    </>
+  )
+}
+
+interface InlineFieldContentProps {
+  fragment: Extract<
+    NonNullable<
+      JournalPageLayout['fragments'][number]
+    >,
+    { type: 'inlineField' }
+  >
+  fragmentIndex: number
+  readOnly: boolean
+  showEditNode: (
+    source: 'master' | 'user',
+  ) => boolean
+  onEditItem: JournalPageProps['onEditItem']
+  onDeleteItem: JournalPageProps['onDeleteItem']
+  renderFormattedText: (
+    runs: JournalPageTextRun[],
+    fragmentIndex: number,
+    textOffset?: number,
+  ) => ReactNode
+}
+
+function InlineFieldContent({
+  fragment,
+  fragmentIndex,
+  readOnly,
+  showEditNode,
+  onEditItem,
+  onDeleteItem,
+  renderFormattedText,
+}: InlineFieldContentProps) {
+  const containerRef =
+    useRef<HTMLDivElement>(null)
+
+  let textOffset =
+    fragment.label.length + 3
+
+  return (
+    <div
+      ref={containerRef}
+      className="journal-page-inline-field"
+      style={{
+        top: fragment.top,
+        height: fragment.height,
+      }}
+    >
+      <strong>
+        {fragment.label} -{' '}
+      </strong>
+
+      {fragment.items.map(
+        (item, itemIndex) => {
+          const offset = textOffset
+
+          textOffset +=
+            item.text.length + 2
+
+          const editable =
+            !readOnly &&
+            showEditNode(item.source)
+
+          return (
+            <span key={item.itemId}>
+              <InlineItemTarget
+                editable={editable}
+                containerRef={containerRef}
+                onEdit={() =>
+                  onEditItem(
+                    fragment.entryId,
+                    fragment.fieldDefinitionId,
+                    item.itemId,
+                  )
+                }
+                onDelete={() =>
+                  onDeleteItem(
+                    fragment.entryId,
+                    fragment.fieldDefinitionId,
+                    item.itemId,
+                  )
+                }
+              >
+                {renderFormattedText(
+                  item.runs,
+                  fragmentIndex,
+                  offset,
+                )}
+              </InlineItemTarget>
+
+              {itemIndex <
+              fragment.items.length - 1
+                ? ', '
+                : ''}
+            </span>
+          )
+        },
+      )}
+    </div>
   )
 }
 
@@ -545,61 +644,19 @@ if (
             }
 
             if (fragment.type === 'inlineField') {
-  let textOffset = fragment.label.length + 3
-
   return (
-    <div
+    <InlineFieldContent
       key={`inline-${fragment.fieldDefinitionId}-${index}`}
-      className="journal-page-inline-field"
-      style={{
-        top: fragment.top,
-        height: fragment.height,
-      }}
-    >
-      <strong>{fragment.label} - </strong>
-
-      {fragment.items.map((item, itemIndex) => {
-        const offset = textOffset
-        textOffset += item.text.length + 2
-
-        const editable =
-          !readOnly &&
-          showEditNode(item.source)
-
-        return (
-  <span key={item.itemId}>
-    <InlineItemTarget
-      editable={editable}
-      onEdit={() =>
-        onEditItem(
-          fragment.entryId,
-          fragment.fieldDefinitionId,
-          item.itemId,
-        )
+      fragment={fragment}
+      fragmentIndex={index}
+      readOnly={readOnly}
+      showEditNode={showEditNode}
+      onEditItem={onEditItem}
+      onDeleteItem={onDeleteItem}
+      renderFormattedText={
+        renderFormattedText
       }
-      onDelete={() =>
-        onDeleteItem(
-          fragment.entryId,
-          fragment.fieldDefinitionId,
-          item.itemId,
-        )
-      }
-    >
-      {renderFormattedText(
-        item.runs,
-        index,
-        offset,
-      )}
-    </InlineItemTarget>
-
-    {itemIndex <
-    fragment.items.length - 1
-      ? ', '
-      : ''}
-  </span>
-)
-      })}
-    </div>
+    />
   )
 }
 
