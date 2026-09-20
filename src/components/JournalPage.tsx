@@ -543,75 +543,72 @@ if (
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  className="journal-page-item-text"
-                  disabled={!nodeVisible}
-                  onClick={(event) => {
-                    if (event.shiftKey) {
-                      onDeleteItem(
-                        fragment.entryId,
-                        fragment.fieldDefinitionId,
-                        fragment.itemId,
-                      )
-                      return
-                    }
-                    onEditItem(
-                      fragment.entryId,
-                      fragment.fieldDefinitionId,
-                      fragment.itemId,
-                    )
-                  }}
-                >
-                  {fragment.paragraphs.map(
-                    (
-                      paragraph,
-                      paragraphIndex,
-                    ) => {
-                      const currentOffset =
-                        paragraphOffset
+                <div className="journal-page-item-text">
+  {fragment.paragraphs.map(
+    (
+      paragraph,
+      paragraphIndex,
+    ) => {
+      const currentOffset =
+        paragraphOffset
 
-                      paragraphOffset +=
-                        paragraph
-                          .text.length
+      paragraphOffset +=
+        paragraph.text.length
 
-                      if (
-                        paragraphIndex <
-                        fragment
-                          .paragraphs
-                          .length -
-                          1
-                      ) {
-                        paragraphOffset +=
-                          1
-                      }
+      if (
+        paragraphIndex <
+        fragment.paragraphs.length - 1
+      ) {
+        paragraphOffset += 1
+      }
 
-                      return (
-                        <div
-                          key={
-                            paragraphIndex
-                          }
-                          style={{
-                            margin: 0,
-                            padding: 0,
+      return (
+        <div
+          key={paragraphIndex}
+          style={{
+            margin: 0,
+            padding: 0,
 
-                            textIndent:
-                              paragraph
-                                .indented
-                                ? '2em'
-                                : 0,
-                          }}
-                        >
-                          {renderFormattedText(
-                            paragraph.runs,
-                            index,
-                            currentOffset,
-                          )}
-                        </div>
-                      )
-                    },
-                  )}
-                </button>
+            textIndent:
+              paragraph.indented
+                ? '2em'
+                : 0,
+          }}
+        >
+          {renderFormattedText(
+            paragraph.runs,
+            index,
+            currentOffset,
+          )}
+        </div>
+      )
+    },
+  )}
+</div>
+
+{nodeVisible && (
+  <button
+    type="button"
+    className="journal-page-item-target"
+    aria-label="Edit field item"
+    onClick={(event) => {
+      if (event.shiftKey) {
+        onDeleteItem(
+          fragment.entryId,
+          fragment.fieldDefinitionId,
+          fragment.itemId,
+        )
+        return
+      }
+
+      onEditItem(
+        fragment.entryId,
+        fragment.fieldDefinitionId,
+        fragment.itemId,
+      )
+    }}
+  />
+)}
               </div>
             )
           },

@@ -241,18 +241,14 @@ const [
     )
 
   if (!field) {
-    clearSelection()
     return
   }
 
-  setSelectedFieldId(
-    field.id,
-  )
-
-  setSelectedPresetIndex(
-    null,
-  )
-
+  /*
+   * Load the newly selected Field's
+   * configuration before changing
+   * the selection itself.
+   */
   setCustomName(
     field.name,
   )
@@ -263,6 +259,14 @@ const [
 
   setCustomPresentation(
     field.presentation,
+  )
+
+  setSelectedPresetIndex(
+    null,
+  )
+
+  setSelectedFieldId(
+    field.id,
   )
 }
 
@@ -278,23 +282,39 @@ const [
     >,
 ) {
   if (
-    !selectedField ||
-    selectedField.isSystem
+    !selectedFieldId
   ) {
     return
   }
 
-  applyFields(
+  const currentField =
+    fields.find(
+      (field) =>
+        field.id ===
+        selectedFieldId,
+    )
+
+  if (
+    !currentField ||
+    currentField.isSystem
+  ) {
+    return
+  }
+
+  const nextFields =
     fields.map(
       (field) =>
         field.id ===
-          selectedField.id
+          selectedFieldId
           ? {
               ...field,
               ...changes,
             }
           : field,
-    ),
+    )
+
+  applyFields(
+    nextFields,
   )
 }
 
