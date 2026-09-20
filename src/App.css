@@ -1388,7 +1388,7 @@
 
   tab-size: 4;
 
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .journal-page-item-target {
@@ -1970,4 +1970,5 @@ button:disabled {
 
 .journal-reference:hover {
   color: #5795cf;
+  cursor: pointer;
 }

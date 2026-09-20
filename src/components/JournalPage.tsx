@@ -638,10 +638,10 @@ useEffect(() => {
             ) {
               const nodeVisible =
                 !readOnly &&
+                !controlPressed &&
                 showEditNode(
                   fragment.source,
                 )
-
               return (
                 <div
                   key={`title-${fragment.itemId}-${index}`}
@@ -695,11 +695,16 @@ useEffect(() => {
       }}
       role={!readOnly ? 'button' : undefined}
       tabIndex={!readOnly ? 0 : undefined}
-      onClick={!readOnly ? () => onEditItem(
+      onClick={
+  !readOnly &&
+  !controlPressed
+    ? () => onEditItem(
         fragment.entryId,
         fragment.fieldDefinitionId,
         fragment.itemId,
-      ) : undefined}
+      )
+    : undefined
+}
     >
       {renderText(
         fragment.text,
@@ -709,10 +714,7 @@ useEffect(() => {
   )
 }
 
-if (
-  fragment.type ===
-  'brief'
-) {
+if ( fragment.type === 'brief') {
   return (
     <div
       key={`brief-${fragment.itemId}-${index}`}
@@ -726,11 +728,16 @@ if (
       }}
       role={!readOnly ? 'button' : undefined}
       tabIndex={!readOnly ? 0 : undefined}
-      onClick={!readOnly ? () => onEditItem(
+      onClick={
+  !readOnly &&
+  !controlPressed
+    ? () => onEditItem(
         fragment.entryId,
         fragment.fieldDefinitionId,
         fragment.itemId,
-      ) : undefined}
+      )
+    : undefined
+}
     >
       {renderText(
         fragment.text,
@@ -816,6 +823,7 @@ if (
 
             const nodeVisible =
               !readOnly &&
+              !controlPressed &&
               showEditNode(
                 fragment.source,
               )
