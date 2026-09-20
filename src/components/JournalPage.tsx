@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -39,6 +40,10 @@ interface JournalPageProps {
   showEditNode: (
     source: 'master' | 'user',
   ) => boolean
+
+  onNavigateReference: (
+    entryId: string,
+  ) => void
 
   onAddItem: (
     entryId: string,
@@ -321,11 +326,71 @@ export function JournalPage({
   titleLineHeight,
   searchHighlight,
   showEditNode,
+  onNavigateReference,
   onAddItem,
   onEditItem,
   onDeleteItem,
   onMoveItem,
 }: JournalPageProps) {
+  const [
+  controlPressed,
+  setControlPressed,
+] = useState(false)
+
+useEffect(() => {
+  const handleKeyDown = (
+    event: KeyboardEvent,
+  ) => {
+    if (event.key === 'Control') {
+      setControlPressed(true)
+    }
+  }
+
+  const handleKeyUp = (
+    event: KeyboardEvent,
+  ) => {
+    if (event.key === 'Control') {
+      setControlPressed(false)
+    }
+  }
+
+  const handleBlur = () => {
+    setControlPressed(false)
+  }
+
+  window.addEventListener(
+    'keydown',
+    handleKeyDown,
+  )
+
+  window.addEventListener(
+    'keyup',
+    handleKeyUp,
+  )
+
+  window.addEventListener(
+    'blur',
+    handleBlur,
+  )
+
+  return () => {
+    window.removeEventListener(
+      'keydown',
+      handleKeyDown,
+    )
+
+    window.removeEventListener(
+      'keyup',
+      handleKeyUp,
+    )
+
+    window.removeEventListener(
+      'blur',
+      handleBlur,
+    )
+  }
+}, [])
+
   function renderText(
     text: string,
     fragmentIndex: number,
@@ -426,6 +491,16 @@ export function JournalPage({
             : undefined,
       }
 
+      const isReference =
+        run.sourceType ===
+          'reference' &&
+        Boolean( run.targetEntryId )
+
+      const className =
+        isReference
+          ? 'journal-reference'
+          : undefined
+
       const highlightStart =
         searchHighlight &&
         searchHighlight
@@ -456,11 +531,33 @@ export function JournalPage({
       ) {
         return (
           <span
-            key={runIndex}
-            style={style}
-          >
-            {run.text}
-          </span>
+  key={runIndex}
+  className={className}
+  data-reference-entry-id={
+    isReference
+      ? run.targetEntryId
+      : undefined
+  }
+  style={style}
+  onClick={
+    isReference &&
+    controlPressed
+      ? (event) => {
+          event.stopPropagation()
+
+          if (
+            run.targetEntryId
+          ) {
+            onNavigateReference(
+              run.targetEntryId,
+            )
+          }
+        }
+      : undefined
+  }
+>
+  {run.text}
+</span>
         )
       }
 
@@ -474,25 +571,47 @@ export function JournalPage({
 
       return (
         <span
-          key={runIndex}
-          style={style}
-        >
-          {run.text.slice(
-            0,
-            localStart,
-          )}
+  key={runIndex}
+  className={className}
+  data-reference-entry-id={
+    isReference
+      ? run.targetEntryId
+      : undefined
+  }
+  style={style}
+  onClick={
+    isReference &&
+    controlPressed
+      ? (event) => {
+          event.stopPropagation()
 
-          <mark className="journal-search-highlight">
-            {run.text.slice(
-              localStart,
-              localEnd,
-            )}
-          </mark>
+          if (
+            run.targetEntryId
+          ) {
+            onNavigateReference(
+              run.targetEntryId,
+            )
+          }
+        }
+      : undefined
+  }
+>
+  {run.text.slice(
+    0,
+    localStart,
+  )}
 
-          {run.text.slice(
-            localEnd,
-          )}
-        </span>
+  <mark className="journal-search-highlight">
+    {run.text.slice(
+      localStart,
+      localEnd,
+    )}
+  </mark>
+
+  {run.text.slice(
+    localEnd,
+  )}
+</span>
       )
     },
   )
@@ -649,7 +768,10 @@ if (
       key={`inline-${fragment.fieldDefinitionId}-${index}`}
       fragment={fragment}
       fragmentIndex={index}
-      readOnly={readOnly}
+      readOnly={
+        readOnly ||
+        controlPressed
+      }
       showEditNode={showEditNode}
       onEditItem={onEditItem}
       onDeleteItem={onDeleteItem}
@@ -805,7 +927,8 @@ if (
   )}
 </div>
 
-{nodeVisible && (
+{nodeVisible &&
+!controlPressed && (
   <button
     type="button"
     className="journal-page-item-target"

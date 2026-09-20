@@ -5,6 +5,7 @@ import type {
 
 import {
   parseJournalFormatting,
+  parseJournalMarkup,
 } from './JournalMarkupParser'
 
 import type {
@@ -100,17 +101,16 @@ function measureBrowserLines(
           ? storedParagraph.slice(1)
           : storedParagraph
 
-      const formattedRuns =
-        parseJournalFormatting(
+      /*
+       * Semantic markup is parsed
+       * first so Journal References
+       * and Languages do not consume
+       * physical page space.
+       */
+      const semanticRuns =
+        parseJournalMarkup(
           paragraphMarkup,
         )
-
-      const paragraphText =
-        formattedRuns
-          .map(
-            (run) => run.text,
-          )
-          .join('')
 
       const paragraph =
         document.createElement('div')
@@ -148,11 +148,129 @@ function measureBrowserLines(
       }
 
       /*
+       * Every visible character keeps
+       * both its formatting state and
+       * its semantic identity.
+       */
+      const characters: {
+        character: string
+        bold: boolean
+        italic: boolean
+        underline: boolean
+        sourceType:
+          | 'text'
+          | 'language'
+          | 'reference'
+        languageId?: string
+        targetEntryId?: string
+        node: Text
+        nodeOffset: number
+      }[] = []
+
+      for (
+        const semanticRun
+        of semanticRuns
+      ) {
+        const formattedRuns =
+          parseJournalFormatting(
+            semanticRun.text,
+          )
+
+        for (
+          const formattedRun
+          of formattedRuns
+        ) {
+          if (!formattedRun.text) {
+            continue
+          }
+
+          const span =
+            document.createElement(
+              'span',
+            )
+
+          if (formattedRun.bold) {
+            span.style.fontWeight =
+              '700'
+          }
+
+          if (formattedRun.italic) {
+            span.style.fontStyle =
+              'italic'
+          }
+
+          if (
+            formattedRun.underline
+          ) {
+            span.style.textDecoration =
+              'underline'
+          }
+
+          const textNode =
+            document.createTextNode(
+              formattedRun.text,
+            )
+
+          span.appendChild(
+            textNode,
+          )
+
+          paragraph.appendChild(
+            span,
+          )
+
+          for (
+            let index = 0;
+            index <
+            formattedRun.text.length;
+            index += 1
+          ) {
+            characters.push({
+              character:
+                formattedRun.text[
+                  index
+                ],
+
+              bold:
+                formattedRun.bold,
+
+              italic:
+                formattedRun.italic,
+
+              underline:
+                formattedRun.underline,
+
+              sourceType:
+                semanticRun.type,
+
+              languageId:
+                semanticRun.type ===
+                'language'
+                  ? semanticRun.languageId
+                  : undefined,
+
+              targetEntryId:
+                semanticRun.type ===
+                'reference'
+                  ? semanticRun.targetEntryId
+                  : undefined,
+
+              node:
+                textNode,
+
+              nodeOffset:
+                index,
+            })
+          }
+        }
+      }
+
+      /*
        * An empty paragraph still
        * occupies one physical line.
        */
       if (
-        paragraphText.length === 0
+        characters.length === 0
       ) {
         paragraph.textContent =
           '\u00a0'
@@ -172,93 +290,6 @@ function measureBrowserLines(
         })
 
         return
-      }
-
-      /*
-       * Build the actual styled DOM
-       * that the browser will use
-       * for line wrapping.
-       *
-       * Every visible character is
-       * associated with its source
-       * formatting so markup itself
-       * consumes no page space.
-       */
-      const characters: {
-        character: string
-        bold: boolean
-        italic: boolean
-        underline: boolean
-        node: Text
-        nodeOffset: number
-      }[] = []
-
-      for (
-        const run
-        of formattedRuns
-      ) {
-        if (!run.text) {
-          continue
-        }
-
-        const span =
-          document.createElement(
-            'span',
-          )
-
-        if (run.bold) {
-          span.style.fontWeight =
-            '700'
-        }
-
-        if (run.italic) {
-          span.style.fontStyle =
-            'italic'
-        }
-
-        if (run.underline) {
-          span.style.textDecoration =
-            'underline'
-        }
-
-        const textNode =
-          document.createTextNode(
-            run.text,
-          )
-
-        span.appendChild(
-          textNode,
-        )
-
-        paragraph.appendChild(
-          span,
-        )
-
-        for (
-          let index = 0;
-          index < run.text.length;
-          index += 1
-        ) {
-          characters.push({
-            character:
-              run.text[index],
-
-            bold:
-              run.bold,
-
-            italic:
-              run.italic,
-
-            underline:
-              run.underline,
-
-            node:
-              textNode,
-
-            nodeOffset:
-              index,
-          })
-        }
       }
 
       container.appendChild(
@@ -285,6 +316,16 @@ function measureBrowserLines(
               result.length - 1
             ]
 
+          /*
+           * Runs can only merge when
+           * formatting AND semantic
+           * identity are identical.
+           *
+           * Two adjacent References
+           * must remain distinct when
+           * they target different
+           * Entries.
+           */
           if (
             previous &&
             previous.bold ===
@@ -292,7 +333,13 @@ function measureBrowserLines(
             previous.italic ===
               character.italic &&
             previous.underline ===
-              character.underline
+              character.underline &&
+            previous.sourceType ===
+              character.sourceType &&
+            previous.languageId ===
+              character.languageId &&
+            previous.targetEntryId ===
+              character.targetEntryId
           ) {
             previous.text +=
               character.character
@@ -309,6 +356,15 @@ function measureBrowserLines(
 
               underline:
                 character.underline,
+
+              sourceType:
+                character.sourceType,
+
+              languageId:
+                character.languageId,
+
+              targetEntryId:
+                character.targetEntryId,
             })
           }
         }
@@ -641,7 +697,13 @@ export function paginateJournalDocument(
           previousRun.italic ===
             run.italic &&
           previousRun.underline ===
-            run.underline
+            run.underline &&
+          previousRun.sourceType ===
+            run.sourceType &&
+          previousRun.languageId ===
+            run.languageId &&
+          previousRun.targetEntryId ===
+            run.targetEntryId
         ) {
           previousRun.text +=
             run.text

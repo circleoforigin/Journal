@@ -1962,3 +1962,12 @@ button:disabled {
 .move-page-dialog select {
   width: 100%;
 }
+
+.journal-reference {
+  color: #356fa8;
+  transition: color 120ms ease;
+}
+
+.journal-reference:hover {
+  color: #5795cf;
+}

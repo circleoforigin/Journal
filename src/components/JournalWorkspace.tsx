@@ -3420,6 +3420,7 @@ function clearSearchPosition() {
                 titleFontSize={titleFontSize}
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
+                onNavigateReference={navigateToEntry}
                 onEditItem={handleEditItem}
                 onDeleteItem={(entryId, fieldDefinitionId, itemId) => {
                   setPendingItemDelete({ entryId, fieldDefinitionId, itemId })
@@ -3457,6 +3458,7 @@ function clearSearchPosition() {
                 titleFontSize={titleFontSize}
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
+                onNavigateReference={navigateToEntry}
                 onEditItem={handleEditItem}
                 onDeleteItem={(entryId, fieldDefinitionId, itemId) => {
                   setPendingItemDelete({ entryId, fieldDefinitionId, itemId })

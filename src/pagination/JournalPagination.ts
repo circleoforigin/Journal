@@ -70,6 +70,9 @@ export interface JournalPageTextRun {
   bold: boolean
   italic: boolean
   underline: boolean
+  sourceType?: 'text' | 'language' | 'reference'
+  languageId?: string
+  targetEntryId?: string
 }
 
 export interface JournalPageItemParagraph {
