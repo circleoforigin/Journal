@@ -438,6 +438,84 @@ function measureBrowserLines(
       ]
 }
 
+function measureSingleLineWidth(
+  storedText: string,
+  fontFamily: string,
+  fontSize: number,
+  fontWeight = '400',
+): number {
+  const element =
+    document.createElement('span')
+
+  element.style.position =
+    'absolute'
+  element.style.visibility =
+    'hidden'
+  element.style.pointerEvents =
+    'none'
+  element.style.left =
+    '-100000px'
+  element.style.top =
+    '0'
+
+  element.style.whiteSpace =
+    'pre'
+
+  element.style.fontFamily =
+    fontFamily
+  element.style.fontSize =
+    `${fontSize}px`
+  element.style.fontWeight =
+    fontWeight
+
+  const runs =
+    parseJournalFormatting(
+      storedText,
+    )
+
+  for (const run of runs) {
+    const span =
+      document.createElement(
+        'span',
+      )
+
+    if (run.bold) {
+      span.style.fontWeight =
+        '700'
+    }
+
+    if (run.italic) {
+      span.style.fontStyle =
+        'italic'
+    }
+
+    if (run.underline) {
+      span.style.textDecoration =
+        'underline'
+    }
+
+    span.textContent =
+      run.text
+
+    element.appendChild(
+      span,
+    )
+  }
+
+  document.body.appendChild(
+    element,
+  )
+
+  const width =
+    element
+      .getBoundingClientRect()
+      .width
+
+  element.remove()
+
+  return width
+}
+
 export function paginateJournalDocument(
   journalDocument:
     JournalDocument,
@@ -702,6 +780,151 @@ export function paginateJournalDocument(
       metrics.itemBottomGap
   }
 
+  const addFieldAndFirstItemInline = (
+  fieldBlock:
+    Extract<
+      JournalDocumentBlock,
+      { type: 'field' }
+    >,
+  itemBlock:
+    Extract<
+      JournalDocumentBlock,
+      { type: 'item' }
+    >,
+): boolean => {
+  /*
+   * This is the compact physical
+   * layout for a normal Single or
+   * Multiple Field.
+   *
+   * It is NOT the Inline Field
+   * presentation mode.
+   */
+  if (
+    itemBlock.text.includes(
+      '\n',
+    ) ||
+    itemBlock.text.startsWith(
+      '\t',
+    )
+  ) {
+    return false
+  }
+
+  const separator = ' - '
+
+  const fieldWidth =
+    measureSingleLineWidth(
+      fieldBlock.text +
+        separator,
+      metrics.fontFamily,
+      metrics.fieldFontSize,
+      '700',
+    )
+
+  const itemWidth =
+    measureSingleLineWidth(
+      itemBlock.text,
+      metrics.fontFamily,
+      metrics.fontSize,
+      '400',
+    )
+
+  if (
+    fieldWidth +
+      itemWidth >
+    metrics.pageWidth
+  ) {
+    return false
+  }
+
+  const rowHeight =
+    Math.max(
+      metrics.fieldLineHeight,
+      metrics.lineHeight,
+    )
+
+  ensureHeight(
+    metrics.fieldTopGap +
+      rowHeight +
+      metrics.itemBottomGap,
+  )
+
+  usedHeight +=
+    metrics.fieldTopGap
+
+  const rowTop =
+    usedHeight
+
+  currentPage.fragments.push({
+    ...fieldBlock,
+
+    text:
+      fieldBlock.text +
+      separator,
+
+    top:
+      rowTop,
+
+    height:
+      rowHeight,
+  })
+
+  const visibleText =
+    parseJournalFormatting(
+      itemBlock.text,
+    )
+      .map(
+        (run) =>
+          run.text,
+      )
+      .join('')
+
+  currentPage.fragments.push({
+    ...itemBlock,
+
+    text:
+      visibleText,
+
+    paragraphs: [
+      {
+        text:
+          visibleText,
+
+        indented:
+          false,
+
+        runs:
+          parseJournalFormatting(
+            itemBlock.text,
+          ),
+      },
+    ],
+
+    top:
+      rowTop,
+
+    height:
+      rowHeight,
+
+    left:
+      fieldWidth,
+
+    width:
+      metrics.pageWidth -
+      fieldWidth,
+
+    inline:
+      true,
+  })
+
+  usedHeight +=
+    rowHeight +
+    metrics.itemBottomGap
+
+  return true
+}
+
   const addInlineFieldBlock = (
     block: Extract<
       JournalDocumentBlock,
@@ -818,18 +1041,49 @@ case 'brief':
   break
 
       case 'field': {
-        addSingleBlock(
-          block,
-          metrics.fieldFontSize,
-          metrics.fieldLineHeight,
-          '700',
-          metrics.fieldTopGap,
-          metrics.fieldBottomGap,
-        )
+  const nextBlock =
+    journalDocument.blocks[
+      blockIndex + 1
+    ]
 
-        blockIndex += 1
-        break
-      }
+  const firstItem =
+    nextBlock?.type ===
+      'item' &&
+    nextBlock
+      .fieldDefinitionId ===
+      block
+        .fieldDefinitionId
+      ? nextBlock
+      : null
+
+  if (
+    firstItem &&
+    block.text !== 'Notes' &&
+    addFieldAndFirstItemInline(
+      block,
+      firstItem,
+    )
+  ) {
+    /*
+     * The Field label and first
+     * Item were consumed together.
+     */
+    blockIndex += 2
+    break
+  }
+
+  addSingleBlock(
+    block,
+    metrics.fieldFontSize,
+    metrics.fieldLineHeight,
+    '700',
+    metrics.fieldTopGap,
+    metrics.fieldBottomGap,
+  )
+
+  blockIndex += 1
+  break
+}
 
       case 'inlineField':
         addInlineFieldBlock(block)
