@@ -183,6 +183,18 @@ const [
         selectedFieldId,
     ) ?? null
 
+  function resetEditor() {
+    setCustomName('')
+    setCustomValueType('string')
+    setCustomPresentation('single')
+  }
+
+  function clearSelection() {
+    setSelectedPresetIndex(null)
+    setSelectedFieldId(null)
+    resetEditor()
+  }
+
   function selectPreset(
     presetIndex: number,
   ) {
@@ -191,6 +203,13 @@ const [
     )
 
     setSelectedFieldId(null)
+
+    const preset = fieldPresets[presetIndex]
+    if (!preset) return
+
+    setCustomName(preset.name)
+    setCustomValueType(preset.valueType)
+    setCustomPresentation(preset.presentation)
   }
 
   function selectField(
@@ -201,68 +220,16 @@ const [
     )
 
     setSelectedPresetIndex(null)
-  }
 
-  function addSelectedPreset() {
-    if (
-      selectedPresetIndex ===
-      null
-    ) {
+    const field = fields.find((candidate) => candidate.id === fieldId)
+    if (!field) {
+      resetEditor()
       return
     }
 
-    const preset =
-      fieldPresets[
-        selectedPresetIndex
-      ]
-
-    if (!preset) {
-      return
-    }
-
-    const alreadyIncluded =
-      fields.some(
-        (field) =>
-          field.name ===
-          preset.name,
-      )
-
-    if (alreadyIncluded) {
-      return
-    }
-
-    const notesIndex =
-  fields.findIndex(
-    (field) =>
-      field.isSystem &&
-      field.name === 'Notes',
-  )
-
-const insertionIndex =
-  notesIndex >= 0
-    ? notesIndex
-    : fields.length
-
-const nextFields =
-  [...fields]
-
-nextFields.splice(
-  insertionIndex,
-  0,
-  {
-    id: crypto.randomUUID(),
-    ...preset,
-    order: insertionIndex,
-  },
-)
-
-setFields(
-  normalizeOrder(
-    nextFields,
-  ),
-)
-
-    setSelectedPresetIndex(null)
+    setCustomName(field.name)
+    setCustomValueType(field.valueType)
+    setCustomPresentation(field.presentation)
   }
 
   function removeSelectedField() {
@@ -284,6 +251,7 @@ setFields(
     )
 
     setSelectedFieldId(null)
+    resetEditor()
   }
 
   function moveField(
@@ -348,7 +316,7 @@ setFields(
   )
 }
 
-  function addCustomField() {
+  function saveEditorField() {
     const name =
       customName.trim()
 
@@ -359,12 +327,29 @@ setFields(
     const alreadyIncluded =
       fields.some(
         (field) =>
+          field.id !== selectedField?.id &&
           field.name
             .toLocaleLowerCase() ===
           name.toLocaleLowerCase(),
       )
 
     if (alreadyIncluded) {
+      return
+    }
+
+    if (selectedField && !selectedField.isSystem) {
+      setFields(
+        fields.map((field) =>
+          field.id === selectedField.id
+            ? {
+                ...field,
+                name,
+                valueType: customValueType,
+                presentation: customPresentation,
+              }
+            : field,
+        ),
+      )
       return
     }
 
@@ -410,13 +395,7 @@ setFields(
   ),
 )
 
-    setCustomName('')
-
-    setSelectedPresetIndex(null)
-
-    setSelectedFieldId(
-      field.id,
-    )
+    clearSelection()
   }
 
   let transferLabel =
@@ -433,9 +412,8 @@ setFields(
     null
   ) {
     transferLabel = 'ADD'
-    transferDisabled = false
-    transferAction =
-      addSelectedPreset
+    transferDisabled = !customName.trim()
+    transferAction = saveEditorField
   } else if (selectedField) {
     if (selectedField.isSystem) {
       transferLabel = 'LOCKED'
@@ -452,8 +430,7 @@ setFields(
       <div
         className="dialog structure-dialog"
         onClick={() => {
-            setSelectedPresetIndex(null)
-            setSelectedFieldId(null)
+            clearSelection()
         }}
         >
         <h2>
@@ -581,9 +558,18 @@ setFields(
           </div>
         </div>
 
-        <div className="structure-custom-field">
+        <div
+          className="structure-custom-field"
+          onClick={(event) => event.stopPropagation()}
+        >
           <h3>
-            Create Custom Field
+            {selectedField?.isSystem
+              ? 'System Field'
+              : selectedField
+                ? 'Edit Field'
+                : selectedPresetIndex !== null
+                  ? 'Configure Preset'
+                  : 'Create Custom Field'}
           </h3>
 
           <div className="structure-custom-row">
@@ -592,6 +578,7 @@ setFields(
 
               <input
                 value={customName}
+                disabled={Boolean(selectedField?.isSystem)}
                 onChange={(event) => {
                   setCustomName(
                     event.target.value,
@@ -611,6 +598,7 @@ setFields(
     value={
       customValueType
     }
+    disabled={Boolean(selectedField?.isSystem)}
     onChange={(event) => {
       setCustomValueType(
         event.target
@@ -638,6 +626,7 @@ setFields(
     value={
       customPresentation
     }
+    disabled={Boolean(selectedField?.isSystem)}
     onChange={(event) => {
       setCustomPresentation(
         event.target
@@ -663,13 +652,15 @@ setFields(
             <button
               type="button"
               disabled={
-                !customName.trim()
+                !customName.trim() || Boolean(selectedField?.isSystem)
               }
               onClick={
-                addCustomField
+                saveEditorField
               }
             >
-              Add Field
+              {selectedField && !selectedField.isSystem
+                ? 'Save Field'
+                : 'Add Field'}
             </button>
           </div>
         </div>

@@ -1312,6 +1312,19 @@
   white-space: pre-wrap;
 }
 
+.journal-page-entry-title[role='button'],
+.journal-page-entry-subtitle[role='button'],
+.journal-page-entry-brief[role='button'] {
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.journal-page-entry-title[role='button']:hover,
+.journal-page-entry-subtitle[role='button']:hover,
+.journal-page-entry-brief[role='button']:hover {
+  background: rgba(96, 85, 67, 0.08);
+}
+
 .journal-page-entry-brief {
   line-height: 1.5;
   text-align: center;
@@ -1356,14 +1369,31 @@
 }
 
 .journal-page-item-text {
+  display: block;
   width: 100%;
   height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
   line-height: 1.5;
   white-space: pre-wrap;
   overflow: hidden;
   box-sizing: border-box;
   text-align: justify;
   tab-size: 4;
+  cursor: pointer;
+}
+
+.journal-page-item-text:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.journal-page-item-text:not(:disabled):hover {
+  border-radius: 3px;
+  background: rgba(96, 85, 67, 0.08);
 }
 
 .journal-page-item-controls {
@@ -1380,6 +1410,46 @@
   gap: 1px;
 
   z-index: 5;
+  opacity: 0;
+  transition: opacity 80ms ease;
+}
+
+.journal-page-item-controls:hover,
+.journal-page-item-controls:focus-within {
+  opacity: 1;
+}
+
+.journal-page-inline-field {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  color: #202020;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.journal-page-inline-item {
+  display: inline;
+  margin: -1px -2px;
+  padding: 1px 2px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+.journal-page-inline-item:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.journal-page-inline-item:not(:disabled):hover {
+  background: rgba(96, 85, 67, 0.08);
 }
 
 .journal-page.left-page
@@ -1552,6 +1622,18 @@
   z-index: 20;
 }
 
+.journal-item-editor-help {
+  margin: 10px 12px 0;
+  color: #c9c9c9;
+  font-size: 12px;
+}
+
+.journal-item-editor-error {
+  margin: 8px 12px 0;
+  color: #ffb3b3;
+  font-size: 12px;
+}
+
 .journal-item-editor-toolbar {
   display: flex;
   align-items: center;
@@ -1600,6 +1682,20 @@
 
 .journal-item-editor-input:focus {
   border-color: #777;
+}
+
+.journal-item-editor-number {
+  margin: 12px;
+  padding: 10px;
+  border: 1px solid #aaa;
+  background: #eee9dc;
+  color: #202020;
+  font: inherit;
+}
+
+.journal-item-editor-number:focus {
+  border-color: #777;
+  outline: 0;
 }
 
 .journal-item-editor-actions {

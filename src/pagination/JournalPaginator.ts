@@ -438,84 +438,6 @@ function measureBrowserLines(
       ]
 }
 
-function measureSingleLineWidth(
-  storedText: string,
-  fontFamily: string,
-  fontSize: number,
-  fontWeight = '400',
-): number {
-  const element =
-    document.createElement('span')
-
-  element.style.position =
-    'absolute'
-  element.style.visibility =
-    'hidden'
-  element.style.pointerEvents =
-    'none'
-  element.style.left =
-    '-100000px'
-  element.style.top =
-    '0'
-
-  element.style.whiteSpace =
-    'pre'
-
-  element.style.fontFamily =
-    fontFamily
-  element.style.fontSize =
-    `${fontSize}px`
-  element.style.fontWeight =
-    fontWeight
-
-  const runs =
-    parseJournalFormatting(
-      storedText,
-    )
-
-  for (const run of runs) {
-    const span =
-      document.createElement(
-        'span',
-      )
-
-    if (run.bold) {
-      span.style.fontWeight =
-        '700'
-    }
-
-    if (run.italic) {
-      span.style.fontStyle =
-        'italic'
-    }
-
-    if (run.underline) {
-      span.style.textDecoration =
-        'underline'
-    }
-
-    span.textContent =
-      run.text
-
-    element.appendChild(
-      span,
-    )
-  }
-
-  document.body.appendChild(
-    element,
-  )
-
-  const width =
-    element
-      .getBoundingClientRect()
-      .width
-
-  element.remove()
-
-  return width
-}
-
 export function paginateJournalDocument(
   journalDocument:
     JournalDocument,
@@ -566,6 +488,7 @@ export function paginateJournalDocument(
           type:
             | 'item'
             | 'addItem'
+            | 'inlineField'
         }
       >,
     fontSize: number,
@@ -779,132 +702,44 @@ export function paginateJournalDocument(
       metrics.itemBottomGap
   }
 
-  const addInlineFieldAndItem = (
-    fieldBlock:
-      Extract<
-        JournalDocumentBlock,
-        { type: 'field' }
-      >,
-    itemBlock:
-      Extract<
-        JournalDocumentBlock,
-        { type: 'item' }
-      >,
-  ): boolean => {
-    /*
-     * Inline form is intentionally
-     * restricted to one stored
-     * paragraph with no semantic
-     * paragraph indent.
-     */
-    if (
-      itemBlock.text.includes(
-        '\n',
-      ) ||
-      itemBlock.text.startsWith(
-        '\t',
-      )
-    ) {
-      return false
-    }
-
-    const separator = ' - '
-
-    const fieldWidth =
-      measureSingleLineWidth(
-        fieldBlock.text +
-          separator,
-        metrics.fontFamily,
-        metrics.fieldFontSize,
-        '700',
-      )
-
-    const itemWidth =
-      measureSingleLineWidth(
-        itemBlock.text,
-        metrics.fontFamily,
-        metrics.fontSize,
-        '400',
-      )
-
-    if (
-      fieldWidth +
-        itemWidth >
-      metrics.pageWidth
-    ) {
-      return false
-    }
-
-    const rowHeight =
-      Math.max(
-        metrics.fieldLineHeight,
-        metrics.lineHeight,
-      )
+  const addInlineFieldBlock = (
+    block: Extract<
+      JournalDocumentBlock,
+      { type: 'inlineField' }
+    >,
+  ) => {
+    const items = block.items.map((item) => ({
+      ...item,
+      text: parseJournalFormatting(item.text)
+        .map((run) => run.text)
+        .join(''),
+      runs: parseJournalFormatting(item.text),
+    }))
+    const lines = measureBrowserLines(
+      block.text,
+      metrics.pageWidth,
+      metrics.fontFamily,
+      metrics.fontSize,
+      metrics.lineHeight,
+      '400',
+      true,
+    )
+    const height = Math.max(1, lines.length) * metrics.lineHeight
 
     ensureHeight(
-      metrics.fieldTopGap +
-        rowHeight +
-        metrics.itemBottomGap,
+      metrics.fieldTopGap + height + metrics.itemBottomGap,
     )
-
-    usedHeight +=
-      metrics.fieldTopGap
-
-    const rowTop =
-      usedHeight
+    usedHeight += metrics.fieldTopGap
 
     currentPage.fragments.push({
-      ...fieldBlock,
-      text:
-        fieldBlock.text +
-        separator,
-      top: rowTop,
-      height: rowHeight,
+      ...block,
+      text: `${block.label} - ${items.map((item) => item.text).join(', ')}`,
+      items,
+      top: usedHeight,
+      height,
     })
 
-    currentPage.fragments.push({
-      ...itemBlock,
-      text:
-  parseJournalFormatting(
-    itemBlock.text,
-  )
-    .map(
-      (run) => run.text,
-    )
-    .join(''),
-      paragraphs: [
-  {
-    text:
-      parseJournalFormatting(
-        itemBlock.text,
-      )
-        .map(
-          (run) => run.text,
-        )
-        .join(''),
-
-    indented: false,
-
-    runs:
-      parseJournalFormatting(
-        itemBlock.text,
-      ),
-  },
-],
-      top: rowTop,
-      height: rowHeight,
-      left: fieldWidth,
-      width:
-        metrics.pageWidth -
-        fieldWidth,
-      inline: true,
-    })
-
-    usedHeight +=
-      rowHeight +
-      metrics.itemBottomGap
-
-    return true
+    usedHeight += height + metrics.itemBottomGap
   }
 
   const addItemTarget = (
@@ -983,38 +818,6 @@ case 'brief':
   break
 
       case 'field': {
-        const nextBlock =
-          journalDocument.blocks[
-            blockIndex + 1
-          ]
-
-        const firstItem =
-          nextBlock?.type ===
-            'item' &&
-          nextBlock
-            .fieldDefinitionId ===
-            block
-              .fieldDefinitionId
-            ? nextBlock
-            : null
-
-        if (
-          firstItem &&
-          block.text !== 'Notes' &&
-          addInlineFieldAndItem(
-            block,
-            firstItem,
-          )
-        ) {
-          /*
-           * Both the Field label
-           * and its first Item were
-           * consumed together.
-           */
-          blockIndex += 2
-          break
-        }
-
         addSingleBlock(
           block,
           metrics.fieldFontSize,
@@ -1027,6 +830,11 @@ case 'brief':
         blockIndex += 1
         break
       }
+
+      case 'inlineField':
+        addInlineFieldBlock(block)
+        blockIndex += 1
+        break
 
       case 'item':
         addItemBlock(

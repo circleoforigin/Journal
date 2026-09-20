@@ -1,6 +1,9 @@
 import type {
   JournalFieldItemSource,
 } from '../models/JournalField'
+import type {
+  JournalFieldPresentation,
+} from '../models/JournalFieldDefinition'
 
 export interface JournalDocumentTitleBlock {
   type: 'title'
@@ -34,6 +37,7 @@ export interface JournalDocumentFieldBlock {
   entryId: string
   fieldDefinitionId: string
   text: string
+  presentation: JournalFieldPresentation
 }
 
 export interface JournalDocumentItemBlock {
@@ -43,6 +47,22 @@ export interface JournalDocumentItemBlock {
   itemId: string
   source: JournalFieldItemSource
   text: string
+  presentation: JournalFieldPresentation
+}
+
+export interface JournalDocumentInlineItem {
+  itemId: string
+  source: JournalFieldItemSource
+  text: string
+}
+
+export interface JournalDocumentInlineFieldBlock {
+  type: 'inlineField'
+  entryId: string
+  fieldDefinitionId: string
+  text: string
+  label: string
+  items: JournalDocumentInlineItem[]
 }
 
 export interface JournalDocumentAddItemBlock {
@@ -58,6 +78,7 @@ export type JournalDocumentBlock =
   | JournalDocumentBriefBlock
   | JournalDocumentFieldBlock
   | JournalDocumentItemBlock
+  | JournalDocumentInlineFieldBlock
   | JournalDocumentAddItemBlock
 
 export interface JournalDocument {

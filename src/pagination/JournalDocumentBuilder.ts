@@ -6,6 +6,8 @@ import type {
   JournalFieldDefinition,
 } from '../models/JournalFieldDefinition'
 
+import { normalizeFieldItems } from '../fields/JournalFieldRules'
+
 import type {
   JournalDocument,
   JournalDocumentBlock,
@@ -14,8 +16,9 @@ import type {
 function getStringValue(
   value: unknown,
 ): string {
-  return typeof value === 'string'
-    ? value
+  return typeof value === 'string' ||
+    typeof value === 'number'
+    ? String(value)
     : ''
 }
 
@@ -177,35 +180,49 @@ export function buildJournalDocument(
       continue
     }
 
+    const orderedItems = normalizeFieldItems(
+      fieldDefinition,
+      field.items,
+    )
+
+    if (fieldDefinition.presentation === 'inline') {
+      const items = orderedItems
+        .map((item) => ({
+          itemId: item.id,
+          source: item.source,
+          text: getStringValue(item.value).trim(),
+        }))
+        .filter((item) => item.text)
+
+      blocks.push({
+        type: 'inlineField',
+        entryId: entry.id,
+        fieldDefinitionId: fieldDefinition.id,
+        text: `${fieldDefinition.name} - ${items
+          .map((item) => item.text)
+          .join(', ')}`,
+        label: fieldDefinition.name,
+        items,
+      })
+
+      if (orderedItems.length > 0) {
+        blocks.push({
+          type: 'addItem',
+          entryId: entry.id,
+          fieldDefinitionId: fieldDefinition.id,
+          afterItemId: orderedItems[orderedItems.length - 1].id,
+        })
+      }
+      continue
+    }
+
     blocks.push({
       type: 'field',
       entryId: entry.id,
-      fieldDefinitionId:
-        fieldDefinition.id,
-      text:
-        fieldDefinition.name,
+      fieldDefinitionId: fieldDefinition.id,
+      text: fieldDefinition.name,
+      presentation: fieldDefinition.presentation,
     })
-
-    const orderedItems =
-      [...field.items]
-        .sort(
-          (left, right) => {
-            if (
-              left.source !==
-              right.source
-            ) {
-              return left.source ===
-                'master'
-                ? -1
-                : 1
-            }
-
-            return (
-              left.order -
-              right.order
-            )
-          },
-        )
 
     for (
       const item
@@ -241,16 +258,19 @@ export function buildJournalDocument(
         source:
           item.source,
         text,
+        presentation: fieldDefinition.presentation,
       })
+    }
 
+    if (
+      fieldDefinition.presentation === 'multiple' &&
+      orderedItems.length > 0
+    ) {
       blocks.push({
         type: 'addItem',
-        entryId:
-          entry.id,
-        fieldDefinitionId:
-          fieldDefinition.id,
-        afterItemId:
-          item.id,
+        entryId: entry.id,
+        fieldDefinitionId: fieldDefinition.id,
+        afterItemId: orderedItems[orderedItems.length - 1].id,
       })
     }
   }

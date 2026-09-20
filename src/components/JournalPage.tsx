@@ -45,6 +45,12 @@ interface JournalPageProps {
     itemId: string,
   ) => void
 
+  onDeleteItem: (
+    entryId: string,
+    fieldDefinitionId: string,
+    itemId: string,
+  ) => void
+
   onMoveItem: (
     entryId: string,
     fieldDefinitionId: string,
@@ -67,6 +73,7 @@ export function JournalPage({
   showEditNode,
   onAddItem,
   onEditItem,
+  onDeleteItem,
   onMoveItem,
 }: JournalPageProps) {
   function renderText(
@@ -282,22 +289,14 @@ export function JournalPage({
                     lineHeight:
                       `${titleLineHeight}px`,
                   }}
+                  role={nodeVisible ? 'button' : undefined}
+                  tabIndex={nodeVisible ? 0 : undefined}
+                  onClick={nodeVisible ? () => onEditItem(
+                    fragment.entryId,
+                    fragment.fieldDefinitionId,
+                    fragment.itemId,
+                  ) : undefined}
                 >
-                  {nodeVisible && (
-                    <button
-                      type="button"
-                      className="journal-page-item-node journal-page-title-node"
-                      aria-label="Edit entry title"
-                      onClick={() =>
-                        onEditItem(
-                          fragment.entryId,
-                          fragment.fieldDefinitionId,
-                          fragment.itemId,
-                        )
-                      }
-                    />
-                  )}
-
                   {renderText(
                     fragment.text,
                     index,
@@ -324,6 +323,13 @@ export function JournalPage({
         lineHeight:
           `${fragment.height}px`,
       }}
+      role={!readOnly ? 'button' : undefined}
+      tabIndex={!readOnly ? 0 : undefined}
+      onClick={!readOnly ? () => onEditItem(
+        fragment.entryId,
+        fragment.fieldDefinitionId,
+        fragment.itemId,
+      ) : undefined}
     >
       {renderText(
         fragment.text,
@@ -348,6 +354,13 @@ if (
         height:
           fragment.height,
       }}
+      role={!readOnly ? 'button' : undefined}
+      tabIndex={!readOnly ? 0 : undefined}
+      onClick={!readOnly ? () => onEditItem(
+        fragment.entryId,
+        fragment.fieldDefinitionId,
+        fragment.itemId,
+      ) : undefined}
     >
       {renderText(
         fragment.text,
@@ -381,6 +394,53 @@ if (
               )
             }
 
+            if (fragment.type === 'inlineField') {
+              let textOffset = fragment.label.length + 3
+
+              return (
+                <div
+                  key={`inline-${fragment.fieldDefinitionId}-${index}`}
+                  className="journal-page-inline-field"
+                  style={{ top: fragment.top, height: fragment.height }}
+                >
+                  <strong>{fragment.label} - </strong>
+                  {fragment.items.map((item, itemIndex) => {
+                    const offset = textOffset
+                    textOffset += item.text.length + 2
+                    const editable = !readOnly && showEditNode(item.source)
+
+                    return (
+                      <span key={item.itemId}>
+                        <button
+                          type="button"
+                          className="journal-page-inline-item"
+                          disabled={!editable}
+                          onClick={(event) => {
+                            if (event.shiftKey) {
+                              onDeleteItem(
+                                fragment.entryId,
+                                fragment.fieldDefinitionId,
+                                item.itemId,
+                              )
+                              return
+                            }
+                            onEditItem(
+                              fragment.entryId,
+                              fragment.fieldDefinitionId,
+                              item.itemId,
+                            )
+                          }}
+                        >
+                          {renderFormattedText(item.runs, index, offset)}
+                        </button>
+                        {itemIndex < fragment.items.length - 1 ? ', ' : ''}
+                      </span>
+                    )
+                  })}
+                </div>
+              )
+            }
+
             if (
               fragment.type === 'addItem'
             ) {
@@ -408,7 +468,7 @@ if (
                     )
                   }
                 >
-                  <span>+</span>
+                  <span>+ Add Item</span>
                 </button>
               )
             }
@@ -445,36 +505,9 @@ if (
                     '100%',
                 }}
               >
-                {nodeVisible && (
+                {nodeVisible && fragment.presentation === 'multiple' && (
                   <div
                     className="journal-page-item-controls"
-                    style={
-  fragment.inline
-    ? pageSide === 'left'
-      ? {
-          left:
-            `calc(100% + ${
-              12
-            }px)`,
-
-          right:
-            'auto',
-        }
-      : {
-          left:
-            'auto',
-
-          right:
-            `calc(100% + ${
-              (
-                fragment.left ??
-                0
-              ) +
-              12
-            }px)`,
-        }
-    : undefined
-}
                   >
                     <button
                       type="button"
@@ -494,19 +527,6 @@ if (
 
                     <button
                       type="button"
-                      className="journal-page-item-node"
-                      aria-label="Edit field item"
-                      onClick={() =>
-                        onEditItem(
-                          fragment.entryId,
-                          fragment.fieldDefinitionId,
-                          fragment.itemId,
-                        )
-                      }
-                    />
-
-                    <button
-                      type="button"
                       className="journal-page-item-move journal-page-item-move-down"
                       aria-label="Move field item down"
                       onClick={() =>
@@ -523,7 +543,26 @@ if (
                   </div>
                 )}
 
-                <div className="journal-page-item-text">
+                <button
+                  type="button"
+                  className="journal-page-item-text"
+                  disabled={!nodeVisible}
+                  onClick={(event) => {
+                    if (event.shiftKey) {
+                      onDeleteItem(
+                        fragment.entryId,
+                        fragment.fieldDefinitionId,
+                        fragment.itemId,
+                      )
+                      return
+                    }
+                    onEditItem(
+                      fragment.entryId,
+                      fragment.fieldDefinitionId,
+                      fragment.itemId,
+                    )
+                  }}
+                >
                   {fragment.paragraphs.map(
                     (
                       paragraph,
@@ -572,7 +611,7 @@ if (
                       )
                     },
                   )}
-                </div>
+                </button>
               </div>
             )
           },

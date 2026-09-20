@@ -2,11 +2,16 @@ import {
   useEffect,
   useRef,
 } from 'react'
+import type {
+  JournalFieldDefinition,
+} from '../models/JournalFieldDefinition'
 
 interface JournalItemEditorProps {
   value: string
   fontFamily: string
   fontSize: number
+  fieldDefinition?: JournalFieldDefinition
+  error: string | null
 
   onChange: (
     value: string,
@@ -144,6 +149,8 @@ export function JournalItemEditor({
   value,
   fontFamily,
   fontSize,
+  fieldDefinition,
+  error,
   onChange,
   onConfirm,
   onClose,
@@ -307,6 +314,19 @@ export function JournalItemEditor({
 
   return (
     <div className="journal-item-editor">
+      {fieldDefinition?.presentation === 'inline' && (
+        <p className="journal-item-editor-help">
+          Commas separate values into independently stored Items.
+        </p>
+      )}
+
+      {error && (
+        <div className="journal-item-editor-error" role="alert">
+          {error}
+        </div>
+      )}
+
+      {fieldDefinition?.valueType !== 'number' && (
       <div className="journal-item-editor-toolbar">
         <button
           type="button"
@@ -353,7 +373,17 @@ export function JournalItemEditor({
           <u>U</u>
         </button>
       </div>
+      )}
 
+      {fieldDefinition?.valueType === 'number' ? (
+        <input
+          className="journal-item-editor-number"
+          type={fieldDefinition.presentation === 'inline' ? 'text' : 'number'}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoFocus
+        />
+      ) : (
       <div
         ref={editorRef}
         className="journal-item-editor-input"
@@ -383,6 +413,7 @@ export function JournalItemEditor({
           insertTab()
         }}
       />
+      )}
 
       <div className="journal-item-editor-actions">
         <button

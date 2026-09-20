@@ -1,6 +1,9 @@
 import type {
   JournalFieldItemSource,
 } from '../models/JournalField'
+import type {
+  JournalFieldPresentation,
+} from '../models/JournalFieldDefinition'
 
 export interface JournalPageTitleFragment {
   type: 'title'
@@ -44,6 +47,24 @@ export interface JournalPageFieldFragment {
   height: number
 }
 
+export interface JournalPageInlineItem {
+  itemId: string
+  source: JournalFieldItemSource
+  text: string
+  runs: JournalPageTextRun[]
+}
+
+export interface JournalPageInlineFieldFragment {
+  type: 'inlineField'
+  entryId: string
+  fieldDefinitionId: string
+  text: string
+  label: string
+  items: JournalPageInlineItem[]
+  top: number
+  height: number
+}
+
 export interface JournalPageTextRun {
   text: string
   bold: boolean
@@ -63,6 +84,7 @@ export interface JournalPageItemFragment {
   fieldDefinitionId: string
   itemId: string
   source: JournalFieldItemSource
+  presentation: JournalFieldPresentation
   text: string
   paragraphs: JournalPageItemParagraph[]
   top: number
@@ -86,6 +108,7 @@ export type JournalPageFragment =
   | JournalPageSubtitleFragment
   | JournalPageBriefFragment
   | JournalPageFieldFragment
+  | JournalPageInlineFieldFragment
   | JournalPageItemFragment
   | JournalPageAddItemFragment
 

@@ -15,6 +15,10 @@ import { JournalPage } from './JournalPage'
 import { JournalItemEditor } from './JournalItemEditor'
 import { NewPageDialog } from '../entries/NewPageDialog'
 import { ConfirmationDialog } from './ConfirmationDialog'
+import {
+  normalizeFieldItems,
+  parseFieldItemValue,
+} from '../fields/JournalFieldRules'
 import { buildJournalDocument } from '../pagination/JournalDocumentBuilder'
 import {
   paginateJournalDocument,
@@ -207,6 +211,21 @@ const [
   fieldDefinitionId: string
   itemId: string
   value: string
+  removeOnCancel: boolean
+} | null>(null)
+
+const [
+  editingItemError,
+  setEditingItemError,
+] = useState<string | null>(null)
+
+const [
+  pendingItemDelete,
+  setPendingItemDelete,
+] = useState<{
+  entryId: string
+  fieldDefinitionId: string
+  itemId: string
 } | null>(null)
 
 const [
@@ -665,11 +684,6 @@ const rightPage =
       ] ?? null
     : null
 
-const pageStep =
-  singlePageMode
-    ? 1
-    : 2
-
 function isBlankPage(
   index: number,
 ): boolean {
@@ -758,21 +772,6 @@ const hasNextPage =
         !field.isSystem &&
         activeEntry &&
         !activeEntry.fields[
-          field.id
-        ],
-    )
-    .sort(
-      (left, right) =>
-        left.order -
-        right.order,
-    )
-
-    const activeFieldDefinitions =
-  project.fieldDefinitions
-    .filter(
-      (field) =>
-        !field.isSystem &&
-        activeEntry?.fields[
           field.id
         ],
     )
@@ -1462,7 +1461,7 @@ async function addFieldToEntry(
   const initialValue =
     fieldDefinition.valueType ===
       'number'
-      ? '0'
+      ? 0
       : 'Add your thoughts here...'
 
   const item:
@@ -1510,13 +1509,25 @@ async function addFieldToEntry(
 
   await entryRepository
     .saveEntry(updatedEntry)
+
+  setEditingItem({
+    entryId: activeEntry.id,
+    fieldDefinitionId,
+    itemId: item.id,
+    value: String(item.value),
+    removeOnCancel: false,
+  })
+  setEditingItemError(null)
 }
 
 async function updateFieldItems(
+  entryId: string,
   fieldDefinitionId: string,
   items: JournalFieldItem[],
 ) {
-  if (!activeEntry) {
+  const entry = entries.find((candidate) => candidate.id === entryId)
+
+  if (!entry) {
     return
   }
 
@@ -1527,43 +1538,19 @@ async function updateFieldItems(
         fieldDefinitionId,
     )
 
-  let normalizedItems =
-    [...items]
+  if (!fieldDefinition) return
 
-  if (
-    fieldDefinition?.presentation ===
-      'inline'
-  ) {
-    normalizedItems.sort(
-      (left, right) =>
-        String(left.value)
-          .localeCompare(
-            String(right.value),
-            undefined,
-            {
-              sensitivity: 'base',
-            },
-          ),
-    )
-  }
-
-  normalizedItems =
-    normalizedItems.map(
-      (
-        item,
-        index,
-      ) => ({
-        ...item,
-        order: index,
-      }),
-    )
+  const normalizedItems = normalizeFieldItems(
+    fieldDefinition,
+    items,
+  )
 
   const updatedEntry:
     JournalEntry = {
-      ...activeEntry,
+      ...entry,
 
       fields: {
-        ...activeEntry.fields,
+        ...entry.fields,
 
         [fieldDefinitionId]: {
           items:
@@ -1591,9 +1578,12 @@ async function updateFieldItems(
 }
 
 async function removeFieldFromEntry(
+  entryId: string,
   fieldDefinitionId: string,
 ) {
-  if (!activeEntry) {
+  const entry = entries.find((candidate) => candidate.id === entryId)
+
+  if (!entry) {
     return
   }
 
@@ -1601,7 +1591,7 @@ async function removeFieldFromEntry(
     [fieldDefinitionId]:
       removedField,
     ...remainingFields
-  } = activeEntry.fields
+  } = entry.fields
 
   if (!removedField) {
     return
@@ -1609,7 +1599,7 @@ async function removeFieldFromEntry(
 
   const updatedEntry:
     JournalEntry = {
-    ...activeEntry,
+    ...entry,
 
     fields:
       remainingFields,
@@ -1794,7 +1784,7 @@ async function addItemToField(
       value:
         fieldDefinition.valueType ===
           'number'
-          ? '0'
+          ? 0
           : 'Add your thoughts here...',
 
       source: 'master',
@@ -1812,16 +1802,10 @@ async function addItemToField(
     item,
   )
 
-  const normalizedItems =
-    updatedItems.map(
-      (
-        currentItem,
-        index,
-      ) => ({
-        ...currentItem,
-        order: index,
-      }),
-    )
+  const normalizedItems = normalizeFieldItems(
+    fieldDefinition,
+    updatedItems,
+  )
 
   const updatedEntry:
     JournalEntry = {
@@ -1852,6 +1836,17 @@ async function addItemToField(
 
   await entryRepository
     .saveEntry(updatedEntry)
+
+  setEditingItem({
+    entryId,
+    fieldDefinitionId,
+    itemId: item.id,
+    value: fieldDefinition.presentation === 'inline'
+      ? ''
+      : String(item.value),
+    removeOnCancel: fieldDefinition.presentation === 'inline',
+  })
+  setEditingItemError(null)
 }
 
 async function moveFieldItem(
@@ -1987,6 +1982,7 @@ if (
     )
 
   await updateFieldItems(
+    entryId,
     fieldDefinitionId,
     updatedItems,
   )
@@ -1998,9 +1994,9 @@ function handleEditItem(
   itemId: string,
 ) {  
   if (
-    titleDefinition &&
-    fieldDefinitionId ===
-      titleDefinition.id
+    fieldDefinitionId === titleDefinition?.id ||
+    fieldDefinitionId === subtitleDefinition?.id ||
+    fieldDefinitionId === briefDefinition?.id
   ) {
     setEditingPageEntryId(
       entryId,
@@ -2031,6 +2027,7 @@ function handleEditItem(
     entryId,
     fieldDefinitionId,
     itemId,
+    removeOnCancel: false,
 
     value:
       typeof item.value === 'string'
@@ -2039,6 +2036,7 @@ function handleEditItem(
             item.value ?? '',
           ),
   })
+  setEditingItemError(null)
 }
 
 async function confirmEditingItem() {
@@ -2071,7 +2069,93 @@ async function confirmEditingItem() {
       editingItem.fieldDefinitionId
     ]
 
-  if (!entry || !field) {
+  const fieldDefinition = project.fieldDefinitions.find(
+    (definition) => definition.id === editingItem.fieldDefinitionId,
+  )
+
+  if (!entry || !field || !fieldDefinition) {
+    return
+  }
+
+  if (
+    fieldDefinition.presentation === 'inline'
+  ) {
+    const values = editingItem.value
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+
+    if (values.length === 0) {
+      if (field.items.length === 1) {
+        await removeFieldFromEntry(
+          editingItem.entryId,
+          editingItem.fieldDefinitionId,
+        )
+      } else {
+        await updateFieldItems(
+          editingItem.entryId,
+          editingItem.fieldDefinitionId,
+          field.items.filter((item) => item.id !== editingItem.itemId),
+        )
+      }
+
+      setEditingItem(null)
+      setEditingItemError(null)
+      return
+    }
+
+    let parsedValues: (string | number)[]
+    try {
+      parsedValues = values.map((value) =>
+        parseFieldItemValue(fieldDefinition, value),
+      )
+    } catch (error) {
+      setEditingItemError(
+        error instanceof Error ? error.message : 'Invalid Item value.',
+      )
+      return
+    }
+
+    const existingItem = field.items.find(
+      (item) => item.id === editingItem.itemId,
+    )
+
+    if (!existingItem) return
+
+    const now = new Date().toISOString()
+    const addedItems = parsedValues.map((value, index) => ({
+      ...existingItem,
+      id: index === 0 ? existingItem.id : crypto.randomUUID(),
+      value,
+      createdAt: index === 0 ? existingItem.createdAt : now,
+      updatedAt: now,
+    }))
+
+    const updatedItems = field.items.flatMap((item) =>
+      item.id === editingItem.itemId ? addedItems : [item],
+    )
+
+    await updateFieldItems(
+      editingItem.entryId,
+      editingItem.fieldDefinitionId,
+      updatedItems,
+    )
+
+    setEditingItem(null)
+    setEditingItemError(null)
+    return
+  }
+
+  let parsedValue: string | number
+  try {
+    parsedValue = parseFieldItemValue(
+      fieldDefinition,
+      editingItem.value,
+    )
+  } catch (error) {
+    setEditingItemError(
+      error instanceof Error ? error.message : 'Invalid Item value.',
+    )
     return
   }
 
@@ -2113,6 +2197,7 @@ async function confirmEditingItem() {
         )
 
       await updateFieldItems(
+        editingItem.entryId,
         editingItem.fieldDefinitionId,
         updatedItems,
       )
@@ -2123,6 +2208,7 @@ async function confirmEditingItem() {
 
     if (field.items.length === 1) {
       await removeFieldFromEntry(
+        editingItem.entryId,
         editingItem.fieldDefinitionId,
       )
 
@@ -2138,6 +2224,7 @@ async function confirmEditingItem() {
       )
 
     await updateFieldItems(
+      editingItem.entryId,
       editingItem.fieldDefinitionId,
       updatedItems,
     )
@@ -2157,18 +2244,75 @@ async function confirmEditingItem() {
           ? {
               ...item,
               value:
-                editingItem.value,
+                parsedValue,
               updatedAt: now,
             }
           : item,
     )
 
   await updateFieldItems(
+    editingItem.entryId,
     editingItem.fieldDefinitionId,
     updatedItems,
   )
 
   setEditingItem(null)
+}
+
+async function cancelEditingItem() {
+  if (editingItem?.removeOnCancel) {
+    const entry = entries.find(
+      (candidate) => candidate.id === editingItem.entryId,
+    )
+    const field = entry?.fields[editingItem.fieldDefinitionId]
+
+    if (field) {
+      await updateFieldItems(
+        editingItem.entryId,
+        editingItem.fieldDefinitionId,
+        field.items.filter((item) => item.id !== editingItem.itemId),
+      )
+    }
+  }
+
+  setEditingItem(null)
+  setEditingItemError(null)
+}
+
+async function confirmDeleteItem() {
+  if (!pendingItemDelete) return
+
+  const entry = entries.find(
+    (candidate) => candidate.id === pendingItemDelete.entryId,
+  )
+  const field = entry?.fields[pendingItemDelete.fieldDefinitionId]
+  const isNotes = notesDefinition?.id ===
+    pendingItemDelete.fieldDefinitionId
+
+  if (!entry || !field) {
+    setPendingItemDelete(null)
+    return
+  }
+
+  if (isNotes && field.items.length === 1) {
+    setPendingItemDelete(null)
+    return
+  }
+
+  if (field.items.length === 1) {
+    await removeFieldFromEntry(
+      pendingItemDelete.entryId,
+      pendingItemDelete.fieldDefinitionId,
+    )
+  } else {
+    await updateFieldItems(
+      pendingItemDelete.entryId,
+      pendingItemDelete.fieldDefinitionId,
+      field.items.filter((item) => item.id !== pendingItemDelete.itemId),
+    )
+  }
+
+  setPendingItemDelete(null)
 }
 
 type SearchMatch = {
@@ -3003,9 +3147,23 @@ function clearSearchPosition() {
   ref={bookAreaRef}
   className="journal-book-area"
 >
+            {pendingItemDelete && (
+              <ConfirmationDialog
+                title="Delete Item?"
+                message="This Item will be permanently removed from the Field."
+                confirmLabel="Delete Item"
+                onConfirm={confirmDeleteItem}
+                onCancel={() => setPendingItemDelete(null)}
+              />
+            )}
+
             {editingItem && (
   <JournalItemEditor
     value={editingItem.value}
+    fieldDefinition={project.fieldDefinitions.find(
+      (definition) => definition.id === editingItem.fieldDefinitionId,
+    )}
+    error={editingItemError}
     fontFamily={fontFamily}
     fontSize={fontSize}
     onChange={(value) => {
@@ -3023,7 +3181,7 @@ function clearSearchPosition() {
         void confirmEditingItem()
     }}
     onClose={() => {
-      setEditingItem(null)
+      void cancelEditingItem()
     }}
   />
 )}
@@ -3089,6 +3247,9 @@ function clearSearchPosition() {
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
+                onDeleteItem={(entryId, fieldDefinitionId, itemId) => {
+                  setPendingItemDelete({ entryId, fieldDefinitionId, itemId })
+                }}
                 onMoveItem={moveFieldItem}
                 onAddItem={addItemToField}
               />
@@ -3123,6 +3284,9 @@ function clearSearchPosition() {
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
                 onEditItem={handleEditItem}
+                onDeleteItem={(entryId, fieldDefinitionId, itemId) => {
+                  setPendingItemDelete({ entryId, fieldDefinitionId, itemId })
+                }}
                 onMoveItem={moveFieldItem}
                 onAddItem={addItemToField}
               />
