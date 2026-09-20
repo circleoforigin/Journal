@@ -6,12 +6,21 @@ import type {
   JournalFieldDefinition,
 } from '../models/JournalFieldDefinition'
 
+export interface JournalReferenceCandidate {
+  id: string
+  title: string
+  subtitle: string
+  brief: string
+  aliases: string[]
+}
+
 interface JournalItemEditorProps {
   value: string
   fontFamily: string
   fontSize: number
   fieldDefinition?: JournalFieldDefinition
   error: string | null
+  referenceCandidates: JournalReferenceCandidate[]
 
   onChange: (
     value: string,
@@ -151,6 +160,7 @@ export function JournalItemEditor({
   fontSize,
   fieldDefinition,
   error,
+  referenceCandidates,
   onChange,
   onConfirm,
   onClose,

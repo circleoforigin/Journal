@@ -675,10 +675,14 @@ useEffect(() => {
               )
             }
 
-            if (
-  fragment.type ===
-  'subtitle'
+            if ( fragment.type === 'subtitle'
 ) {
+  const nodeVisible =
+  !readOnly &&
+  !controlPressed &&
+  showEditNode(
+    fragment.source,
+  )
   return (
     <div
       key={`subtitle-${fragment.itemId}-${index}`}
@@ -693,11 +697,18 @@ useEffect(() => {
         lineHeight:
           `${fragment.height}px`,
       }}
-      role={!readOnly ? 'button' : undefined}
-      tabIndex={!readOnly ? 0 : undefined}
+      role={
+  nodeVisible
+    ? 'button'
+    : undefined
+}
+tabIndex={
+  nodeVisible
+    ? 0
+    : undefined
+}
       onClick={
-  !readOnly &&
-  !controlPressed
+  nodeVisible
     ? () => onEditItem(
         fragment.entryId,
         fragment.fieldDefinitionId,
@@ -714,7 +725,14 @@ useEffect(() => {
   )
 }
 
-if ( fragment.type === 'brief') {
+if ( fragment.type === 'brief') 
+  {
+    const nodeVisible =
+  !readOnly &&
+  !controlPressed &&
+  showEditNode(
+    fragment.source,
+  )
   return (
     <div
       key={`brief-${fragment.itemId}-${index}`}
@@ -726,11 +744,18 @@ if ( fragment.type === 'brief') {
         height:
           fragment.height,
       }}
-      role={!readOnly ? 'button' : undefined}
-      tabIndex={!readOnly ? 0 : undefined}
+      role={
+  nodeVisible
+    ? 'button'
+    : undefined
+}
+tabIndex={
+  nodeVisible
+    ? 0
+    : undefined
+}
       onClick={
-  !readOnly &&
-  !controlPressed
+  nodeVisible
     ? () => onEditItem(
         fragment.entryId,
         fragment.fieldDefinitionId,

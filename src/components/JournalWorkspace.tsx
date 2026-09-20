@@ -329,6 +329,93 @@ function getEntryTitle(
       : 'New Entry'
 }
 
+function getEntrySystemText(
+  entry: JournalEntry,
+  fieldDefinitionId:
+    string | undefined,
+): string {
+  if (!fieldDefinitionId) {
+    return ''
+  }
+
+  const item =
+    entry.fields[
+      fieldDefinitionId
+    ]?.items[0]
+
+  return typeof item?.value ===
+    'string'
+    ? item.value
+    : ''
+}
+
+const referenceCandidates =
+  useMemo(
+    () =>
+      entries
+        .filter(
+          (entry) =>
+            entry.id.startsWith(
+              'master-',
+            ),
+        )
+        .map((entry) => ({
+          id: entry.id,
+
+          title:
+            getEntryTitle(
+              entry,
+            ),
+
+          subtitle:
+            getEntrySystemText(
+              entry,
+              subtitleDefinition?.id,
+            ),
+
+          brief:
+            getEntrySystemText(
+              entry,
+              briefDefinition?.id,
+            ),
+
+          aliases:
+            aliasesDefinition
+              ? (
+                  entry.fields[
+                    aliasesDefinition.id
+                  ]?.items ?? []
+                )
+                  .map(
+                    (item) =>
+                      typeof item.value ===
+                      'string'
+                        ? item.value
+                        : '',
+                  )
+                  .filter(
+                    (value) =>
+                      value &&
+                      value !==
+                        'No known aliases',
+                  )
+              : [],
+        }))
+        .sort(
+          (left, right) =>
+            left.title.localeCompare(
+              right.title,
+            ),
+        ),
+    [
+      entries,
+      titleDefinition,
+      subtitleDefinition,
+      briefDefinition,
+      aliasesDefinition,
+    ],
+  )
+
 const activeEntry =
   entries.find(
     (entry) =>
@@ -3334,6 +3421,7 @@ function clearSearchPosition() {
             {editingItem && (
   <JournalItemEditor
     value={editingItem.value}
+    referenceCandidates={referenceCandidates}
     fieldDefinition={project.fieldDefinitions.find(
       (definition) => definition.id === editingItem.fieldDefinitionId,
     )}
