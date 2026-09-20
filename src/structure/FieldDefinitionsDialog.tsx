@@ -94,33 +94,58 @@ export function FieldDefinitionsDialog({
           right.order,
       )
 
-  const existingNotes =
-    fieldDefinitions.find(
-      (field) =>
-        field.isSystem &&
-        field.name === 'Notes',
-    )
+  const existingAliases =
+  fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Aliases',
+  )
 
-  const notesField:
-    JournalFieldDefinition =
-    existingNotes
-      ? {
-          ...existingNotes,
-        }
-      : {
-          id: crypto.randomUUID(),
-          name: 'Notes',
-          valueType: 'string',
-          presentation: 'multiple',
-          order: 0,
-          isSystem: true,
-        }
+const aliasesField:
+  JournalFieldDefinition =
+  existingAliases
+    ? {
+        ...existingAliases,
+        valueType: 'string',
+        presentation: 'inline',
+      }
+    : {
+        id: crypto.randomUUID(),
+        name: 'Aliases',
+        valueType: 'string',
+        presentation: 'inline',
+        order: 0,
+        isSystem: true,
+      }
 
-  return normalizeOrder([
-    ...headerFields,
-    ...ordinaryFields,
-    notesField,
-  ])
+const existingNotes =
+  fieldDefinitions.find(
+    (field) =>
+      field.isSystem &&
+      field.name === 'Notes',
+  )
+
+const notesField:
+  JournalFieldDefinition =
+  existingNotes
+    ? {
+        ...existingNotes,
+      }
+    : {
+        id: crypto.randomUUID(),
+        name: 'Notes',
+        valueType: 'string',
+        presentation: 'multiple',
+        order: 0,
+        isSystem: true,
+      }
+
+return normalizeOrder([
+  ...headerFields,
+  ...ordinaryFields,
+  aliasesField,
+  notesField,
+])
 },
   )
 

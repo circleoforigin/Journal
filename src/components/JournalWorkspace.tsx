@@ -1336,7 +1336,8 @@ async function updatePageHeader(
   if (
     !titleDefinition ||
     !subtitleDefinition ||
-    !briefDefinition
+    !briefDefinition ||
+    !aliasesDefinition
   ) {
     return
   }
@@ -1355,6 +1356,9 @@ async function updatePageHeader(
 
   const trimmedTitle =
     title.trim()
+
+  const trimmedSubtitle =
+    subtitle.trim()
 
   const trimmedBrief =
     brief.trim()
@@ -1397,43 +1401,191 @@ async function updatePageHeader(
     }
   }
 
+  const previousTitleValue =
+    existingEntry.fields[
+      titleDefinition.id
+    ]?.items[0]?.value
+
+  const previousSubtitleValue =
+    existingEntry.fields[
+      subtitleDefinition.id
+    ]?.items[0]?.value
+
+  const previousTitle =
+    typeof previousTitleValue ===
+      'string'
+      ? previousTitleValue.trim()
+      : ''
+
+  const previousSubtitle =
+    typeof previousSubtitleValue ===
+      'string'
+      ? previousSubtitleValue.trim()
+      : ''
+
+  const existingAliasItems =
+    existingEntry.fields[
+      aliasesDefinition.id
+    ]?.items ?? []
+
+  /*
+   * Start with all genuine existing
+   * aliases. The empty-state sentinel
+   * is display data only and must not
+   * survive once a real alias exists.
+   */
+  const aliasItems =
+    existingAliasItems.filter(
+      (item) =>
+        String(item.value)
+          .trim()
+          .toLocaleLowerCase() !==
+        'no known aliases',
+    )
+
+  function hasAlias(
+    value: string,
+  ): boolean {
+    const normalized =
+      value
+        .trim()
+        .toLocaleLowerCase()
+
+    if (!normalized) {
+      return true
+    }
+
+    return aliasItems.some(
+      (item) =>
+        String(item.value)
+          .trim()
+          .toLocaleLowerCase() ===
+        normalized,
+    )
+  }
+
+  function addAlias(
+    value: string,
+  ) {
+    const trimmedValue =
+      value.trim()
+
+    if (
+      !trimmedValue ||
+      hasAlias(trimmedValue)
+    ) {
+      return
+    }
+
+    aliasItems.push({
+      id: crypto.randomUUID(),
+
+      order:
+        aliasItems.length,
+
+      value:
+        trimmedValue,
+
+      source: 'master',
+
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
+  /*
+   * A changed Title preserves the
+   * previous Title as an Alias.
+   */
+  if (
+    previousTitle &&
+    previousTitle.localeCompare(
+      trimmedTitle,
+      undefined,
+      { sensitivity: 'base' },
+    ) !== 0
+  ) {
+    addAlias(previousTitle)
+  }
+
+  /*
+   * Subtitle identities accumulate.
+   *
+   * Preserve the previous Subtitle
+   * and ensure the current Subtitle
+   * is also represented.
+   */
+  addAlias(previousSubtitle)
+  addAlias(trimmedSubtitle)
+
+  /*
+   * If no genuine Alias exists,
+   * restore the empty-state sentinel.
+   */
+  if (aliasItems.length === 0) {
+    aliasItems.push({
+      id: crypto.randomUUID(),
+
+      order: 0,
+
+      value:
+        'No known aliases',
+
+      source: 'master',
+
+      createdAt: now,
+      updatedAt: now,
+    })
+  }
+
+  const normalizedAliasItems =
+    normalizeFieldItems(
+      aliasesDefinition,
+      aliasItems,
+    )
+
   const updatedEntry:
     JournalEntry = {
-    ...entry,
+      ...entry,
 
-    fields: {
-      ...entry.fields,
+      fields: {
+        ...entry.fields,
 
-      [titleDefinition.id]: {
-        items: [
-          updateSystemItem(
-            titleDefinition.id,
-            trimmedTitle,
-          ),
-        ],
+        [titleDefinition.id]: {
+          items: [
+            updateSystemItem(
+              titleDefinition.id,
+              trimmedTitle,
+            ),
+          ],
+        },
+
+        [subtitleDefinition.id]: {
+          items: [
+            updateSystemItem(
+              subtitleDefinition.id,
+              trimmedSubtitle,
+            ),
+          ],
+        },
+
+        [briefDefinition.id]: {
+          items: [
+            updateSystemItem(
+              briefDefinition.id,
+              trimmedBrief,
+            ),
+          ],
+        },
+
+        [aliasesDefinition.id]: {
+          items:
+            normalizedAliasItems,
+        },
       },
 
-      [subtitleDefinition.id]: {
-        items: [
-          updateSystemItem(
-            subtitleDefinition.id,
-            subtitle.trim(),
-          ),
-        ],
-      },
-
-      [briefDefinition.id]: {
-        items: [
-          updateSystemItem(
-            briefDefinition.id,
-            trimmedBrief,
-          ),
-        ],
-      },
-    },
-
-    updatedAt: now,
-  }
+      updatedAt: now,
+    }
 
   setPendingEntryNavigationId(
     updatedEntry.id,
