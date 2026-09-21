@@ -1972,3 +1972,185 @@ button:disabled {
   color: #5795cf;
   cursor: pointer;
 }
+
+/* =========================
+   JOURNAL ITEM LINKS
+   ========================= */
+
+.journal-item-editor-link-button {
+  width: auto !important;
+  padding: 0 8px !important;
+}
+
+.journal-editor-reference {
+  color: #356fa8;
+}
+
+.journal-link-dialog {
+  position: absolute;
+  z-index: 1200;
+
+  top: 50%;
+  left: 50%;
+
+  width: 380px;
+  max-height: 440px;
+
+  transform:
+    translate(-50%, -50%);
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 12px;
+
+  box-sizing: border-box;
+
+  background: #25262a;
+  color: #eeeeee;
+
+  border:
+    1px solid #55575e;
+  border-radius: 5px;
+
+  box-shadow:
+    0 12px 30px
+    rgba(0, 0, 0, 0.55);
+}
+
+.journal-link-dialog-header {
+  margin-bottom: 10px;
+
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.journal-link-selected-text {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+
+  margin-bottom: 10px;
+
+  font-size: 12px;
+}
+
+.journal-link-selected-text span,
+.journal-link-search span,
+.journal-link-connection span {
+  color: #999999;
+}
+
+.journal-link-search {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  margin-bottom: 8px;
+
+  font-size: 12px;
+}
+
+.journal-link-search input {
+  height: 28px;
+
+  box-sizing: border-box;
+
+  padding: 0 7px;
+
+  border:
+    1px solid #55575e;
+  border-radius: 3px;
+
+  outline: none;
+
+  background: #1f2023;
+  color: #eeeeee;
+
+  font: inherit;
+}
+
+.journal-link-search input:focus {
+  border-color: #777a82;
+}
+
+.journal-link-results {
+  min-height: 70px;
+  max-height: 210px;
+
+  overflow-y: auto;
+
+  margin-bottom: 10px;
+
+  border:
+    1px solid #45474e;
+}
+
+.journal-link-result {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  padding: 7px 9px;
+
+  border: 0;
+  border-bottom:
+    1px solid #3b3c41;
+  border-radius: 0;
+
+  background: #292a2e;
+  color: #eeeeee;
+
+  font: inherit;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.journal-link-result:hover {
+  background: #34353a;
+}
+
+.journal-link-result.selected {
+  background: #3d4650;
+}
+
+.journal-link-result-subtitle {
+  color: #cccccc;
+  font-size: 12px;
+}
+
+.journal-link-result-brief {
+  color: #999999;
+  font-size: 11px;
+}
+
+.journal-link-empty {
+  padding: 12px;
+
+  color: #888888;
+
+  font-size: 12px;
+  text-align: center;
+}
+
+.journal-link-connection {
+  display: flex;
+  gap: 6px;
+
+  margin-bottom: 10px;
+
+  font-size: 12px;
+}
+
+.journal-link-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 6px;
+}
