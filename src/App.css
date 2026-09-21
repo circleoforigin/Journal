@@ -2154,3 +2154,14 @@ button:disabled {
 
   gap: 6px;
 }
+
+.journal-editor-reference {
+  cursor: pointer;
+}
+
+.journal-editor-reference.selected {
+  outline:
+    1px solid currentColor;
+
+  outline-offset: 2px;
+}

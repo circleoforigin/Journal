@@ -24,8 +24,8 @@ interface JournalItemEditorProps {
   fieldDefinition?: JournalFieldDefinition
   error: string | null
 
-  referenceCandidates:
-    JournalReferenceCandidate[]
+  referenceCandidates: JournalReferenceCandidate[]
+  referenceOwner: 'master' | 'player'
 
   onChange: (
     value: string,
@@ -187,6 +187,7 @@ export function JournalItemEditor({
   fieldDefinition,
   error,
   referenceCandidates,
+  referenceOwner,
   onChange,
   onConfirm,
   onClose,
@@ -204,6 +205,13 @@ export function JournalItemEditor({
     useRef<Range | null>(
       null,
     )
+
+  const [
+    selectedEditorReference,
+    setSelectedEditorReference,
+  ] = useState<HTMLElement | null>(
+    null,
+  )
 
   const [
     linkDialogOpen,
@@ -226,6 +234,18 @@ export function JournalItemEditor({
   ] = useState<string | null>(
     null,
   )
+
+  const selectedReferenceTargetId =
+    selectedEditorReference?.dataset
+      .referenceEntryId ?? null
+
+  const canUnlinkSelectedReference =
+    Boolean(
+      selectedReferenceTargetId &&
+      selectedReferenceTargetId.startsWith(
+        `${referenceOwner}-`,
+      ),
+    )
 
   const filteredReferenceCandidates =
     useMemo(
@@ -412,6 +432,77 @@ export function JournalItemEditor({
       selection.addRange(range)
     })
   }
+
+  function unlinkSelectedReference() {
+  const editor =
+    editorRef.current
+
+  const reference =
+    selectedEditorReference
+
+  if (
+    !editor ||
+    !reference ||
+    !editor.contains(reference)
+  ) {
+    return
+  }
+
+  const targetEntryId =
+    reference.dataset
+      .referenceEntryId
+
+  if (
+    !targetEntryId ||
+    !targetEntryId.startsWith(
+      `${referenceOwner}-`,
+    )
+  ) {
+    return
+  }
+
+  const parent =
+    reference.parentNode
+
+  if (!parent) {
+    return
+  }
+
+  const textNode =
+    document.createTextNode(
+      reference.textContent ?? '',
+    )
+
+  parent.replaceChild(
+    textNode,
+    reference,
+  )
+
+  setSelectedEditorReference(
+    null,
+  )
+
+  syncValue()
+
+  const selection =
+    window.getSelection()
+
+  if (selection) {
+    const range =
+      document.createRange()
+
+    range.selectNodeContents(
+      textNode,
+    )
+
+    range.collapse(false)
+
+    selection.removeAllRanges()
+    selection.addRange(range)
+  }
+
+  editor.focus()
+}
 
   function openLinkDialog() {
     const editor =
@@ -668,20 +759,45 @@ export function JournalItemEditor({
           </button>
 
           <button
-            type="button"
-            className="journal-item-editor-link-button"
-            title="Add Link"
-            onMouseDown={(
-              event,
-            ) => {
-              event.preventDefault()
-            }}
-            onClick={() => {
-              openLinkDialog()
-            }}
-          >
-            Add Link
-          </button>
+  type="button"
+  className={
+    selectedEditorReference
+      ? 'journal-item-editor-link-button active'
+      : 'journal-item-editor-link-button'
+  }
+  title={
+    selectedEditorReference
+      ? canUnlinkSelectedReference
+        ? 'Unlink'
+        : 'This Reference belongs to another Journal owner'
+      : 'Add Link'
+  }
+  disabled={
+    Boolean(
+      selectedEditorReference &&
+      !canUnlinkSelectedReference,
+    )
+  }
+  onMouseDown={(
+    event,
+  ) => {
+    event.preventDefault()
+  }}
+  onClick={() => {
+    if (
+      selectedEditorReference
+    ) {
+      unlinkSelectedReference()
+      return
+    }
+
+    openLinkDialog()
+  }}
+>
+  {selectedEditorReference
+    ? 'Unlink'
+    : 'Link...'}
+</button>
         </div>
       )}
 
@@ -710,6 +826,60 @@ export function JournalItemEditor({
           contentEditable
           suppressContentEditableWarning
           spellCheck
+          onClick={(event) => {
+    const target =
+    event.target
+
+  if (
+    target instanceof
+      HTMLElement
+  ) {
+    const reference =
+      target.closest<HTMLElement>(
+        '.journal-editor-reference[data-reference-entry-id]',
+      )
+
+    if (
+      reference &&
+      editorRef.current?.contains(
+        reference,
+      )
+    ) {
+      editorRef.current
+  ?.querySelectorAll(
+    '.journal-editor-reference.selected',
+  )
+  .forEach(
+    (element) =>
+      element.classList.remove(
+        'selected',
+      ),
+  )
+
+reference.classList.add(
+  'selected',
+)
+      setSelectedEditorReference(
+        reference,
+      )
+
+      return
+    }
+  }
+  editorRef.current
+  ?.querySelectorAll(
+    '.journal-editor-reference.selected',
+  )
+  .forEach(
+    (element) =>
+      element.classList.remove(
+        'selected',
+      ),
+  )
+  setSelectedEditorReference(
+    null,
+  )
+}}
           onDoubleClick={() => {
             trimSelectedWhitespace()
           }}

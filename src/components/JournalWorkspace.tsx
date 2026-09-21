@@ -3422,6 +3422,7 @@ function clearSearchPosition() {
   <JournalItemEditor
     value={editingItem.value}
     referenceCandidates={referenceCandidates}
+    referenceOwner="master"
     fieldDefinition={project.fieldDefinitions.find(
       (definition) => definition.id === editingItem.fieldDefinitionId,
     )}
