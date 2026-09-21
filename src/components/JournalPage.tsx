@@ -100,84 +100,132 @@ function InlineItemTarget({
     >([])
 
   useLayoutEffect(() => {
+  if (
+    !editable ||
+    !containerRef.current ||
+    !textRef.current
+  ) {
+    setRects([])
+    return
+  }
+
+  let frameOne = 0
+  let frameTwo = 0
+
+  const measure = () => {
+    const container =
+      containerRef.current
+
+    const text =
+      textRef.current
+
     if (
-      !editable ||
-      !containerRef.current ||
-      !textRef.current
+      !container ||
+      !text
     ) {
-      setRects([])
       return
     }
 
-    const measure = () => {
-      const container =
-        containerRef.current
+    const containerRect =
+      container.getBoundingClientRect()
 
-      const text =
-        textRef.current
+    const range =
+      document.createRange()
 
-      if (!container || !text) {
-        return
-      }
+    range.selectNodeContents(
+      text,
+    )
 
-      const containerRect =
-        container.getBoundingClientRect()
-
-      const range =
-        document.createRange()
-
-      range.selectNodeContents(text)
-
-      const nextRects =
-        Array.from(
-          range.getClientRects(),
+    const nextRects =
+      Array.from(
+        range.getClientRects(),
+      )
+        .filter(
+          (rect) =>
+            rect.width > 0 &&
+            rect.height > 0,
         )
-          .filter(
-            (rect) =>
-              rect.width > 0 &&
-              rect.height > 0,
-          )
-          .map((rect) => ({
+        .map(
+          (rect) => ({
             left:
               rect.left -
               containerRect.left,
+
             top:
               rect.top -
               containerRect.top,
-            width: rect.width,
-            height: rect.height,
-          }))
 
-      setRects(nextRects)
-    }
+            width:
+              rect.width,
 
-    measure()
+            height:
+              rect.height,
+          }),
+        )
 
-    const resizeObserver =
-      new ResizeObserver(measure)
+    setRects(nextRects)
+  }
 
-    resizeObserver.observe(
-      containerRef.current,
+  /*
+   * Measure immediately for normal
+   * rendering, then again after the
+   * Journal/page layout has settled.
+   */
+  measure()
+
+  frameOne =
+    requestAnimationFrame(
+      () => {
+        measure()
+
+        frameTwo =
+          requestAnimationFrame(
+            measure,
+          )
+      },
     )
 
-    window.addEventListener(
-      'resize',
+  const resizeObserver =
+    new ResizeObserver(
       measure,
     )
 
-    return () => {
-      resizeObserver.disconnect()
+  resizeObserver.observe(
+    containerRef.current,
+  )
 
-      window.removeEventListener(
-        'resize',
-        measure,
-      )
-    }
-  }, [
-    children,
-    editable,
-    containerRef,
-  ])
+  if (textRef.current) {
+    resizeObserver.observe(
+      textRef.current,
+    )
+  }
+
+  window.addEventListener(
+    'resize',
+    measure,
+  )
+
+  return () => {
+    cancelAnimationFrame(
+      frameOne,
+    )
+
+    cancelAnimationFrame(
+      frameTwo,
+    )
+
+    resizeObserver.disconnect()
+
+    window.removeEventListener(
+      'resize',
+      measure,
+    )
+  }
+}, [
+  children,
+  editable,
+  containerRef,
+])
 
   return (
     <>
@@ -826,7 +874,7 @@ tabIndex={
             if (fragment.type === 'inlineField') {
   return (
     <InlineFieldContent
-      key={`inline-${fragment.fieldDefinitionId}-${index}`}
+      key={`inline-${fragment.entryId}-${fragment.fieldDefinitionId}-${index}`}
       fragment={fragment}
       fragmentIndex={index}
       readOnly={
