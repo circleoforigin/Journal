@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from 'react'
@@ -74,6 +73,7 @@ interface JournalPageProps {
 interface InlineItemTargetProps {
   children: ReactNode
   editable: boolean
+  interactionDisabled: boolean
   containerRef: RefObject<HTMLDivElement | null>
   onEdit: () => void
   onDelete: () => void
@@ -82,184 +82,42 @@ interface InlineItemTargetProps {
 function InlineItemTarget({
   children,
   editable,
-  containerRef,
+  containerRef: _containerRef,
   onEdit,
   onDelete,
 }: InlineItemTargetProps) {
-  const textRef =
-    useRef<HTMLSpanElement>(null)
-
-  const [rects, setRects] =
-    useState<
-      Array<{
-        left: number
-        top: number
-        width: number
-        height: number
-      }>
-    >([])
-
-  useLayoutEffect(() => {
-  if (
-    !editable ||
-    !containerRef.current ||
-    !textRef.current
-  ) {
-    setRects([])
-    return
-  }
-
-  let frameOne = 0
-  let frameTwo = 0
-
-  const measure = () => {
-    const container =
-      containerRef.current
-
-    const text =
-      textRef.current
-
-    if (
-      !container ||
-      !text
-    ) {
-      return
-    }
-
-    const containerRect =
-      container.getBoundingClientRect()
-
-    const range =
-      document.createRange()
-
-    range.selectNodeContents(
-      text,
-    )
-
-    const nextRects =
-      Array.from(
-        range.getClientRects(),
-      )
-        .filter(
-          (rect) =>
-            rect.width > 0 &&
-            rect.height > 0,
-        )
-        .map(
-          (rect) => ({
-            left:
-              rect.left -
-              containerRect.left,
-
-            top:
-              rect.top -
-              containerRect.top,
-
-            width:
-              rect.width,
-
-            height:
-              rect.height,
-          }),
-        )
-
-    setRects(nextRects)
-  }
-
-  /*
-   * Measure immediately for normal
-   * rendering, then again after the
-   * Journal/page layout has settled.
-   */
-  measure()
-
-  frameOne =
-    requestAnimationFrame(
-      () => {
-        measure()
-
-        frameTwo =
-          requestAnimationFrame(
-            measure,
-          )
-      },
-    )
-
-  const resizeObserver =
-    new ResizeObserver(
-      measure,
-    )
-
-  resizeObserver.observe(
-    containerRef.current,
-  )
-
-  if (textRef.current) {
-    resizeObserver.observe(
-      textRef.current,
-    )
-  }
-
-  window.addEventListener(
-    'resize',
-    measure,
-  )
-
-  return () => {
-    cancelAnimationFrame(
-      frameOne,
-    )
-
-    cancelAnimationFrame(
-      frameTwo,
-    )
-
-    resizeObserver.disconnect()
-
-    window.removeEventListener(
-      'resize',
-      measure,
-    )
-  }
-}, [
-  children,
-  editable,
-  containerRef,
-])
-
   return (
-    <>
-      <span
-        ref={textRef}
-        className="journal-page-inline-item-text"
-      >
-        {children}
-      </span>
+    <span
+      className={
+        editable
+          ? 'journal-page-inline-item-text editable'
+          : 'journal-page-inline-item-text'
+      }
+      onClick={
+        editable
+          ? (event) => {
+              if (
+                event.ctrlKey
+              ) {
+                return
+              }
 
-      {editable &&
-        rects.map((rect, index) => (
-          <button
-            key={index}
-            type="button"
-            className="journal-page-inline-item-target"
-            aria-label="Edit field item"
-            style={{
-              left: rect.left,
-              top: rect.top,
-              width: rect.width,
-              height: rect.height,
-            }}
-            onClick={(event) => {
-              if (event.shiftKey) {
+              if (
+                event.shiftKey
+              ) {
+                event.stopPropagation()
                 onDelete()
                 return
               }
 
+              event.stopPropagation()
               onEdit()
-            }}
-          />
-        ))}
-    </>
+            }
+          : undefined
+      }
+    >
+      {children}
+    </span>
   )
 }
 
@@ -272,6 +130,7 @@ interface InlineFieldContentProps {
   >
   fragmentIndex: number
   readOnly: boolean
+  interactionDisabled: boolean
   showEditNode: (
     source: 'master' | 'user',
   ) => boolean
@@ -288,6 +147,7 @@ function InlineFieldContent({
   fragment,
   fragmentIndex,
   readOnly,
+  interactionDisabled,
   showEditNode,
   onEditItem,
   onDeleteItem,
@@ -328,6 +188,9 @@ function InlineFieldContent({
               <InlineItemTarget
                 editable={editable}
                 containerRef={containerRef}
+                interactionDisabled={
+                  interactionDisabled
+                }
                 onEdit={() =>
                   onEditItem(
                     fragment.entryId,
@@ -874,20 +737,20 @@ tabIndex={
             if (fragment.type === 'inlineField') {
   return (
     <InlineFieldContent
-      key={`inline-${fragment.entryId}-${fragment.fieldDefinitionId}-${index}`}
-      fragment={fragment}
-      fragmentIndex={index}
-      readOnly={
-        readOnly ||
-        controlPressed
-      }
-      showEditNode={showEditNode}
-      onEditItem={onEditItem}
-      onDeleteItem={onDeleteItem}
-      renderFormattedText={
-        renderFormattedText
-      }
-    />
+  key={`inline-${fragment.entryId}-${fragment.fieldDefinitionId}-${index}`}
+  fragment={fragment}
+  fragmentIndex={index}
+  readOnly={readOnly}
+  interactionDisabled={
+    controlPressed
+  }
+  showEditNode={showEditNode}
+  onEditItem={onEditItem}
+  onDeleteItem={onDeleteItem}
+  renderFormattedText={
+    renderFormattedText
+  }
+/>
   )
 }
 
