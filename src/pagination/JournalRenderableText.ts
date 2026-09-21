@@ -34,9 +34,10 @@ export interface JournalRenderableTextRun {
   text: string
   fontFamily: string
   fontSize: number
-  sourceType: 'text' | 'language'
+  sourceType: 'text' | 'language' | 'reference'
   languageId?: string
   translated?: boolean
+  targetEntryId?: string
 }
 
 export interface JournalRenderableItem {

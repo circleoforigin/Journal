@@ -28,6 +28,9 @@ import {
 } from '../pagination/JournalPaginator'
 
 export interface JournalWorkspaceHandle {
+  goToPage: (
+    pageId: string,
+  ) => boolean
   createPage: (
     sectionId: string,
     title: string,
@@ -1628,6 +1631,26 @@ async function createEntry(
 useImperativeHandle(
   ref,
   () => ({
+    goToPage(
+      pageId,
+    ) {
+      const exists =
+        entries.some(
+          (entry) =>
+            entry.id === pageId,
+        )
+
+      if (!exists) {
+        return false
+      }
+
+      navigateToEntry(
+        pageId,
+      )
+
+      return true
+    },
+
     async createPage(
       sectionId,
       title,

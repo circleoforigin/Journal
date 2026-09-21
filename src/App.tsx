@@ -167,11 +167,96 @@ const pendingProjectActionRef =
 
       return page
     },
+    async (request) => {
+  const workspace =
+    journalWorkspaceRef.current
+
+  if (!workspace) {
+    throw new Error(
+      'Journal workspace is unavailable.',
+    )
+  }
+
+  const found =
+    workspace.goToPage(
+      request.pageId,
+    )
+
+  if (!found) {
+    throw new Error(
+      `Journal Page "${request.pageId}" was not found.`
+    )
+  }
+},
   )
 }, [
   activeProject?.id,
 ])
 
+useEffect(() => {
+  if (!moduleEventBus.hosted) {
+    return
+  }
+
+  const timer =
+    window.setTimeout(async () => {
+      try {
+        const sections =
+  await moduleEventBus.request<{
+    projectId: string
+    sections: Array<{
+      sectionId: string
+      sectionName: string
+    }>
+  }>(
+    'Journal.GetSections',
+    {},
+  )
+
+        const section =
+          sections.sections[0]
+
+        if (!section) {
+          console.error(
+            'Journal Action test: no available Section.',
+          )
+          return
+        }
+
+       const result =
+  await moduleEventBus.request(
+    'Journal.CreatePage',
+    {
+      sectionId:
+        section.sectionId,
+
+      title:
+        'Action Forwarder Test',
+
+      subtitle:
+        'Created through SettingForge',
+
+      brief:
+        'A temporary Page created to verify the Journal Action Forwarder.',
+    },
+  )
+
+        console.log(
+          'Journal Action test succeeded:',
+          result,
+        )
+      } catch (error) {
+        console.error(
+          'Journal Action test failed:',
+          error,
+        )
+      }
+    }, 1000)
+
+  return () => {
+    window.clearTimeout(timer)
+  }
+}, [])
   /*
  * ----------------------------------------
  * Journal Field Definition advertisement

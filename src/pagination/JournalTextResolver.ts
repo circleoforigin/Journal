@@ -56,6 +56,28 @@ function resolveRun(
     }
   }
 
+  if (
+  run.type === 'reference'
+) {
+  return {
+    id: run.id,
+
+    text: run.text,
+
+    fontFamily:
+      readability.fontFamily,
+
+    fontSize:
+      readability.fontSize,
+
+    sourceType:
+      'reference',
+
+    targetEntryId:
+      run.targetEntryId,
+  }
+}
+
   const language =
     languages.find(
       (candidate) =>

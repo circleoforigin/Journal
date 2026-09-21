@@ -20,6 +20,14 @@ export interface JournalPageSummary {
   sectionName: string
 }
 
+export interface JournalGoToPageRequest {
+  pageId: string
+}
+
+type GoToPageRequester = (
+  request: JournalGoToPageRequest,
+) => Promise<void>
+
 type CreatePageRequester = (
   request: JournalCreatePageRequest,
 ) => Promise<JournalPageSummary>
@@ -31,6 +39,9 @@ export class JournalActionManager {
   private createPage:
     CreatePageRequester | null = null
 
+    private goToPage:
+  GoToPageRequester | null = null
+
   constructor(
     eventBus: ModuleEventBus,
   ) {
@@ -38,13 +49,19 @@ export class JournalActionManager {
   }
 
   start(
-    createPage:
-      CreatePageRequester,
-  ): () => void {
+  createPage:
+    CreatePageRequester,
+
+  goToPage:
+    GoToPageRequester,
+): () => void {
     this.stop()
 
     this.createPage =
       createPage
+
+    this.goToPage =
+        goToPage
 
     const unregisterCreatePage =
       this.eventBus
@@ -89,16 +106,51 @@ export class JournalActionManager {
           },
         )
 
-    return () => {
-      unregisterCreatePage()
+        const unregisterGoToPage =
+  this.eventBus
+    .registerRequestHandler(
+      'Journal.GoToPage',
+      async (message) => {
+        if (!this.goToPage) {
+          throw new Error(
+            'Journal Go to Page is unavailable.',
+          )
+        }
 
-      this.createPage = null
-    }
+        const request =
+          message.payload as
+            | Partial<JournalGoToPageRequest>
+            | undefined
+
+        if (!request?.pageId) {
+          throw new Error(
+            'Journal.GoToPage requires pageId.',
+          )
+        }
+
+        await this.goToPage({
+          pageId: request.pageId,
+        })
+
+        return {
+          pageId: request.pageId,
+        }
+      },
+    )
+
+    return () => {
+  unregisterCreatePage()
+  unregisterGoToPage()
+
+  this.createPage = null
+  this.goToPage = null
+}
   }
 
   stop(): void {
-    this.createPage = null
-  }
+  this.createPage = null
+  this.goToPage = null
+}
 }
 
 export const journalActionManager =
