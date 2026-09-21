@@ -26,6 +26,10 @@ import {
   paginateJournalDocument,
   type JournalPaginationMetrics,
 } from '../pagination/JournalPaginator'
+import {
+  createJournalViewPage,
+  type JournalGetViewPageResponse,
+} from '../integrations/JournalView';
 
 export interface JournalWorkspaceHandle {
   goToPage: (
@@ -44,6 +48,10 @@ export interface JournalWorkspaceHandle {
     sectionId: string
     sectionName: string
   }>
+  getViewPage: (
+    entryId: string,
+    pageIndex: number,
+  ) => JournalGetViewPageResponse;
 }
 
 interface JournalWorkspaceProps {
@@ -1649,6 +1657,109 @@ useImperativeHandle(
       )
 
       return true
+    },
+
+    getViewPage(
+      entryId,
+      requestedPageIndex,
+    ) {
+      const entry =
+        entries.find(
+          (candidate) =>
+            candidate.id ===
+            entryId,
+        )
+
+      if (!entry) {
+        throw new Error(
+          `Journal Entry "${entryId}" was not found.`,
+        )
+      }
+
+      const document =
+        buildJournalDocument(
+          entry,
+          project.fieldDefinitions,
+        )
+
+      const result =
+        paginateJournalDocument(
+          document,
+          paginationMetrics,
+        )
+
+      const entryPages =
+        result.pages.filter(
+          (page) =>
+            page.fragments.length > 0,
+        )
+
+      if (
+        entryPages.length === 0
+      ) {
+        throw new Error(
+          `Journal Entry "${entryId}" has no renderable pages.`,
+        )
+      }
+
+      const pageIndex =
+        Math.min(
+          Math.max(
+            0,
+            requestedPageIndex,
+          ),
+          entryPages.length - 1,
+        )
+
+      return {
+        pageCount:
+          entryPages.length,
+
+        page:
+          createJournalViewPage(
+            entryPages[
+              pageIndex
+            ],
+          ),
+
+        presentation: {
+          fontFamily:
+            paginationMetrics
+              .fontFamily,
+
+          fontSize:
+            paginationMetrics
+              .fontSize,
+
+          lineHeight:
+            paginationMetrics
+              .lineHeight,
+
+          titleFontSize:
+            paginationMetrics
+              .titleFontSize,
+
+          titleLineHeight:
+            paginationMetrics
+              .titleLineHeight,
+
+          fieldFontSize:
+            paginationMetrics
+              .fieldFontSize,
+
+          fieldLineHeight:
+            paginationMetrics
+              .fieldLineHeight,
+
+          pageWidth:
+            paginationMetrics
+              .pageWidth,
+
+          pageHeight:
+            paginationMetrics
+              .pageHeight,
+        },
+      }
     },
 
     async createPage(
