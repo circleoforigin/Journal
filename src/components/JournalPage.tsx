@@ -354,9 +354,10 @@ useEffect(() => {
     }
   }
 
-  const handleBlur = () => {
-    setControlPressed(false)
-  }
+  const clearControlPressed =
+    () => {
+      setControlPressed(false)
+    }
 
   window.addEventListener(
     'keydown',
@@ -370,7 +371,17 @@ useEffect(() => {
 
   window.addEventListener(
     'blur',
-    handleBlur,
+    clearControlPressed,
+  )
+
+  window.addEventListener(
+    'focus',
+    clearControlPressed,
+  )
+
+  document.addEventListener(
+    'visibilitychange',
+    clearControlPressed,
   )
 
   return () => {
@@ -386,8 +397,25 @@ useEffect(() => {
 
     window.removeEventListener(
       'blur',
-      handleBlur,
+      clearControlPressed,
     )
+
+    window.removeEventListener(
+      'focus',
+      clearControlPressed,
+    )
+
+    document.removeEventListener(
+      'visibilitychange',
+      clearControlPressed,
+    )
+
+    /*
+     * Never allow temporary Ctrl
+     * interaction mode to survive
+     * this page instance.
+     */
+    setControlPressed(false)
   }
 }, [])
 
@@ -548,6 +576,7 @@ useEffect(() => {
           if (
             run.targetEntryId
           ) {
+            setControlPressed(false)
             onNavigateReference(
               run.targetEntryId,
             )
