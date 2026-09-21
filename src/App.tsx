@@ -12,7 +12,12 @@ import type {
 } from '@settingforge/module-sdk'
 
 import { MenuBar } from './components/MenuBar'
-import { JournalWorkspace } from './components/JournalWorkspace'
+import {
+  JournalWorkspace,
+  type JournalWorkspaceHandle,
+} from './components/JournalWorkspace'
+
+import { journalActionManager } from './actions/JournalActionManager'
 
 import type { Project } from './models/Project'
 import type { JournalFieldDefinition } from './models/JournalFieldDefinition'
@@ -21,7 +26,10 @@ import type { JournalSectionDefinition } from './models/JournalSectionDefinition
 import { projectRepository } from './projects/ProjectRepository'
 
 import { moduleEventBus } from './host/ModuleBus'
-
+import {
+  journalActionDefinitions,
+  type JournalSectionsResponse,
+} from './events/JournalEvents'
 import { announceJournalReady } from './host/ModulePresence'
 
 import { NewProjectDialog } from './projects/NewProjectDialog'
@@ -36,6 +44,11 @@ import { FieldDefinitionsDialog } from './structure/FieldDefinitionsDialog'
 import { TocStructureDialog } from './structure/TocStructureDialog'
 
 function App() {
+  const journalWorkspaceRef =
+    useRef<JournalWorkspaceHandle | null>(
+      null,
+    )
+  
   const [
     activeProject,
     setActiveProject,
@@ -108,7 +121,56 @@ const pendingProjectActionRef =
 
   useEffect(() => {
     announceJournalReady()
+
+    if (moduleEventBus.hosted) {
+      void moduleEventBus
+        .registerActions(
+          journalActionDefinitions,
+        )
+        .catch(() => undefined)
+    }
   }, [])
+
+  useEffect(() => {
+  if (!moduleEventBus.hosted) {
+    return
+  }
+
+  return journalActionManager.start(
+    async (request) => {
+      const workspace =
+        journalWorkspaceRef.current
+
+      if (!workspace) {
+        throw new Error(
+          'Journal workspace is unavailable.',
+        )
+      }
+
+      const page =
+        await workspace.createPage(
+          request.sectionId,
+          request.title,
+          request.subtitle ?? '',
+          request.brief,
+        )
+
+      moduleEventBus.emit(
+        'Journal.PageCreated',
+        {
+          projectId:
+            activeProject?.id,
+
+          ...page,
+        },
+      )
+
+      return page
+    },
+  )
+}, [
+  activeProject?.id,
+])
 
   /*
  * ----------------------------------------
@@ -159,6 +221,45 @@ useEffect(() => {
    */
 
   useEffect(() => {
+    const unregisterGetSections =
+  moduleEventBus.registerRequestHandler(
+    'Journal.GetSections',
+    () => {
+      if (!activeProject) {
+        throw new Error(
+          'Journal has no active Project.',
+        )
+      }
+
+      const response:
+        JournalSectionsResponse = {
+          projectId:
+            activeProject.id,
+
+          sections:
+            activeProject
+              .sectionDefinitions
+              .filter(
+                (section) =>
+                  !section.isSystem,
+              )
+              .sort(
+                (left, right) =>
+                  left.order -
+                  right.order,
+              )
+              .map((section) => ({
+                sectionId:
+                  section.id,
+
+                sectionName:
+                  section.name,
+              })),
+        }
+
+      return response
+    },
+  )
     const unregisterStatus =
       moduleEventBus.registerRequestHandler(
         'project.status',
@@ -363,6 +464,7 @@ setProjectDirty(
       )
 
     return () => {
+      unregisterGetSections()
       unregisterStatus()
       unregisterLoad()
       unregisterSave()
@@ -982,6 +1084,7 @@ onDeleteBook={
     </section>
   ) : (
     <JournalWorkspace
+      ref={journalWorkspaceRef}
       project={activeProject}
       journal={activeJournal}
 

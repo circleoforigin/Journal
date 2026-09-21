@@ -40,8 +40,11 @@ interface JournalPageProps {
     source: 'master' | 'user',
   ) => boolean
 
-  onNavigateReference: (
-    entryId: string,
+  onReferenceClick: (
+    targetEntryId: string,
+    sourceEntryId: string,
+    fieldDefinitionId: string,
+    itemId: string,
   ) => void
 
   onAddItem: (
@@ -136,11 +139,16 @@ interface InlineFieldContentProps {
   ) => boolean
   onEditItem: JournalPageProps['onEditItem']
   onDeleteItem: JournalPageProps['onDeleteItem']
-  renderFormattedText: (
-    runs: JournalPageTextRun[],
-    fragmentIndex: number,
-    textOffset?: number,
-  ) => ReactNode
+ renderFormattedText: (
+  runs: JournalPageTextRun[],
+  fragmentIndex: number,
+  textOffset?: number,
+  referenceSource?: {
+    entryId: string
+    fieldDefinitionId: string
+    itemId: string
+  },
+) => ReactNode
 }
 
 function InlineFieldContent({
@@ -207,10 +215,18 @@ function InlineFieldContent({
                 }
               >
                 {renderFormattedText(
-                  item.runs,
-                  fragmentIndex,
-                  offset,
-                )}
+  item.runs,
+  fragmentIndex,
+  offset,
+  {
+    entryId:
+      fragment.entryId,
+    fieldDefinitionId:
+      fragment.fieldDefinitionId,
+    itemId:
+      item.itemId,
+  },
+)}
               </InlineItemTarget>
 
               {itemIndex <
@@ -237,7 +253,7 @@ export function JournalPage({
   titleLineHeight,
   searchHighlight,
   showEditNode,
-  onNavigateReference,
+  onReferenceClick,
   onAddItem,
   onEditItem,
   onDeleteItem,
@@ -394,6 +410,11 @@ useEffect(() => {
   runs: JournalPageTextRun[],
   fragmentIndex: number,
   textOffset = 0,
+  referenceSource?: {
+    entryId: string
+    fieldDefinitionId: string
+    itemId: string
+  },
 ) {
   if (runs.length === 0) {
     return '\u00a0'
@@ -433,11 +454,38 @@ useEffect(() => {
       const isReference =
         run.sourceType ===
           'reference' &&
-        Boolean( run.targetEntryId )
+        Boolean(
+          run.targetEntryId,
+        )
 
       const className =
         isReference
           ? 'journal-reference'
+          : undefined
+
+      const handleReferenceClick =
+        isReference &&
+        controlPressed &&
+        run.targetEntryId &&
+        referenceSource
+          ? (
+              event:
+                React.MouseEvent<
+                  HTMLSpanElement
+                >,
+            ) => {
+              event.stopPropagation()
+
+              setControlPressed(false)
+
+              onReferenceClick(
+                run.targetEntryId!,
+                referenceSource.entryId,
+                referenceSource
+                  .fieldDefinitionId,
+                referenceSource.itemId,
+              )
+            }
           : undefined
 
       const highlightStart =
@@ -470,34 +518,20 @@ useEffect(() => {
       ) {
         return (
           <span
-  key={runIndex}
-  className={className}
-  data-reference-entry-id={
-    isReference
-      ? run.targetEntryId
-      : undefined
-  }
-  style={style}
-  onClick={
-    isReference &&
-    controlPressed
-      ? (event) => {
-          event.stopPropagation()
-
-          if (
-            run.targetEntryId
-          ) {
-            setControlPressed(false)
-            onNavigateReference(
-              run.targetEntryId,
-            )
-          }
-        }
-      : undefined
-  }
->
-  {run.text}
-</span>
+            key={runIndex}
+            className={className}
+            data-reference-entry-id={
+              isReference
+                ? run.targetEntryId
+                : undefined
+            }
+            style={style}
+            onClick={
+              handleReferenceClick
+            }
+          >
+            {run.text}
+          </span>
         )
       }
 
@@ -511,47 +545,34 @@ useEffect(() => {
 
       return (
         <span
-  key={runIndex}
-  className={className}
-  data-reference-entry-id={
-    isReference
-      ? run.targetEntryId
-      : undefined
-  }
-  style={style}
-  onClick={
-    isReference &&
-    controlPressed
-      ? (event) => {
-          event.stopPropagation()
-
-          if (
-            run.targetEntryId
-          ) {
-            onNavigateReference(
-              run.targetEntryId,
-            )
+          key={runIndex}
+          className={className}
+          data-reference-entry-id={
+            isReference
+              ? run.targetEntryId
+              : undefined
           }
-        }
-      : undefined
-  }
->
-  {run.text.slice(
-    0,
-    localStart,
-  )}
+          style={style}
+          onClick={
+            handleReferenceClick
+          }
+        >
+          {run.text.slice(
+            0,
+            localStart,
+          )}
 
-  <mark className="journal-search-highlight">
-    {run.text.slice(
-      localStart,
-      localEnd,
-    )}
-  </mark>
+          <mark className="journal-search-highlight">
+            {run.text.slice(
+              localStart,
+              localEnd,
+            )}
+          </mark>
 
-  {run.text.slice(
-    localEnd,
-  )}
-</span>
+          {run.text.slice(
+            localEnd,
+          )}
+        </span>
       )
     },
   )
@@ -890,10 +911,18 @@ tabIndex={
           }}
         >
           {renderFormattedText(
-            paragraph.runs,
-            index,
-            currentOffset,
-          )}
+  paragraph.runs,
+  index,
+  currentOffset,
+  {
+    entryId:
+      fragment.entryId,
+    fieldDefinitionId:
+      fragment.fieldDefinitionId,
+    itemId:
+      fragment.itemId,
+  },
+)}
         </div>
       )
     },

@@ -1,5 +1,7 @@
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useMemo,
   useState,
@@ -25,6 +27,22 @@ import {
   type JournalPaginationMetrics,
 } from '../pagination/JournalPaginator'
 
+export interface JournalWorkspaceHandle {
+  createPage: (
+    sectionId: string,
+    title: string,
+    subtitle: string,
+    brief: string,
+  ) => Promise<{
+    pageId: string
+    title: string
+    subtitle: string
+    brief: string
+    sectionId: string
+    sectionName: string
+  }>
+}
+
 interface JournalWorkspaceProps {
   project: Project
   journal: Journal | null
@@ -39,13 +57,16 @@ interface JournalWorkspaceProps {
   ) => void
 }
 
-export function JournalWorkspace({
-  project,
-  journal,
-  onJournalChange,
-  onReadabilityChange,
-}: JournalWorkspaceProps)
-{
+export const JournalWorkspace =
+  forwardRef<
+    JournalWorkspaceHandle,
+    JournalWorkspaceProps
+  >(function JournalWorkspace({
+    project,
+    journal,
+    onJournalChange,
+    onReadabilityChange,
+  }, ref) {
 const [
   entries,
   setEntries,
@@ -737,6 +758,121 @@ function navigateToEntry(
       ? startPage
       : startPage -
           (startPage % 2),
+  )
+}
+
+async function dissolveReference(
+  targetEntryId: string,
+  sourceEntryId: string,
+  fieldDefinitionId: string,
+  itemId: string,
+) {
+  const sourceEntry =
+    entries.find(
+      (entry) =>
+        entry.id ===
+        sourceEntryId,
+    )
+
+  const field =
+    sourceEntry?.fields[
+      fieldDefinitionId
+    ]
+
+  const item =
+    field?.items.find(
+      (candidate) =>
+        candidate.id === itemId,
+    )
+
+  if (
+    !sourceEntry ||
+    !field ||
+    !item ||
+    typeof item.value !==
+      'string'
+  ) {
+    return
+  }
+
+  const escapedTargetId =
+    targetEntryId.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&',
+    )
+
+  const referencePattern =
+    new RegExp(
+      `<ref:${escapedTargetId}>([\\s\\S]*?)<\\/>`,
+      'gi',
+    )
+
+  const dissolvedValue =
+    item.value.replace(
+      referencePattern,
+      '$1',
+    )
+
+  if (
+    dissolvedValue ===
+    item.value
+  ) {
+    return
+  }
+
+  const now =
+    new Date().toISOString()
+
+  const updatedItems =
+    field.items.map(
+      (candidate) =>
+        candidate.id === itemId
+          ? {
+              ...candidate,
+              value:
+                dissolvedValue,
+              updatedAt: now,
+            }
+          : candidate,
+    )
+
+  await updateFieldItems(
+    sourceEntryId,
+    fieldDefinitionId,
+    updatedItems,
+  )
+
+  window.alert(
+    'This link pointed to a target that no longer exists. Link dissolved.',
+  )
+}
+
+function handleReferenceClick(
+  targetEntryId: string,
+  sourceEntryId: string,
+  fieldDefinitionId: string,
+  itemId: string,
+) {
+  const targetExists =
+    entries.some(
+      (entry) =>
+        entry.id ===
+        targetEntryId,
+    )
+
+  if (targetExists) {
+    navigateToEntry(
+      targetEntryId,
+    )
+
+    return
+  }
+
+  void dissolveReference(
+    targetEntryId,
+    sourceEntryId,
+    fieldDefinitionId,
+    itemId,
   )
 }
 
@@ -1485,7 +1621,71 @@ async function createEntry(
   onJournalChange(
     updatedJournal,
   )
+
+  return entry
 }
+
+useImperativeHandle(
+  ref,
+  () => ({
+    async createPage(
+      sectionId,
+      title,
+      subtitle,
+      brief,
+    ) {
+      const section =
+        sections.find(
+          (candidate) =>
+            candidate.id ===
+            sectionId,
+        )
+
+      if (
+        !section ||
+        section.isSystem
+      ) {
+        throw new Error(
+          'Journal Section was not found or cannot contain Pages.',
+        )
+      }
+
+      const entry =
+        await createEntry(
+          sectionId,
+          title,
+          subtitle,
+          brief,
+        )
+
+      if (!entry) {
+        throw new Error(
+          'Journal was unable to create the Page.',
+        )
+      }
+
+      return {
+        pageId:
+          entry.id,
+
+        title:
+          title.trim(),
+
+        subtitle:
+          subtitle.trim(),
+
+        brief:
+          brief.trim(),
+
+        sectionId:
+          section.id,
+
+        sectionName:
+          section.name,
+      }
+    },
+  }),
+)
 
 async function updatePageHeader(
   entryId: string,
@@ -3604,7 +3804,7 @@ return (
                 titleFontSize={titleFontSize}
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
-                onNavigateReference={navigateToEntry}
+                onReferenceClick={handleReferenceClick}
                 onEditItem={handleEditItem}
                 onDeleteItem={(entryId, fieldDefinitionId, itemId) => {
                   setPendingItemDelete({ entryId, fieldDefinitionId, itemId })
@@ -3642,7 +3842,7 @@ return (
                 titleFontSize={titleFontSize}
                 titleLineHeight={titleLineHeight}
                 showEditNode={showEditNode}
-                onNavigateReference={navigateToEntry}
+                onReferenceClick={handleReferenceClick}
                 onEditItem={handleEditItem}
                 onDeleteItem={(entryId, fieldDefinitionId, itemId) => {
                   setPendingItemDelete({ entryId, fieldDefinitionId, itemId })
@@ -3693,4 +3893,4 @@ return (
       </section>
     </div>
   )
-}
+})
