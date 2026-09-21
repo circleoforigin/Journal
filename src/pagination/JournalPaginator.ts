@@ -773,16 +773,88 @@ export function paginateJournalDocument(
       { type: 'inlineField' }
     >,
   ) => {
-    const items = block.items.map((item) => ({
-      ...item,
-      text: parseJournalFormatting(item.text)
-        .map((run) => run.text)
-        .join(''),
-      runs: parseJournalFormatting(item.text),
-    }))
-    const lines = measureBrowserLines(
-      block.text,
-      metrics.pageWidth,
+    const items =
+  block.items.map(
+    (item) => {
+      const runs:
+        JournalPageTextRun[] = []
+
+      const semanticRuns =
+        parseJournalMarkup(
+          item.text,
+        )
+
+      for (
+        const semanticRun
+        of semanticRuns
+      ) {
+        const formattedRuns =
+          parseJournalFormatting(
+            semanticRun.text,
+          )
+
+        for (
+          const formattedRun
+          of formattedRuns
+        ) {
+          if (
+            !formattedRun.text
+          ) {
+            continue
+          }
+
+          runs.push({
+            ...formattedRun,
+
+            sourceType:
+              semanticRun.type,
+
+            languageId:
+              semanticRun.type ===
+                'language'
+                ? semanticRun
+                    .languageId
+                : undefined,
+
+            targetEntryId:
+              semanticRun.type ===
+                'reference'
+                ? semanticRun
+                    .targetEntryId
+                : undefined,
+          })
+        }
+      }
+
+      return {
+        ...item,
+
+        text:
+          runs
+            .map(
+              (run) =>
+                run.text,
+            )
+            .join(''),
+
+        runs,
+      }
+    },
+  )
+    const displayText =
+  `${block.label} - ${
+    block.items
+      .map(
+        (item) =>
+          item.text,
+      )
+      .join(', ')
+  }`
+
+const lines =
+  measureBrowserLines(
+    displayText,
+    metrics.pageWidth,
       metrics.fontFamily,
       metrics.fontSize,
       metrics.lineHeight,

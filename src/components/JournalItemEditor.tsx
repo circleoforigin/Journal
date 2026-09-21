@@ -319,8 +319,7 @@ export function JournalItemEditor({
 
     onChange(nextValue)
   }
-
-  function applyFormatting(
+function applyFormatting(
   command:
     | 'bold'
     | 'italic'
@@ -346,31 +345,28 @@ export function JournalItemEditor({
           ? 'em'
           : 'u'
 
-    const existingFormatting =
-      Array.from(
-        selectedEditorReference
-          .children,
-      ).find(
-        (child) =>
-          child.tagName
-            .toLowerCase() ===
+    const existing =
+      selectedEditorReference
+        .querySelector(
           tagName,
-      )
+        )
 
-    if (existingFormatting) {
-      while (
-        existingFormatting
-          .firstChild
-      ) {
-        selectedEditorReference
-          .insertBefore(
-            existingFormatting
-              .firstChild,
-            existingFormatting,
+    if (existing) {
+      const parent =
+        existing.parentNode
+
+      if (parent) {
+        while (
+          existing.firstChild
+        ) {
+          parent.insertBefore(
+            existing.firstChild,
+            existing,
           )
-      }
+        }
 
-      existingFormatting.remove()
+        existing.remove()
+      }
     } else {
       const wrapper =
         document.createElement(
