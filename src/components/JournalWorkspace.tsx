@@ -349,6 +349,69 @@ function getEntrySystemText(
     : ''
 }
 
+function getIncomingReferenceInfo(
+  targetEntryId: string,
+): {
+  itemCount: number
+  entryCount: number
+} {
+  const escapedTargetId =
+    targetEntryId.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&',
+    )
+
+  const referencePattern =
+    new RegExp(
+      `<ref:${escapedTargetId}>`,
+      'gi',
+    )
+
+  let itemCount = 0
+  const referringEntryIds =
+    new Set<string>()
+
+  for (const entry of entries) {
+    if (entry.id === targetEntryId) {
+      continue
+    }
+
+    for (
+      const field
+      of Object.values(entry.fields)
+    ) {
+      for (const item of field.items) {
+        if (
+          typeof item.value !==
+          'string'
+        ) {
+          continue
+        }
+
+        if (
+          referencePattern.test(
+            item.value,
+          )
+        ) {
+          itemCount += 1
+
+          referringEntryIds.add(
+            entry.id,
+          )
+        }
+
+        referencePattern.lastIndex = 0
+      }
+    }
+  }
+
+  return {
+    itemCount,
+    entryCount:
+      referringEntryIds.size,
+  }
+}
+
 const referenceCandidates =
   useMemo(
     () =>
@@ -429,6 +492,16 @@ const activeEntryIsArchived =
     activeEntry.sectionDefinitionId ===
       archiveSection.id,
   )
+
+  const activeEntryReferenceInfo =
+  activeEntry
+    ? getIncomingReferenceInfo(
+        activeEntry.id,
+      )
+    : {
+        itemCount: 0,
+        entryCount: 0,
+      }
 
 const JOURNAL_TEXT_WIDTH = 400
 const JOURNAL_TEXT_HEIGHT = 490
@@ -3037,19 +3110,41 @@ function clearSearchPosition() {
       )
     }
 
-    return (
-      <ConfirmationDialog
-        title={`Delete "${pageTitle}"?`}
-        message="This page will be permanently deleted. This action cannot be undone and the page cannot be restored."
-        confirmLabel="Delete Page"
-        onCancel={() => {
-          setPendingPageAction(null)
-        }}
-        onConfirm={
-          deleteActiveEntry
-        }
-      />
-    )
+    const referenceWarning =
+  activeEntryReferenceInfo
+    .itemCount > 0
+    ? ` It is currently referenced by ${
+        activeEntryReferenceInfo
+          .itemCount
+      } ${
+        activeEntryReferenceInfo
+          .itemCount === 1
+          ? 'Item'
+          : 'Items'
+      } across ${
+        activeEntryReferenceInfo
+          .entryCount
+      } ${
+        activeEntryReferenceInfo
+          .entryCount === 1
+          ? 'Page'
+          : 'Pages'
+      }. Those links will become unresolved.`
+    : ''
+
+return (
+  <ConfirmationDialog
+    title={`Delete "${pageTitle}"?`}
+    message={`This page will be permanently deleted. This action cannot be undone and the page cannot be restored.${referenceWarning}`}
+    confirmLabel="Delete Page"
+    onCancel={() => {
+      setPendingPageAction(null)
+    }}
+    onConfirm={
+      deleteActiveEntry
+    }
+  />
+)
   })()}
 
       <aside className="journal-inspector">
