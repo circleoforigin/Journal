@@ -214,6 +214,11 @@ export function JournalItemEditor({
   )
 
   const [
+  inlineLinkSelectionValid,
+  setInlineLinkSelectionValid,
+] = useState(true)
+
+  const [
     linkDialogOpen,
     setLinkDialogOpen,
   ] = useState(false)
@@ -567,85 +572,159 @@ function applyFormatting(
   editor.focus()
 }
 
-  function openLinkDialog() {
-    const editor =
-      editorRef.current
+function selectionStaysWithinInlineItem(
+  range: Range,
+): boolean {
+  const editor =
+    editorRef.current
 
-    const selection =
-      window.getSelection()
-
-    if (
-      !editor ||
-      !selection ||
-      selection.rangeCount === 0 ||
-      selection.isCollapsed
-    ) {
-      return
-    }
-
-    const range =
-      selection.getRangeAt(0)
-
-    if (
-      !editor.contains(
-        range.commonAncestorContainer,
-      )
-    ) {
-      return
-    }
-
-    const text =
-      range.toString()
-
-    if (!text.trim()) {
-      return
-    }
-
-    selectedRangeRef.current =
-      range.cloneRange()
-
-    setSelectedLinkText(
-      text,
-    )
-
-    setLinkSearch(
-      text.trim(),
-    )
-
-    const normalizedText =
-      text
-        .trim()
-        .toLocaleLowerCase()
-
-    const exactTitleMatch =
-      referenceCandidates.find(
-        (candidate) =>
-          candidate.title
-            .trim()
-            .toLocaleLowerCase() ===
-          normalizedText,
-      )
-
-    const exactAliasMatch =
-      referenceCandidates.find(
-        (candidate) =>
-          candidate.aliases.some(
-            (alias) =>
-              alias
-                .trim()
-                .toLocaleLowerCase() ===
-              normalizedText,
-          ),
-      )
-
-    setSelectedReferenceId(
-      exactTitleMatch?.id ??
-      exactAliasMatch?.id ??
-      null,
-    )
-
-    setLinkDialogOpen(true)
+  if (
+    !editor ||
+    fieldDefinition
+      ?.presentation !== 'inline'
+  ) {
+    return true
   }
+
+  if (
+    !editor.contains(
+      range.commonAncestorContainer,
+    )
+  ) {
+    return false
+  }
+
+  const beforeSelection =
+    document.createRange()
+
+  beforeSelection.selectNodeContents(
+    editor,
+  )
+
+  beforeSelection.setEnd(
+    range.startContainer,
+    range.startOffset,
+  )
+
+  const throughSelection =
+    document.createRange()
+
+  throughSelection.selectNodeContents(
+    editor,
+  )
+
+  throughSelection.setEnd(
+    range.endContainer,
+    range.endOffset,
+  )
+
+  const commasBeforeStart =
+    (
+      beforeSelection
+        .toString()
+        .match(/,/g) ?? []
+    ).length
+
+  const commasBeforeEnd =
+    (
+      throughSelection
+        .toString()
+        .match(/,/g) ?? []
+    ).length
+
+  return (
+    commasBeforeStart ===
+    commasBeforeEnd
+  )
+}
+
+  function openLinkDialog() {
+  const editor =
+    editorRef.current
+
+  const selection =
+    window.getSelection()
+
+  if (
+    !editor ||
+    !selection ||
+    selection.rangeCount === 0 ||
+    selection.isCollapsed
+  ) {
+    return
+  }
+
+  const range =
+    selection.getRangeAt(0)
+
+  if (
+    !editor.contains(
+      range.commonAncestorContainer,
+    )
+  ) {
+    return
+  }
+
+  if (
+  !selectionStaysWithinInlineItem(
+    range,
+  )
+) {
+  return
+}
+
+  const text =
+    range.toString()
+
+  if (!text.trim()) {
+    return
+  }
+
+  selectedRangeRef.current =
+    range.cloneRange()
+
+  setSelectedLinkText(
+    text,
+  )
+
+  setLinkSearch(
+    text.trim(),
+  )
+
+  const normalizedText =
+    text
+      .trim()
+      .toLocaleLowerCase()
+
+  const exactTitleMatch =
+    referenceCandidates.find(
+      (candidate) =>
+        candidate.title
+          .trim()
+          .toLocaleLowerCase() ===
+        normalizedText,
+    )
+
+  const exactAliasMatch =
+    referenceCandidates.find(
+      (candidate) =>
+        candidate.aliases.some(
+          (alias) =>
+            alias
+              .trim()
+              .toLocaleLowerCase() ===
+            normalizedText,
+        ),
+    )
+
+  setSelectedReferenceId(
+    exactTitleMatch?.id ??
+    exactAliasMatch?.id ??
+    null,
+  )
+
+  setLinkDialogOpen(true)
+}
 
   function closeLinkDialog() {
     setLinkDialogOpen(false)
@@ -829,18 +908,19 @@ function applyFormatting(
       : 'journal-item-editor-link-button'
   }
   title={
-    selectedEditorReference
-      ? canUnlinkSelectedReference
-        ? 'Unlink'
-        : 'This Reference belongs to another Journal owner'
+  selectedEditorReference
+    ? canUnlinkSelectedReference
+      ? 'Unlink'
+      : 'This Reference belongs to another Journal owner'
+    : !inlineLinkSelectionValid
+      ? 'A Reference cannot cross Inline Item boundaries'
       : 'Add Link'
-  }
+}
   disabled={
-    Boolean(
-      selectedEditorReference &&
-      !canUnlinkSelectedReference,
-    )
-  }
+  selectedEditorReference
+    ? !canUnlinkSelectedReference
+    : !inlineLinkSelectionValid
+}
   onMouseDown={(
     event,
   ) => {
@@ -889,6 +969,35 @@ function applyFormatting(
           contentEditable
           suppressContentEditableWarning
           spellCheck
+          onSelect={() => {
+  if (
+    fieldDefinition
+      ?.presentation !== 'inline'
+  ) {
+    return
+  }
+
+  const selection =
+    window.getSelection()
+
+  if (
+    !selection ||
+    selection.rangeCount === 0 ||
+    selection.isCollapsed
+  ) {
+    setInlineLinkSelectionValid(
+      true,
+    )
+
+    return
+  }
+
+  setInlineLinkSelectionValid(
+    selectionStaysWithinInlineItem(
+      selection.getRangeAt(0),
+    ),
+  )
+}}
           onClick={(event) => {
     const target =
     event.target
