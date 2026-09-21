@@ -321,27 +321,94 @@ export function JournalItemEditor({
   }
 
   function applyFormatting(
-    command:
-      | 'bold'
-      | 'italic'
-      | 'underline',
-  ) {
-    const editor =
-      editorRef.current
+  command:
+    | 'bold'
+    | 'italic'
+    | 'underline',
+) {
+  const editor =
+    editorRef.current
 
-    if (!editor) {
-      return
+  if (!editor) {
+    return
+  }
+
+  if (
+    selectedEditorReference &&
+    editor.contains(
+      selectedEditorReference,
+    )
+  ) {
+    const tagName =
+      command === 'bold'
+        ? 'strong'
+        : command === 'italic'
+          ? 'em'
+          : 'u'
+
+    const existingFormatting =
+      Array.from(
+        selectedEditorReference
+          .children,
+      ).find(
+        (child) =>
+          child.tagName
+            .toLowerCase() ===
+          tagName,
+      )
+
+    if (existingFormatting) {
+      while (
+        existingFormatting
+          .firstChild
+      ) {
+        selectedEditorReference
+          .insertBefore(
+            existingFormatting
+              .firstChild,
+            existingFormatting,
+          )
+      }
+
+      existingFormatting.remove()
+    } else {
+      const wrapper =
+        document.createElement(
+          tagName,
+        )
+
+      while (
+        selectedEditorReference
+          .firstChild
+      ) {
+        wrapper.appendChild(
+          selectedEditorReference
+            .firstChild,
+        )
+      }
+
+      selectedEditorReference
+        .appendChild(
+          wrapper,
+        )
     }
+
+    syncValue()
 
     editor.focus()
 
-    document.execCommand(
-      command,
-      false,
-    )
-
-    syncValue()
+    return
   }
+
+  editor.focus()
+
+  document.execCommand(
+    command,
+    false,
+  )
+
+  syncValue()
+}
 
   function insertTab() {
     const selection =
