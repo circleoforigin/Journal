@@ -167,6 +167,28 @@ const pendingProjectActionRef =
 
       return page
     },
+
+    async (request) => {
+      const workspace =
+        journalWorkspaceRef.current
+
+      if (!workspace) {
+        throw new Error(
+          'Journal workspace is unavailable.',
+        )
+      }
+
+      const found =
+        workspace.goToPage(
+          request.pageId,
+        )
+
+      if (!found) {
+        throw new Error(
+          `Journal Page "${request.pageId}" was not found.`,
+        )
+      }
+    },
   )
 }, [
   activeProject?.id,
@@ -324,6 +346,40 @@ useEffect(() => {
       return response
     },
   )
+    const unregisterGetViewPage =
+      moduleEventBus.registerRequestHandler(
+        'Journal.GetViewPage',
+        (request) => {
+          const payload =
+            request.payload as
+              | {
+                  entryId?: string
+                  pageIndex?: number
+                }
+              | undefined
+
+          if (!payload?.entryId) {
+            throw new Error(
+              'Journal.GetViewPage requires entryId.',
+            )
+          }
+
+          const workspace =
+            journalWorkspaceRef.current
+
+          if (!workspace) {
+            throw new Error(
+              'Journal workspace is unavailable.',
+            )
+          }
+
+          return workspace.getViewPage(
+            payload.entryId,
+            payload.pageIndex ?? 0,
+          )
+        },
+      )
+
     const unregisterStatus =
       moduleEventBus.registerRequestHandler(
         'project.status',
@@ -529,6 +585,7 @@ setProjectDirty(
 
     return () => {
       unregisterGetSections()
+      unregisterGetViewPage()
       unregisterStatus()
       unregisterLoad()
       unregisterSave()
