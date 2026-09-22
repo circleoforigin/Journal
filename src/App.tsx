@@ -5,10 +5,17 @@ import {
 } from 'react'
 
 import type {
+  ProjectCreateRequest,
+  ProjectCreateResponse,
+  ProjectDeleteRequest,
+  ProjectDeleteResponse,
+  ProjectListResponse,
   ProjectLoadAcceptedPayload,
   ProjectLoadFailedPayload,
   ProjectLoadedPayload,
   ProjectLoadRequest,
+  ProjectRenameRequest,
+  ProjectRenameResponse,
 } from '@settingforge/module-sdk'
 
 import { MenuBar } from './components/MenuBar'
@@ -28,6 +35,7 @@ import { projectRepository } from './projects/ProjectRepository'
 import { moduleEventBus } from './host/ModuleBus'
 import {
   journalActionDefinitions,
+  type JournalPagesResponse,
   type JournalSectionsResponse,
 } from './events/JournalEvents'
 import { announceJournalReady } from './host/ModulePresence'
@@ -346,6 +354,37 @@ useEffect(() => {
       return response
     },
   )
+  const unregisterGetPages =
+  moduleEventBus.registerRequestHandler(
+    'Journal.GetPages',
+    () => {
+      if (!activeProject) {
+        throw new Error(
+          'Journal has no active Project.',
+        )
+      }
+
+      const workspace =
+        journalWorkspaceRef.current
+
+      if (!workspace) {
+        throw new Error(
+          'Journal workspace is unavailable.',
+        )
+      }
+
+      const response:
+        JournalPagesResponse = {
+          projectId:
+            activeProject.id,
+
+          pages:
+            workspace.getPages(),
+        }
+
+      return response
+    },
+  )
     const unregisterGetViewPage =
       moduleEventBus.registerRequestHandler(
         'Journal.GetViewPage',
@@ -377,6 +416,176 @@ useEffect(() => {
             payload.entryId,
             payload.pageIndex ?? 0,
           )
+        },
+      )
+          const unregisterList =
+      moduleEventBus.registerRequestHandler(
+        'project.list',
+        async () => {
+          const projects =
+            await projectRepository
+              .loadProjects()
+
+          const response:
+            ProjectListResponse = {
+              projects:
+                projects.map(
+                  (project) => ({
+                    projectId:
+                      project.id,
+
+                    projectName:
+                      project.name,
+                  }),
+                ),
+            }
+
+          return response
+        },
+      )
+
+    const unregisterCreate =
+      moduleEventBus.registerRequestHandler(
+        'project.create',
+        async (request) => {
+          const payload =
+            request.payload as
+              | Partial<ProjectCreateRequest>
+              | undefined
+
+          const name =
+            payload?.name?.trim()
+
+          if (!name) {
+            throw new Error(
+              'project.create requires a name.',
+            )
+          }
+
+          const project =
+            await createProject(name)
+
+          const response:
+            ProjectCreateResponse = {
+              projectId:
+                project.id,
+
+              projectName:
+                project.name,
+            }
+
+          return response
+        },
+      )
+
+    const unregisterRename =
+      moduleEventBus.registerRequestHandler(
+        'project.rename',
+        async (request) => {
+          const payload =
+            request.payload as
+              | Partial<ProjectRenameRequest>
+              | undefined
+
+          const projectId =
+            payload?.projectId
+
+          const name =
+            payload?.name?.trim()
+
+          if (!projectId || !name) {
+            throw new Error(
+              'project.rename requires projectId and name.',
+            )
+          }
+
+          const project =
+            await projectRepository
+              .loadProject(projectId)
+
+          if (!project) {
+            throw new Error(
+              `Project "${projectId}" was not found.`,
+            )
+          }
+
+          const renamedProject:
+            Project = {
+              ...project,
+
+              name,
+
+              updatedAt:
+                new Date().toISOString(),
+            }
+
+          await projectRepository
+            .saveProject(
+              renamedProject,
+            )
+
+          if (
+            activeProject?.id ===
+            projectId
+          ) {
+            setActiveProject(
+              renamedProject,
+            )
+
+            setProjectDirty(false)
+          }
+
+          const response:
+            ProjectRenameResponse = {
+              projectId:
+                renamedProject.id,
+
+              projectName:
+                renamedProject.name,
+            }
+
+          return response
+        },
+      )
+
+    const unregisterDelete =
+      moduleEventBus.registerRequestHandler(
+        'project.delete',
+        async (request) => {
+          const payload =
+            request.payload as
+              | Partial<ProjectDeleteRequest>
+              | undefined
+
+          const projectId =
+            payload?.projectId
+
+          if (!projectId) {
+            throw new Error(
+              'project.delete requires projectId.',
+            )
+          }
+
+          if (
+            activeProject?.id ===
+            projectId
+          ) {
+            throw new Error(
+              'The active Project must be closed before it can be deleted.',
+            )
+          }
+
+          const deleted =
+            await projectRepository
+              .deleteProject(projectId)
+
+          const response:
+            ProjectDeleteResponse = {
+              projectId,
+              deleted,
+            }
+
+          return response
         },
       )
 
@@ -584,13 +793,17 @@ setProjectDirty(
       )
 
     return () => {
-      unregisterGetSections()
-      unregisterGetViewPage()
-      unregisterStatus()
-      unregisterLoad()
-      unregisterSave()
-      unregisterClose()
-    }
+  unregisterGetSections()
+  unregisterGetViewPage()
+  unregisterList()
+  unregisterCreate()
+  unregisterRename()
+  unregisterDelete()
+  unregisterStatus()
+  unregisterLoad()
+  unregisterSave()
+  unregisterClose()
+}
   }, [
     activeProject,
     projectDirty,
@@ -868,7 +1081,7 @@ async function createProject(
 
   setProjectDirty(false)
 
-  setIsNewProjectOpen(false)
+  return project
 }
 
 function handleLoadProject() {
@@ -1222,9 +1435,12 @@ onDeleteBook={
 
 {isNewProjectOpen && (
   <NewProjectDialog
-    onCreate={
-      createProject
+  onCreate={
+    async (name) => {
+      await createProject(name)
+      setIsNewProjectOpen(false)
     }
+  }
 
     onCancel={() => {
       setIsNewProjectOpen(false)

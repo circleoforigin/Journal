@@ -9,6 +9,18 @@ export interface JournalPageSummary {
   brief: string
 }
 
+export interface JournalPageCandidate {
+  pageId: string
+  title: string
+  subtitle: string
+  brief: string
+}
+
+export interface JournalPagesResponse {
+  projectId: string
+  pages: JournalPageCandidate[]
+}
+
 export interface JournalSectionSummary {
   sectionId: string
   sectionName: string

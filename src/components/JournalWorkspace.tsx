@@ -32,6 +32,12 @@ import {
 } from '../integrations/JournalView';
 
 export interface JournalWorkspaceHandle {
+  getPages: () => Array<{
+    pageId: string
+    title: string
+    subtitle: string
+    brief: string
+  }>
   goToPage: (
     pageId: string,
   ) => boolean
@@ -1639,6 +1645,45 @@ async function createEntry(
 useImperativeHandle(
   ref,
   () => ({
+    getPages() {
+      return entries
+        .filter((entry) => {
+          const section =
+            sections.find(
+              (candidate) =>
+                candidate.id ===
+                entry.sectionDefinitionId,
+            )
+
+          return !section?.isSystem
+        })
+        .map((entry) => ({
+          pageId:
+            entry.id,
+
+          title:
+            getEntryTitle(entry),
+
+          subtitle:
+            getEntrySystemText(
+              entry,
+              subtitleDefinition?.id,
+            ),
+
+          brief:
+            getEntrySystemText(
+              entry,
+              briefDefinition?.id,
+            ),
+        }))
+        .sort(
+          (left, right) =>
+            left.title.localeCompare(
+              right.title,
+            ),
+        )
+    },
+    
     goToPage(
       pageId,
     ) {
@@ -1663,6 +1708,7 @@ useImperativeHandle(
       entryId,
       requestedPageIndex,
     ) {
+
       const entry =
         entries.find(
           (candidate) =>
