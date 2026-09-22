@@ -1818,7 +1818,13 @@ useImperativeHandle(
           section.name,
       }
     },
-  }),
+    }),
+  [
+    entries,
+    project.fieldDefinitions,
+    paginationMetrics,
+    sections,
+  ],
 )
 
 async function updatePageHeader(
