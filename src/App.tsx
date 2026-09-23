@@ -38,6 +38,11 @@ import {
   type JournalPagesResponse,
   type JournalSectionsResponse,
 } from './events/JournalEvents'
+import {
+  journalCommandDefinitions,
+  journalEventDefinitions,
+  journalQueryDefinitions,
+} from './capabilities/JournalCapabilities'
 import { announceJournalReady } from './host/ModulePresence'
 
 import { NewProjectDialog } from './projects/NewProjectDialog'
@@ -128,16 +133,36 @@ const pendingProjectActionRef =
    */
 
   useEffect(() => {
-    announceJournalReady()
+  announceJournalReady()
 
-    if (moduleEventBus.hosted) {
-      void moduleEventBus
-        .registerActions(
-          journalActionDefinitions,
-        )
-        .catch(() => undefined)
-    }
-  }, [])
+  if (!moduleEventBus.hosted) {
+    return
+  }
+
+  void moduleEventBus
+    .registerActions(
+      journalActionDefinitions,
+    )
+    .catch(() => undefined)
+
+  void moduleEventBus
+    .registerCapabilities({
+      events:
+        journalEventDefinitions,
+
+      commands:
+        journalCommandDefinitions,
+
+      queries:
+        journalQueryDefinitions,
+    })
+    .catch((error: unknown) => {
+      console.error(
+        '[Journal] Capability registration failed.',
+        error,
+      )
+    })
+}, [])
 
   useEffect(() => {
   if (!moduleEventBus.hosted) {
