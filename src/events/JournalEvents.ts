@@ -1,5 +1,5 @@
 import type {
-  ActionDefinition,
+  EventDefinition,
 } from '@settingforge/module-sdk'
 
 export interface JournalPageSummary {
@@ -37,8 +37,8 @@ export interface JournalPageCreatedPayload
   projectId: string
 }
 
-export const journalActionDefinitions:
-  ActionDefinition[] = [
+export const journalEventDefinitions:
+  EventDefinition[] = [
     {
       id: 'Journal.PageCreated',
 

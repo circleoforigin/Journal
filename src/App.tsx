@@ -34,7 +34,6 @@ import { projectRepository } from './projects/ProjectRepository'
 
 import { moduleEventBus } from './host/ModuleBus'
 import {
-  journalActionDefinitions,
   type JournalPagesResponse,
   type JournalSectionsResponse,
 } from './events/JournalEvents'
@@ -138,13 +137,7 @@ const pendingProjectActionRef =
   if (!moduleEventBus.hosted) {
     return
   }
-
-  void moduleEventBus
-    .registerActions(
-      journalActionDefinitions,
-    )
-    .catch(() => undefined)
-
+   
   void moduleEventBus
     .registerCapabilities({
       events:

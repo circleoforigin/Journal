@@ -4,6 +4,10 @@ import {
   projectQueryDefinitions,
 } from '@settingforge/module-sdk'
 
+import {
+  journalEventDefinitions as journalDomainEventDefinitions,
+} from '../events/JournalEvents'
+
 import type {
   CommandDefinition,
   EventDefinition,
@@ -12,52 +16,8 @@ import type {
 
 export const journalEventDefinitions:
   EventDefinition[] = [
-    {
-      id: 'Journal.PageCreated',
-
-      label: 'Page Created',
-
-      description:
-        'A Journal Page was created.',
-
-      fields: [
-        {
-          key: 'projectId',
-          label: 'Project ID',
-          type: 'string',
-        },
-        {
-          key: 'pageId',
-          label: 'Page ID',
-          type: 'string',
-        },
-        {
-          key: 'title',
-          label: 'Title',
-          type: 'string',
-        },
-        {
-          key: 'subtitle',
-          label: 'Subtitle',
-          type: 'string',
-        },
-        {
-          key: 'brief',
-          label: 'Brief',
-          type: 'string',
-        },
-        {
-          key: 'sectionId',
-          label: 'Section ID',
-          type: 'string',
-        },
-        {
-          key: 'sectionName',
-          label: 'Section Name',
-          type: 'string',
-        },
-      ],
-    },    
+    ...journalDomainEventDefinitions,
+    ...projectEventDefinitions,
   ]
 
 export const journalCommandDefinitions:
