@@ -812,6 +812,7 @@ setProjectDirty(
 
     return () => {
   unregisterGetSections()
+  unregisterGetPages()
   unregisterGetViewPage()
   unregisterList()
   unregisterCreate()
