@@ -137,7 +137,7 @@ const pendingProjectActionRef =
   if (!moduleEventBus.hosted) {
     return
   }
-   
+
   void moduleEventBus
     .registerCapabilities({
       events:

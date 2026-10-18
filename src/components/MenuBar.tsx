@@ -424,11 +424,7 @@ export function MenuBar({
   )}
 </div>
 
-      {projectName && (
-        <div className="menu-project-name">
-          {projectName}.proj
-        </div>
-      )}
+      
     </div>
   )
 }
